@@ -2,12 +2,14 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "./ERC721A.sol";
 
-contract EndemicERC721 is ERC721A {
+contract EndemicERC721 is ERC721A, Initializable {
     using Address for address;
 
-    string private baseUri = "ipfs://";
+    string public baseURI = "ipfs://";
     address public owner;
     address public immutable erc721Factory;
 
@@ -19,7 +21,9 @@ contract EndemicERC721 is ERC721A {
         _;
     }
 
-    constructor(address _erc721Factory) {
+    constructor(address _erc721Factory)
+        ERC721A("Endemic Collection Template", "ECT")
+    {
         require(
             _erc721Factory.isContract(),
             "EndemicERC721: _erc721Factory is not a contract"
@@ -31,7 +35,7 @@ contract EndemicERC721 is ERC721A {
         address creator,
         string memory name,
         string memory symbol
-    ) external {
+    ) external initializer {
         require(
             msg.sender == address(erc721Factory),
             "EndemicERC721: Collection must be created via the factory"
@@ -61,7 +65,19 @@ contract EndemicERC721 is ERC721A {
         return true;
     }
 
+    function burn(uint256 tokenId) external {
+        TokenOwnership memory prevOwnership = ownershipOf(tokenId);
+
+        bool isApprovedOrOwner = (_msgSender() == prevOwnership.addr ||
+            isApprovedForAll(prevOwnership.addr, _msgSender()) ||
+            getApproved(tokenId) == _msgSender());
+
+        if (!isApprovedOrOwner) revert TransferCallerNotOwnerNorApproved();
+
+        _burn(tokenId);
+    }
+
     function _baseURI() internal view override returns (string memory) {
-        return baseUri;
+        return baseURI;
     }
 }

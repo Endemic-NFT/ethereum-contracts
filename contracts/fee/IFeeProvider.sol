@@ -10,7 +10,5 @@ interface IFeeProvider {
 
     function getTakerFee(address buyer) external view returns (uint256);
 
-    function getMasterNftCut() external view returns (uint256);
-
     function onInitialSale(address nftContract, uint256 tokenId) external;
 }

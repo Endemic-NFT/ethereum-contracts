@@ -3,9 +3,8 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "../erc-721/IERC721.sol";
+import "../erc-721/IEndemicERC721.sol";
 import "../erc-1155/IERC1155.sol";
-import "../erc-721/IEndemicMasterNFT.sol";
 import "../fee/IFeeProvider.sol";
 import "../royalties/IRoyaltiesProvider.sol";
 import "./LibAuction.sol";
@@ -13,30 +12,19 @@ import "./LibAuction.sol";
 abstract contract TransferManager is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
-    uint256 public masterNftShares;
     address public feeClaimAddress;
 
     IFeeProvider feeProvider;
-    IEndemicMasterNFT masterNFT;
     IRoyaltiesProvider royaltiesProvider;
 
     function __TransferManager___init_unchained(
         IFeeProvider _feeProvider,
-        IEndemicMasterNFT _masterNFT,
         IRoyaltiesProvider _royaltiesProvider,
         address _feeClaimAddress
     ) internal initializer {
         feeProvider = _feeProvider;
-        masterNFT = _masterNFT;
         royaltiesProvider = _royaltiesProvider;
         feeClaimAddress = _feeClaimAddress;
-    }
-
-    function setRoyaltiesProvider(IRoyaltiesProvider _royaltiesProvider)
-        external
-        onlyOwner
-    {
-        royaltiesProvider = _royaltiesProvider;
     }
 
     function _computeMakerCut(
@@ -61,14 +49,6 @@ abstract contract TransferManager is OwnableUpgradeable {
     {
         uint256 takerFee = feeProvider.getTakerFee(buyer);
         return (price.mul(takerFee)).div(10000);
-    }
-
-    function claimETH() external onlyOwner {
-        uint256 claimableETH = address(this).balance.sub(masterNftShares);
-        (bool success, ) = payable(feeClaimAddress).call{value: claimableETH}(
-            ""
-        );
-        require(success, "Transfer failed.");
     }
 
     function _transferFunds(
@@ -157,5 +137,5 @@ abstract contract TransferManager is OwnableUpgradeable {
         return (account, price.mul(royaltiesFee).div(10000));
     }
 
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 }

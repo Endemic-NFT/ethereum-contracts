@@ -6,8 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "../erc-721/IERC721.sol";
-import "../erc-721/IEndemicMasterNFT.sol";
+import "../erc-721/IEndemicERC721.sol";
 import "../fee/IFeeProvider.sol";
 import "../royalties/IRoyaltiesProvider.sol";
 
@@ -31,10 +30,8 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         internal bidsByToken;
 
     address feeClaimAddress;
-    uint256 public masterNftShares;
 
     IFeeProvider feeProvider;
-    IEndemicMasterNFT masterNFT;
     IRoyaltiesProvider royaltiesProvider;
 
     struct Bid {
@@ -74,12 +71,10 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
 
     function __BidCore___init_unchained(
         IFeeProvider _feeProvider,
-        IEndemicMasterNFT _masterNFT,
         IRoyaltiesProvider _royaltiesProvider,
         address _feeClaimAddress
     ) internal initializer {
         feeProvider = _feeProvider;
-        masterNFT = _masterNFT;
         royaltiesProvider = _royaltiesProvider;
         feeClaimAddress = _feeClaimAddress;
 
@@ -275,7 +270,11 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         feeProvider.onInitialSale(_msgSender(), _tokenId);
 
         // Transfer token to bidder
-        IERC721(_msgSender()).safeTransferFrom(address(this), bidder, _tokenId);
+        IEndemicERC721(_msgSender()).safeTransferFrom(
+            address(this),
+            bidder,
+            _tokenId
+        );
 
         // transfer fees
         if (totalCut > 0) {
@@ -298,12 +297,6 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         return ERC721_Received;
     }
 
-    function distributeMasterNftShares() external onlyOwner {
-        require(address(this).balance >= masterNftShares, "Not enough funds");
-        masterNFT.distributeShares{value: masterNftShares}();
-        masterNftShares = 0;
-    }
-
     function _calculateCut(
         address _tokenAddress,
         uint256 _tokenId,
@@ -324,12 +317,9 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
     }
 
     function _transferFees(uint256 _totalCut) internal {
-        uint256 masterShares = _calculateMasterNftShares(_totalCut);
-        masterNftShares += masterShares;
-
-        (bool feeSuccess, ) = payable(feeClaimAddress).call{
-            value: _totalCut.sub(masterShares)
-        }("");
+        (bool feeSuccess, ) = payable(feeClaimAddress).call{value: _totalCut}(
+            ""
+        );
         require(feeSuccess, "Fee Transfer failed.");
     }
 
@@ -474,14 +464,6 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         }
 
         return bidId;
-    }
-
-    function _calculateMasterNftShares(uint256 bidCut)
-        internal
-        view
-        returns (uint256)
-    {
-        return (bidCut.mul(feeProvider.getMasterNftCut())).div(10000);
     }
 
     uint256[50] private __gap;

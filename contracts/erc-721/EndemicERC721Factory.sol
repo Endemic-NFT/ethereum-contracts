@@ -28,7 +28,6 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
         string name;
         string symbol;
         string category;
-        string baseURI;
     }
 
     struct OwnedDeployParams {
@@ -36,12 +35,9 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
         string name;
         string symbol;
         string category;
-        string baseURI;
     }
 
-    constructor(address _implementation) {
-        implementation = _implementation;
-
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -60,6 +56,7 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
 
     function createTokenForOwner(OwnedDeployParams calldata params)
         external
+        noDelegateCall
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         _deployContract(
@@ -79,6 +76,12 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
             "EndemicERC721Factory: Implementation is not a contract"
         );
         implementation = newImplementation;
+
+        IEndemicERC721(implementation).initialize(
+            msg.sender,
+            "Endemic Collection Template",
+            "ECT"
+        );
     }
 
     function _deployContract(
@@ -93,6 +96,6 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
 
         IEndemicERC721(proxy).initialize(owner, name, symbol);
 
-        emit NFTContractCreated(proxy, msg.sender, name, symbol, category);
+        emit NFTContractCreated(proxy, owner, name, symbol, category);
     }
 }

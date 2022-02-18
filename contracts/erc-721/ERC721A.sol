@@ -396,8 +396,6 @@ contract ERC721A is Context, ERC165, IERC721, IERC721Metadata {
             _ownerships[startTokenId].addr = to;
             _ownerships[startTokenId].startTimestamp = uint64(block.timestamp);
 
-            _setTokenURI(startTokenId, _tokenURI);
-
             uint256 updatedIndex = startTokenId;
 
             emit Transfer(address(0), to, updatedIndex);
@@ -411,6 +409,7 @@ contract ERC721A is Context, ERC165, IERC721, IERC721Metadata {
 
             _currentIndex = updatedIndex;
         }
+        _setTokenURI(startTokenId, _tokenURI);
         _afterTokenTransfers(address(0), to, startTokenId, 1);
     }
 

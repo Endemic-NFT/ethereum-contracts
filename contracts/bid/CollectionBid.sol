@@ -2,18 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "./CollectionBidCore.sol";
-import "../erc-721/IEndemicMasterNFT.sol";
 import "../fee/IFeeProvider.sol";
 import "../royalties/IRoyaltiesProvider.sol";
 
 contract CollectionBid is CollectionBidCore {
     /// @param _feeProvider - fee provider contract
-    /// @param _masterNFT - master NFT contract
     /// @param _feeClaimAddress - address to claim fee
     ///  between 0-10,000.
     function __CollectionBid_init(
         IFeeProvider _feeProvider,
-        IEndemicMasterNFT _masterNFT,
         IRoyaltiesProvider _royaltiesProvider,
         address _feeClaimAddress
     ) external initializer {
@@ -24,7 +21,6 @@ contract CollectionBid is CollectionBidCore {
         __Ownable_init_unchained();
         __CollectionBidCore___init_unchained(
             _feeProvider,
-            _masterNFT,
             _royaltiesProvider,
             _feeClaimAddress
         );

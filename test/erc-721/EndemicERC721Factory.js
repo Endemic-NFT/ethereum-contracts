@@ -1,34 +1,17 @@
 const { expect, use } = require('chai');
 const { ethers } = require('hardhat');
 const Web3 = require('web3');
-const {
-  deployEndemicNFT,
-  deployEndemicMasterNFT,
-} = require('../helpers/deploy');
+const { deployEndemicERC721WithFactory } = require('../helpers/deploy');
 
-describe('EndemicNFTFactory', function () {
+describe('EndemicERC721Factory', function () {
   let factoryContract = null;
-  let EndemicLazyNFT = null;
   let owner, user, signer;
 
   beforeEach(async function () {
     [owner, user, signer] = await ethers.getSigners();
 
-    const masterNftContract = await deployEndemicMasterNFT(owner);
-    const implContract = await deployEndemicNFT(owner, signer.address);
-    // beacon
-    const EndemicNFTBeacon = await ethers.getContractFactory(
-      'EndemicNFTBeacon'
-    );
-    const beacon = await EndemicNFTBeacon.deploy(implContract.address);
-    await beacon.deployed();
-
-    const EndemicNFTFactory = await ethers.getContractFactory(
-      'EndemicNFTFactory'
-    );
-
-    factoryContract = await EndemicNFTFactory.deploy(beacon.address);
-    await factoryContract.deployed();
+    const deployResult = await deployEndemicERC721WithFactory(owner);
+    factoryContract = deployResult.nftFactory;
   });
 
   it('should have initial roles', async function () {
@@ -68,10 +51,9 @@ describe('EndemicNFTFactory', function () {
     );
 
     const tx = await factoryContract.connect(user).createToken({
-      name: 'Lazy #1',
-      symbol: 'LZ',
+      name: 'My Collection',
+      symbol: 'MC',
       category: 'Art',
-      baseURI: 'ipfs://',
     });
 
     const receipt = await tx.wait();
@@ -82,18 +64,17 @@ describe('EndemicNFTFactory', function () {
 
     expect(newAddress).to.properAddress;
     expect(contractOwner).to.equal(user.address);
-    expect(name).to.equal('Lazy #1');
-    expect(symbol).to.equal('LZ');
+    expect(name).to.equal('My Collection');
+    expect(symbol).to.equal('MC');
     expect(category).to.equal('Art');
   });
 
   it('should fail to deploy a new contract if not minter', async function () {
     await expect(
       factoryContract.connect(user).createToken({
-        name: 'Lazy #1',
-        symbol: 'LZ',
+        name: 'My Collection',
+        symbol: 'MC',
         category: 'Art',
-        baseURI: 'ipfs://',
       })
     ).to.be.reverted;
   });
@@ -101,10 +82,9 @@ describe('EndemicNFTFactory', function () {
   it('should deploy new contract for owner if admin', async () => {
     const tx = await factoryContract.connect(owner).createTokenForOwner({
       owner: user.address,
-      name: 'Lazy #1',
-      symbol: 'LZ',
+      name: 'My Collection',
+      symbol: 'MC',
       category: 'Art',
-      baseURI: 'ipfs://',
     });
 
     const receipt = await tx.wait();
@@ -115,8 +95,8 @@ describe('EndemicNFTFactory', function () {
 
     expect(newAddress).to.properAddress;
     expect(contractOwner).to.equal(user.address);
-    expect(name).to.equal('Lazy #1');
-    expect(symbol).to.equal('LZ');
+    expect(name).to.equal('My Collection');
+    expect(symbol).to.equal('MC');
     expect(category).to.equal('Art');
   });
 
@@ -124,10 +104,9 @@ describe('EndemicNFTFactory', function () {
     await expect(
       factoryContract.connect(user).createTokenForOwner({
         owner: user.address,
-        name: 'Lazy #1',
-        symbol: 'LZ',
+        name: 'My Collection',
+        symbol: 'MC',
         category: 'Art',
-        baseURI: 'ipfs://',
       })
     ).to.be.reverted;
   });
