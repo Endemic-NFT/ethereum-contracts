@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "./ERC721A.sol";
 
 contract EndemicERC721 is ERC721A, Initializable {
-    using Address for address;
+    using AddressUpgradeable for address;
 
     string public baseURI = "ipfs://";
     address public owner;
