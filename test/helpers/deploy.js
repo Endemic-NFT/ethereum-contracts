@@ -209,13 +209,12 @@ const deployFeeProvider = async (
   return feeProviderContract;
 };
 
-const deployContractRegistry = async (deployer) => {
+const deployContractRegistry = async () => {
   const ContractRegistry = await ethers.getContractFactory('ContractRegistry');
   const contractRegistryContracat = await upgrades.deployProxy(
     ContractRegistry,
     [],
     {
-      deployer,
       initializer: '__ContractRegistry_init',
     }
   );

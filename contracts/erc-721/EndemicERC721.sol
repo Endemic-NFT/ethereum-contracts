@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "./ERC721A.sol";
 
 contract EndemicERC721 is ERC721A, Initializable {
