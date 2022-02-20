@@ -3,14 +3,14 @@
 // const BN = require('bignumber.js');
 // const {
 //   deployEndemicNFT,
-//   deployMarketplaceWithDeps,
+//   deployEndemicExchangeWithDeps,
 //   deployBid,
 // } = require('./helpers/deploy');
 // const { ERC721_ASSET_CLASS } = require('./helpers/ids');
 // const safeTransferWithBytes = require('./helpers/safeTransferWithBytes');
 
 // describe('NftTrade', function () {
-//   let marketplace,
+//   let endemicExchange,
 //     bid,
 //     masterNftContract,
 //     nftContract,
@@ -33,7 +33,7 @@
 //     [owner, user1, user2, user3, minter, signer, ...otherSigners] =
 //       await ethers.getSigners();
 
-//     const result = await deployMarketplaceWithDeps(
+//     const result = await deployEndemicExchangeWithDeps(
 //       owner,
 //       makerFee,
 //       takerFee,
@@ -43,7 +43,7 @@
 //     contractRegistryContract = result.contractRegistryContract;
 //     masterNftContract = result.masterNftContract;
 //     feeProviderContract = result.feeProviderContract;
-//     marketplace = result.marketplace;
+//     endemicExchange = result.endemicExchange;
 //     royaltiesProviderContract = result.royaltiesProviderContract;
 
 //     bid = await deployBid(
@@ -55,7 +55,7 @@
 
 //     nftContract = await deployEndemicNFT(owner);
 
-//     await contractRegistryContract.addSaleContract(marketplace.address);
+//     await contractRegistryContract.addSaleContract(endemicExchange.address);
 //     await contractRegistryContract.addSaleContract(bid.address);
 
 //     await mint(1, owner.address);
@@ -65,8 +65,8 @@
 
 //   it('should be able to accept bid after buying NFT', async () => {
 //     // owner set auctions for 1 ETH
-//     await nftContract.approve(marketplace.address, 1);
-//     await marketplace.createAuction(
+//     await nftContract.approve(endemicExchange.address, 1);
+//     await endemicExchange.createAuction(
 //       nftContract.address,
 //       1,
 //       ethers.utils.parseUnits('1'),
@@ -76,7 +76,7 @@
 //       ERC721_ASSET_CLASS
 //     );
 
-//     const auctionId = await marketplace.createAuctionId(
+//     const auctionId = await endemicExchange.createAuctionId(
 //       nftContract.address,
 //       1,
 //       owner.address
@@ -94,7 +94,7 @@
 //     );
 
 //     //user2 buys NFT
-//     await marketplace.connect(user2).bid(auctionId, 1, {
+//     await endemicExchange.connect(user2).bid(auctionId, 1, {
 //       value: ethers.utils.parseUnits('1'),
 //     });
 

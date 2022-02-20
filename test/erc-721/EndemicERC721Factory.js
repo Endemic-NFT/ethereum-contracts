@@ -67,6 +67,8 @@ describe('EndemicERC721Factory', function () {
     expect(name).to.equal('My Collection');
     expect(symbol).to.equal('MC');
     expect(category).to.equal('Art');
+
+    // todo attach contract and check data
   });
 
   it('should fail to deploy a new contract if not minter', async function () {

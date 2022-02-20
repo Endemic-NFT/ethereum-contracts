@@ -7,15 +7,31 @@ const {
 } = require('./helpers/deploy');
 
 describe('RoyaltiesProvider', function () {
-  let royaltiesProviderContract, nftContract;
-  let owner, nftContractOwner, user2, feeRecipient;
+  let royaltiesProviderContract, nftContract, nftContractFactory;
+  let owner, nftContractOwner, user2, feeRecipient, feeRecipient2;
 
   async function deploy() {
-    [owner, nftContractOwner, user2, feeRecipient] = await ethers.getSigners();
+    [owner, nftContractOwner, user2, feeRecipient, feeRecipient2] =
+      await ethers.getSigners();
 
-    royaltiesProviderContract = await deployRoyaltiesProvider(nftContractOwner);
-    nftContract = (await deployEndemicERC721WithFactory(nftContractOwner))
-      .nftContract;
+    royaltiesProviderContract = await deployRoyaltiesProvider();
+    const deployResults = await deployEndemicERC721WithFactory();
+    nftContractFactory = deployResults.nftFactory;
+
+    const tx = await nftContractFactory.createTokenForOwner({
+      owner: nftContractOwner.address,
+      name: 'My Collection',
+      symbol: 'MC',
+      category: 'Art',
+    });
+
+    const res = await tx.wait();
+    const nftContractAddresss = res.events.find(
+      (e) => e.event === 'NFTContractCreated'
+    ).args.nftContract;
+
+    const EndemicERC721 = await ethers.getContractFactory('EndemicERC721');
+    nftContract = await EndemicERC721.attach(nftContractAddresss);
   }
 
   describe('Intial state', async () => {
@@ -24,6 +40,11 @@ describe('RoyaltiesProvider', function () {
     it('should set initial owner', async () => {
       const contractOwner = await royaltiesProviderContract.owner();
       expect(contractOwner).to.eq(owner.address);
+    });
+
+    it('should have fee limit', async () => {
+      const limit = await royaltiesProviderContract.royaltyFeeLimit();
+      expect(limit).to.eq('5000');
     });
   });
 
@@ -37,7 +58,7 @@ describe('RoyaltiesProvider', function () {
           feeRecipient.address,
           5100
         )
-      ).to.be.revertedWith('Royalties must be up to 50%');
+      ).to.be.revertedWith('Royalties over the limit');
     });
 
     it('should set for collection if caller is collection owner', async () => {
@@ -100,10 +121,10 @@ describe('RoyaltiesProvider', function () {
           feeRecipient.address,
           5100
         )
-      ).to.be.revertedWith('Royalties must be up to 50%');
+      ).to.be.revertedWith('Royalties over the limit');
     });
 
-    it('should set for collection if caller is collection owner', async () => {
+    it('should set for token if caller is collection owner', async () => {
       await royaltiesProviderContract
         .connect(nftContractOwner)
         .setRoyaltiesForToken(
@@ -124,12 +145,37 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.1'));
     });
 
-    it('should set for collection if caller is royalties contract owner', async () => {
+    it('should set for token if caller is royalties contract owner', async () => {
       await royaltiesProviderContract.setRoyaltiesForToken(
         nftContract.address,
         1,
         feeRecipient.address,
         2000
+      );
+
+      [account, fee] =
+        await royaltiesProviderContract.calculateRoyaltiesAndGetRecipient(
+          nftContract.address,
+          1,
+          ethers.utils.parseUnits('1')
+        );
+
+      expect(account).to.equal(feeRecipient.address);
+      expect(fee).to.equal(ethers.utils.parseUnits('0.2'));
+    });
+
+    it('should use even when collection royalties are set', async () => {
+      await royaltiesProviderContract.setRoyaltiesForToken(
+        nftContract.address,
+        1,
+        feeRecipient.address,
+        2000
+      );
+
+      await royaltiesProviderContract.setRoyaltiesForCollection(
+        nftContract.address,
+        feeRecipient2.address,
+        1000
       );
 
       [account, fee] =
@@ -155,5 +201,11 @@ describe('RoyaltiesProvider', function () {
           )
       ).to.be.revertedWith('InvalidOwner');
     });
+  });
+
+  describe('ERC2981', function () {
+    it('should support ERC2981 royalties', () => {});
+
+    it('should not use if custom token or collection royalties are set', () => {});
   });
 });

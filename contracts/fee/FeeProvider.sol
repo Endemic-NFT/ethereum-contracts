@@ -5,8 +5,8 @@ import "./FeeProviderCore.sol";
 
 contract FeeProvider is FeeProviderCore {
     /// @param _primarySaleFee - percent fee the masterplace takes on first sale
-    /// @param _secondarySaleFee - percent fee the marketplace takes on secondary sales for maker
-    /// @param _takerFee - percent fee the marketplace takes on buy
+    /// @param _secondarySaleFee - percent fee the endemicExchange takes on secondary sales for maker
+    /// @param _takerFee - percent fee the endemicExchange takes on buy
     /// @param _contractRegistry - address of endemic contract registry
     ///  between 0-10,000.
     function __FeeProvider_init(

@@ -10,7 +10,7 @@ describe('ContractRegistry', function () {
   async function deploy() {
     [owner, user1, exchangeContract] = await ethers.getSigners();
 
-    contractRegistryContract = await deployContractRegistry(owner);
+    contractRegistryContract = await deployContractRegistry();
   }
 
   describe('Owner functions', () => {

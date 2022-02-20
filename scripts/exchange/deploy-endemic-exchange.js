@@ -24,7 +24,7 @@ async function main() {
   );
   await endemicExchange.deployed();
 
-  console.log('Marketplace deployed to:', endemicExchange.address);
+  console.log('EndemicExchange deployed to:', endemicExchange.address);
 }
 
 main()

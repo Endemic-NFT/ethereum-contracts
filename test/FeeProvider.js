@@ -20,10 +20,9 @@ describe('FeeProvider', function () {
   ) {
     [owner, user1, nftContract, exchangeContract] = await ethers.getSigners();
 
-    contractRegistryContract = await deployContractRegistry(owner);
+    contractRegistryContract = await deployContractRegistry();
 
     feeProviderContract = await deployFeeProvider(
-      owner,
       contractRegistryContract.address,
       secondarySaleFee,
       takerFee,
@@ -38,7 +37,7 @@ describe('FeeProvider', function () {
   describe('Maker fee', () => {
     beforeEach(deploy);
 
-    it('should calculate correct fee for primary sale', async () => {
+    it('should get correct fee for primary sale', async () => {
       const fee = await feeProviderContract.getMakerFee(
         owner.address,
         nftContract.address,
@@ -48,7 +47,7 @@ describe('FeeProvider', function () {
       expect(fee.toString()).to.equal('2200');
     });
 
-    it('should calculate correct fee for secondary sale', async () => {
+    it('should get correct fee for secondary sale', async () => {
       await feeProviderContract
         .connect(exchangeContract)
         .onSale(nftContract.address, 1);
@@ -104,14 +103,45 @@ describe('FeeProvider', function () {
           .setCollectionWithoutPrimarySaleFee(nftContract.address, true)
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
+
+    it('should calculate correct maker fee cut', async () => {
+      const amount = await feeProviderContract.calculateMakerFee(
+        owner.address,
+        nftContract.address,
+        1,
+        ethers.utils.parseUnits('1')
+      );
+
+      expect(amount).to.equal(ethers.utils.parseUnits('0.22'));
+
+      // primary sale happened
+      await feeProviderContract
+        .connect(exchangeContract)
+        .onSale(nftContract.address, 1);
+
+      const amountForSecondary = await feeProviderContract.calculateMakerFee(
+        owner.address,
+        nftContract.address,
+        1,
+        ethers.utils.parseUnits('1')
+      );
+      expect(amountForSecondary).to.equal(ethers.utils.parseUnits('0.03'));
+    });
   });
 
   describe('Taker fee', () => {
     beforeEach(deploy);
 
-    it('should calculate correct fee', async () => {
+    it('should get correct fee', async () => {
       const fee = await feeProviderContract.takerFee();
-      expect(fee.toString()).to.equal('300');
+      expect(fee).to.equal('300');
+    });
+
+    it('should calculate correct fee amount', async () => {
+      const amount = await feeProviderContract.calculateTakerFee(
+        ethers.utils.parseUnits('1')
+      );
+      expect(amount).to.equal(ethers.utils.parseUnits('0.03'));
     });
   });
 

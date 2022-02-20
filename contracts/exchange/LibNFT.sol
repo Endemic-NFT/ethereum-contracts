@@ -79,12 +79,12 @@ library LibNFT {
             require(
                 nft.getApproved(tokenId) == address(this) ||
                     nft.isApprovedForAll(seller, address(this)),
-                "Marketplace is not approved for the asset"
+                "EndemicExchange is not approved for the asset"
             );
         } else if (assetClass == LibAuction.ERC1155_ASSET_CLASS) {
             require(
                 IERC1155(nftContract).isApprovedForAll(seller, address(this)),
-                "Marketplace is not approved for the asset"
+                "EndemicExchange is not approved for the asset"
             );
         } else {
             revert("Invalid asset class");

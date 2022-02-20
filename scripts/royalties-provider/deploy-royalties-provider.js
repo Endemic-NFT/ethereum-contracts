@@ -12,7 +12,7 @@ async function main() {
   );
   const royaltiesProviderProxy = await upgrades.deployProxy(
     RoyaltiesProvider,
-    [],
+    [5000],
     {
       deployer,
       initializer: '__RoyaltiesProvider_init',

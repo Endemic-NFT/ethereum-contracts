@@ -4,10 +4,10 @@ const { deployEndemicERC721WithFactory } = require('../helpers/deploy');
 
 describe('EndemicERC721', function () {
   let nftContract;
-  let owner, user, royaltiesRecipient;
+  let owner, user, royaltiesRecipient, operator;
 
   beforeEach(async function () {
-    [owner, user, royaltiesRecipient] = await ethers.getSigners();
+    [owner, user, royaltiesRecipient, operator] = await ethers.getSigners();
 
     const deployResult = await deployEndemicERC721WithFactory(owner);
 
@@ -82,6 +82,34 @@ describe('EndemicERC721', function () {
       );
 
       expect(await nftContract.totalSupply()).to.equal('1');
+    });
+
+    it('should mint and approve', async () => {
+      const tokenId = 0;
+
+      expect(
+        await nftContract.isApprovedForAll(owner.address, operator.address)
+      ).to.equal(false);
+
+      const mintTx = await nftContract
+        .connect(owner)
+        .mintAndApprove(
+          user.address,
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          operator.address
+        );
+
+      const nftOwnerAddress = await nftContract.ownerOf(tokenId);
+      expect(nftOwnerAddress).to.equal(user.address);
+
+      const tokenUri = await nftContract.tokenURI(tokenId);
+      expect(tokenUri).to.equal(
+        'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+
+      expect(
+        await nftContract.isApprovedForAll(owner.address, operator.address)
+      ).to.equal(true);
     });
   });
 

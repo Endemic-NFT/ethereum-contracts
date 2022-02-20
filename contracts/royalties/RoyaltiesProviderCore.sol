@@ -11,8 +11,13 @@ error InvalidOwner();
 abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
     bytes4 public constant ERC2981_INTERFACE_ID = 0x2a55205a;
 
+    // (10,000 = 100%)
+    uint256 public royaltyFeeLimit;
+
     mapping(address => mapping(uint256 => Royalties)) royaltiesPerTokenId;
     mapping(address => Royalties) royaltiesPerCollection;
+
+    event NewRoyaltiesLimit(uint256 limit);
 
     event RoyaltiesSetForToken(
         address indexed nftContract,
@@ -30,6 +35,13 @@ abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
     struct Royalties {
         address account;
         uint256 fee;
+    }
+
+    function __RoyaltiesProviderCore_init(uint256 royaltiesLimit)
+        internal
+        onlyInitializing
+    {
+        setRoyaltiesLimit(royaltiesLimit);
     }
 
     function calculateRoyaltiesAndGetRecipient(
@@ -75,7 +87,7 @@ abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= 5000, "Royalties must be up to 50%");
+        require(fee <= royaltyFeeLimit, "Royalties over the limit");
 
         checkOwner(nftContract);
 
@@ -92,13 +104,19 @@ abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= 5000, "Royalties must be up to 50%");
+        require(fee <= royaltyFeeLimit, "Royalties over the limit");
 
         checkOwner(nftContract);
 
         royaltiesPerCollection[nftContract] = Royalties(feeRecipient, fee);
 
         emit RoyaltiesSetForCollection(nftContract, feeRecipient, fee);
+    }
+
+    function setRoyaltiesLimit(uint256 newLimit) public onlyOwner {
+        require(newLimit <= 9500, "Royalty fee limit too high");
+        royaltyFeeLimit = newLimit;
+        emit NewRoyaltiesLimit(newLimit);
     }
 
     function checkOwner(address nftContract) internal view {
