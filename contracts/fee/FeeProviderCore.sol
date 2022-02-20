@@ -1,56 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
-import "../registry/IContractRegistry.sol";
+import "../registry/interfaces/IContractRegistry.sol";
+import "./interfaces/IFeeProvider.sol";
 
-abstract contract FeeProviderCore is PausableUpgradeable, OwnableUpgradeable {
+error CallerNotExchangeContract();
+error NullAddress();
+
+abstract contract FeeProviderCore is OwnableUpgradeable, IFeeProvider {
     using AddressUpgradeable for address;
 
-    uint256 public secondarySaleMakerFee;
+    IContractRegistry public contractRegistry;
+    uint256 public primarySaleFee;
+    uint256 public secondarySaleFee;
     uint256 public takerFee;
-    uint256 public initialSaleFee;
 
-    mapping(address => mapping(uint256 => bool)) initialSales;
-
-    IContractRegistry contractRegistry;
+    // Contract Address => (Token Id => Did primary sale happen)
+    mapping(address => mapping(uint256 => bool)) primarySales;
 
     struct AccountFee {
         address account;
         uint256 fee;
     }
 
-    mapping(address => AccountFee) initialSaleFeePerAccount;
-    mapping(address => bool) collectionsWithoutInitialSaleFee;
+    mapping(address => AccountFee) primarySaleFeePerAccount;
+    mapping(address => bool) collectionsWithoutPrimarySaleFee;
 
     function __FeeProviderCore___init_unchained(
-        uint256 _initialSaleFee,
-        uint256 _secondarySaleMakerFee,
+        uint256 _primarySaleFee,
+        uint256 _secondarySaleFee,
         uint256 _takerFee,
-        IContractRegistry _contractRegistry
+        address _contractRegistry
     ) internal initializer {
-        initialSaleFee = _initialSaleFee;
-        secondarySaleMakerFee = _secondarySaleMakerFee;
-        takerFee = _takerFee;
-        contractRegistry = _contractRegistry;
+        if (_contractRegistry == address(0)) revert NullAddress();
+
+        updateFee(_primarySaleFee, _secondarySaleFee, _takerFee);
+        contractRegistry = IContractRegistry(_contractRegistry);
     }
 
     function updateFee(
-        uint256 _secondarySaleMakerFee,
-        uint256 _takerFee,
-        uint256 _initialSaleFee
-    ) external onlyOwner {
-        require(_secondarySaleMakerFee <= 10000);
+        uint256 _primarySaleFee,
+        uint256 _secondarySaleFee,
+        uint256 _takerFee
+    ) public onlyOwner {
+        require(_primarySaleFee <= 10000);
+        require(_secondarySaleFee <= 10000);
         require(_takerFee <= 10000);
-        require(_initialSaleFee <= 10000);
 
+        primarySaleFee = _primarySaleFee;
+        secondarySaleFee = _secondarySaleFee;
         takerFee = _takerFee;
-        secondarySaleMakerFee = _secondarySaleMakerFee;
-        initialSaleFee = _initialSaleFee;
     }
 
     function getMakerFee(
@@ -58,57 +61,66 @@ abstract contract FeeProviderCore is PausableUpgradeable, OwnableUpgradeable {
         address nftContract,
         uint256 tokenId
     ) public view returns (uint256) {
-        require(seller != address(0));
-        require(nftContract != address(0));
+        if (seller == address(0)) revert NullAddress();
+        if (nftContract == address(0)) revert NullAddress();
 
-        bool isInitialSale = !initialSales[nftContract][tokenId];
-        bool hasInitialSaleFee = !collectionsWithoutInitialSaleFee[nftContract];
-        if (isInitialSale && hasInitialSaleFee) {
-            if (initialSaleFeePerAccount[seller].account == seller) {
-                return initialSaleFeePerAccount[seller].fee;
+        bool isPrimarySale = !primarySales[nftContract][tokenId];
+        bool hasPrimarySaleFee = !collectionsWithoutPrimarySaleFee[nftContract];
+        if (isPrimarySale && hasPrimarySaleFee) {
+            if (primarySaleFeePerAccount[seller].account == seller) {
+                return primarySaleFeePerAccount[seller].fee;
             }
 
-            return initialSaleFee;
+            return primarySaleFee;
         }
 
-        return secondarySaleMakerFee;
+        return secondarySaleFee;
     }
 
-    function getTakerFee(address buyer) public view returns (uint256) {
-        require(buyer != address(0));
+    function getTakerFee() external view override returns (uint256) {
         return takerFee;
     }
 
-    function onInitialSale(address nftContract, uint256 tokenId) external {
-        require(
-            contractRegistry.isSaleContract(_msgSender()),
-            "Invalid caller"
-        );
-        initialSales[nftContract][tokenId] = true;
+    function calculateMakerFee(
+        address seller,
+        address nftContract,
+        uint256 tokenId,
+        uint256 amount
+    ) external view override returns (uint256) {
+        uint256 makerFee = getMakerFee(seller, nftContract, tokenId);
+        return (amount * makerFee) / 10000;
     }
 
-    function setInitialSaleFeePerAccount(address account, uint256 fee)
+    function calculateTakerFee(uint256 amount)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return (amount * takerFee) / 10000;
+    }
+
+    function onSale(address nftContract, uint256 tokenId) external override {
+        if (!contractRegistry.isExchangeContract(_msgSender()))
+            revert CallerNotExchangeContract();
+
+        primarySales[nftContract][tokenId] = true;
+    }
+
+    function setPrimarySaleFeePerAccount(address account, uint256 fee)
         external
         onlyOwner
     {
         require(fee <= 10000);
 
-        initialSaleFeePerAccount[account] = AccountFee(account, fee);
+        primarySaleFeePerAccount[account] = AccountFee(account, fee);
     }
 
-    function setCollectionWithoutInitialSaleFee(
+    function setCollectionWithoutPrimarySaleFee(
         address nftContract,
-        bool isWithoutInitialFee
+        bool isWithoutPrimarySaleFee
     ) external onlyOwner {
-        collectionsWithoutInitialSaleFee[nftContract] = isWithoutInitialFee;
-    }
-
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    function unpause() external onlyOwner {
-        _unpause();
+        collectionsWithoutPrimarySaleFee[nftContract] = isWithoutPrimarySaleFee;
     }
 
     uint256[50] private __gap;

@@ -6,9 +6,10 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "../erc-721/IEndemicERC721.sol";
-import "../fee/IFeeProvider.sol";
-import "../royalties/IRoyaltiesProvider.sol";
+
+import "../erc-721/interfaces/IEndemicERC721.sol";
+import "../fee/interfaces/IFeeProvider.sol";
+import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
 abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -66,12 +67,12 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
     );
 
     function __CollectionBidCore___init_unchained(
-        IFeeProvider _feeProvider,
-        IRoyaltiesProvider _royaltiesProvider,
+        address _feeProvider,
+        address _royaltiesProvider,
         address _feeClaimAddress
     ) internal initializer {
-        feeProvider = _feeProvider;
-        royaltiesProvider = _royaltiesProvider;
+        feeProvider = IFeeProvider(_feeProvider);
+        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
         feeClaimAddress = _feeClaimAddress;
 
         ERC721_Received = 0x150b7a02;
@@ -101,7 +102,7 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
             )
         );
 
-        uint256 takerFee = feeProvider.getTakerFee(_msgSender());
+        uint256 takerFee = feeProvider.getTakerFee();
 
         uint256 priceWithFee = msg.value;
         uint256 price = msg.value.mul(10000).div(takerFee.add(10000));
@@ -221,13 +222,11 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
             priceWithFee
         );
 
-        (
-            address royaltiesRecipient,
-            uint256 royaltiesCut
-        ) = _calculateRoyalties(_msgSender(), _tokenId, price);
+        (address royaltiesRecipient, uint256 royaltiesCut) = royaltiesProvider
+            .calculateRoyaltiesAndGetRecipient(_msgSender(), _tokenId, price);
 
         // sale happened
-        feeProvider.onInitialSale(_msgSender(), _tokenId);
+        feeProvider.onSale(_msgSender(), _tokenId);
 
         // Transfer token to bidder
         IEndemicERC721(_msgSender()).safeTransferFrom(
@@ -264,10 +263,11 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
         uint256 price,
         uint256 priceWithFee
     ) internal view returns (uint256) {
-        uint256 makerFee = feeProvider.getMakerFee(
+        uint256 makerFee = feeProvider.calculateMakerFee(
             _seller,
             _tokenAddress,
-            _tokenId
+            _tokenId,
+            price
         );
 
         uint256 makerCut = price.mul(makerFee).div(10000);
@@ -296,17 +296,6 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
     function _transferFundsToSeller(address _seller, uint256 _total) internal {
         (bool success, ) = payable(_seller).call{value: _total}("");
         require(success, "Transfer failed.");
-    }
-
-    function _calculateRoyalties(
-        address _tokenAddress,
-        uint256 _tokenId,
-        uint256 price
-    ) internal view returns (address recipient, uint256 royaltiesCut) {
-        (address account, uint256 royaltiesFee) = royaltiesProvider
-            .getRoyalties(_tokenAddress, _tokenId);
-
-        return (account, price.mul(royaltiesFee).div(10000));
     }
 
     function removeExpiredBids(

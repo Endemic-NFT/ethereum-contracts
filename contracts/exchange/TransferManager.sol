@@ -3,11 +3,13 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "../erc-721/IEndemicERC721.sol";
-import "../erc-1155/IERC1155.sol";
-import "../fee/IFeeProvider.sol";
-import "../royalties/IRoyaltiesProvider.sol";
+
 import "./LibAuction.sol";
+
+import "../erc-721/interfaces/IEndemicERC721.sol";
+import "../erc-1155/IERC1155.sol";
+import "../fee/interfaces/IFeeProvider.sol";
+import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
 abstract contract TransferManager is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -18,67 +20,46 @@ abstract contract TransferManager is OwnableUpgradeable {
     IRoyaltiesProvider royaltiesProvider;
 
     function __TransferManager___init_unchained(
-        IFeeProvider _feeProvider,
-        IRoyaltiesProvider _royaltiesProvider,
+        address _feeProvider,
+        address _royaltiesProvider,
         address _feeClaimAddress
     ) internal initializer {
-        feeProvider = _feeProvider;
-        royaltiesProvider = _royaltiesProvider;
+        feeProvider = IFeeProvider(_feeProvider);
+        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
         feeClaimAddress = _feeClaimAddress;
-    }
-
-    function _computeMakerCut(
-        uint256 price,
-        address seller,
-        address nftContract,
-        uint256 tokenId
-    ) internal view returns (uint256) {
-        uint256 makerFee = feeProvider.getMakerFee(
-            seller,
-            nftContract,
-            tokenId
-        );
-
-        return (price.mul(makerFee)).div(10000);
-    }
-
-    function _computeTakerCut(uint256 price, address buyer)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 takerFee = feeProvider.getTakerFee(buyer);
-        return (price.mul(takerFee)).div(10000);
     }
 
     function _transferFunds(
         address nftContract,
         uint256 tokenId,
         address seller,
-        address buyer,
         uint256 price
     ) internal returns (uint256 totalFees) {
         if (price > 0) {
-            uint256 takerCut = _computeTakerCut(price, buyer);
+            uint256 takerCut = feeProvider.calculateTakerFee(price);
 
             require(msg.value >= price.add(takerCut), "Not enough funds sent");
 
             (
                 address royaltiesRecipient,
                 uint256 royaltiesCut
-            ) = _calculateRoyalties(nftContract, tokenId, price);
+            ) = royaltiesProvider.calculateRoyaltiesAndGetRecipient(
+                    nftContract,
+                    tokenId,
+                    price
+                );
 
-            uint256 makerCut = _computeMakerCut(
-                price,
+            uint256 makerCut = feeProvider.calculateMakerFee(
                 seller,
                 nftContract,
-                tokenId
+                tokenId,
+                price
             );
 
             uint256 fees = takerCut.add(makerCut);
             uint256 sellerProceeds = price.sub(makerCut).sub(royaltiesCut);
 
-            feeProvider.onInitialSale(nftContract, tokenId);
+            feeProvider.onSale(nftContract, tokenId);
 
             if (royaltiesCut > 0) {
                 (bool royaltiesSuccess, ) = payable(royaltiesRecipient).call{
@@ -124,17 +105,6 @@ abstract contract TransferManager is OwnableUpgradeable {
         } else {
             revert("Invalid asset class");
         }
-    }
-
-    function _calculateRoyalties(
-        address _tokenAddress,
-        uint256 _tokenId,
-        uint256 price
-    ) internal view returns (address recipient, uint256 royaltiesCut) {
-        (address account, uint256 royaltiesFee) = royaltiesProvider
-            .getRoyalties(_tokenAddress, _tokenId);
-
-        return (account, price.mul(royaltiesFee).div(10000));
     }
 
     uint256[50] private __gap;

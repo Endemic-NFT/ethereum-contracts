@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./MarketplaceCore.sol";
-import "../fee/IFeeProvider.sol";
+import "./EndemicExchangeCore.sol";
 
-contract Marketplace is MarketplaceCore {
+contract EndemicExchange is EndemicExchangeCore {
     /// @param _feeProvider - fee provider contract
     /// @param _feeClaimAddress - address to claim fee between 0-10,000.
     /// @param _royaltiesProvider - royalyies provider contract
-    function __Marketplace_init(
-        IFeeProvider _feeProvider,
-        IRoyaltiesProvider _royaltiesProvider,
+    function __EndemicExchange_init(
+        address _feeProvider,
+        address _royaltiesProvider,
         address _feeClaimAddress
     ) external initializer {
+        require(_feeProvider != address(0));
+        require(_royaltiesProvider != address(0));
         require(_feeClaimAddress != address(0));
 
         __Context_init_unchained();

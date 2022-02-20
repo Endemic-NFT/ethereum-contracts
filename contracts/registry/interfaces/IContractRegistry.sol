@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 interface IContractRegistry {
-    function isSaleContract(address contractAddress)
+    function isExchangeContract(address contractAddress)
         external
         view
         returns (bool);

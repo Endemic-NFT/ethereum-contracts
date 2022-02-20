@@ -5,28 +5,33 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./ERC721A.sol";
 
-contract EndemicERC721 is ERC721A, Initializable {
+import "./interfaces/IERC2981Royalties.sol";
+
+error CallerNotOwner();
+error AddressNotContract();
+error CallerNotContractFactory();
+error RoyaltiesTooHigh();
+error CallerNotTokenOwner();
+
+contract EndemicERC721 is ERC721A, Initializable, IERC2981Royalties {
     using AddressUpgradeable for address;
+
+    address public royaltiesRecipient;
+    uint256 public royaltiesAmount;
 
     string public baseURI = "ipfs://";
     address public owner;
     address public immutable erc721Factory;
 
     modifier onlyOwner() {
-        require(
-            owner == _msgSender(),
-            "EndemicERC721: caller is not the owner"
-        );
+        if (owner != _msgSender()) revert CallerNotOwner();
         _;
     }
 
     constructor(address _erc721Factory)
         ERC721A("Endemic Collection Template", "ECT")
     {
-        require(
-            _erc721Factory.isContract(),
-            "EndemicERC721: _erc721Factory is not a contract"
-        );
+        if (!_erc721Factory.isContract()) revert AddressNotContract();
         erc721Factory = _erc721Factory;
     }
 
@@ -35,10 +40,8 @@ contract EndemicERC721 is ERC721A, Initializable {
         string memory name,
         string memory symbol
     ) external initializer {
-        require(
-            msg.sender == address(erc721Factory),
-            "EndemicERC721: Collection must be created via the factory"
-        );
+        if (_msgSender() != address(erc721Factory))
+            revert CallerNotContractFactory();
 
         owner = creator;
         _name = name;
@@ -64,16 +67,42 @@ contract EndemicERC721 is ERC721A, Initializable {
         return true;
     }
 
+    function setRoyalties(address recipient, uint256 value) external onlyOwner {
+        if (value > 10000) revert RoyaltiesTooHigh();
+        royaltiesRecipient = recipient;
+        royaltiesAmount = value;
+    }
+
+    function royaltyInfo(uint256, uint256 value)
+        external
+        view
+        override
+        returns (address receiver, uint256 royaltyAmount)
+    {
+        return (royaltiesRecipient, (value * royaltiesAmount) / 10000);
+    }
+
     function burn(uint256 tokenId) external {
         TokenOwnership memory prevOwnership = ownershipOf(tokenId);
 
-        bool isApprovedOrOwner = (_msgSender() == prevOwnership.addr ||
-            isApprovedForAll(prevOwnership.addr, _msgSender()) ||
-            getApproved(tokenId) == _msgSender());
+        bool isOwner = _msgSender() == prevOwnership.addr;
 
-        if (!isApprovedOrOwner) revert TransferCallerNotOwnerNorApproved();
+        if (!isOwner) revert CallerNotTokenOwner();
 
         _burn(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        if (interfaceId == type(IERC2981Royalties).interfaceId) {
+            return true;
+        }
+        return super.supportsInterface(interfaceId);
     }
 
     function _baseURI() internal view override returns (string memory) {

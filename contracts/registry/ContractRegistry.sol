@@ -3,28 +3,34 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ContractRegistry is OwnableUpgradeable {
-    mapping(address => bool) saleContracts;
+import "./interfaces/IContractRegistry.sol";
+
+contract ContractRegistry is OwnableUpgradeable, IContractRegistry {
+    mapping(address => bool) exchangeContracts;
 
     function __ContractRegistry_init() external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
     }
 
-    function isSaleContract(address contractAddress)
+    function isExchangeContract(address contractAddress)
         external
         view
+        override
         returns (bool)
     {
-        return saleContracts[contractAddress];
+        return exchangeContracts[contractAddress];
     }
 
-    function addSaleContract(address saleContract) external onlyOwner {
-        saleContracts[saleContract] = true;
+    function addExchangeContract(address exchangeContract) external onlyOwner {
+        exchangeContracts[exchangeContract] = true;
     }
 
-    function removeSaleContract(address saleContract) external onlyOwner {
-        saleContracts[saleContract] = false;
+    function removeExchangeContract(address exchangeContract)
+        external
+        onlyOwner
+    {
+        exchangeContracts[exchangeContract] = false;
     }
 
     uint256[50] private __gap;

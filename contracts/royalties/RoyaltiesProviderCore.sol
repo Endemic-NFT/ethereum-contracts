@@ -2,8 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/interfaces/IERC165.sol";
+
+import "../erc-721/interfaces/IERC2981Royalties.sol";
+
+error InvalidOwner();
 
 abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
+    bytes4 public constant ERC2981_INTERFACE_ID = 0x2a55205a;
+
     mapping(address => mapping(uint256 => Royalties)) royaltiesPerTokenId;
     mapping(address => Royalties) royaltiesPerCollection;
 
@@ -25,22 +32,41 @@ abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
         uint256 fee;
     }
 
-    function getRoyalties(address nftContract, uint256 tokenId)
-        external
-        view
-        returns (address account, uint256 fee)
-    {
+    function calculateRoyaltiesAndGetRecipient(
+        address nftContract,
+        uint256 tokenId,
+        uint256 amount
+    ) external view returns (address, uint256) {
         Royalties memory royaltiesForToken = royaltiesPerTokenId[nftContract][
             tokenId
         ];
-        if (royaltiesForToken.account != address(0)) {
-            return (royaltiesForToken.account, royaltiesForToken.fee);
+        if (
+            royaltiesForToken.account != address(0) && royaltiesForToken.fee > 0
+        ) {
+            return (
+                royaltiesForToken.account,
+                calculateFeeForAmount(amount, royaltiesForToken.fee)
+            );
         }
 
         Royalties memory royaltiesForCollection = royaltiesPerCollection[
             nftContract
         ];
-        return (royaltiesForCollection.account, royaltiesForCollection.fee);
+        if (
+            royaltiesForCollection.account != address(0) &&
+            royaltiesForCollection.fee > 0
+        ) {
+            return (
+                royaltiesForCollection.account,
+                calculateFeeForAmount(amount, royaltiesForCollection.fee)
+            );
+        }
+
+        if (IERC165(nftContract).supportsInterface(ERC2981_INTERFACE_ID)) {
+            return IERC2981Royalties(nftContract).royaltyInfo(tokenId, amount);
+        }
+
+        return (address(0), 0);
     }
 
     function setRoyaltiesForToken(
@@ -80,8 +106,16 @@ abstract contract RoyaltiesProviderCore is OwnableUpgradeable {
             (owner() != _msgSender()) &&
             (OwnableUpgradeable(nftContract).owner() != _msgSender())
         ) {
-            revert("Token owner not found");
+            revert InvalidOwner();
         }
+    }
+
+    function calculateFeeForAmount(uint256 amount, uint256 fee)
+        internal
+        pure
+        returns (uint256)
+    {
+        return (amount * (fee)) / 10000;
     }
 
     uint256[50] private __gap;

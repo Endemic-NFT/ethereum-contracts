@@ -5,11 +5,11 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "./TransferManager.sol";
 
+import "./TransferManager.sol";
 import "./LibNFT.sol";
 
-abstract contract MarketplaceCore is
+abstract contract EndemicExchangeCore is
     PausableUpgradeable,
     OwnableUpgradeable,
     TransferManager
@@ -145,13 +145,7 @@ abstract contract MarketplaceCore is
             revert("Invalid asset class");
         }
 
-        uint256 totalFees = _transferFunds(
-            contractId,
-            tokenId,
-            seller,
-            _msgSender(),
-            price
-        );
+        uint256 totalFees = _transferFunds(contractId, tokenId, seller, price);
 
         _transferNFT(
             seller,

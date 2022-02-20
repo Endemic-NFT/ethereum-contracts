@@ -10,16 +10,16 @@ const deployEndemicERC721Factory = async (deployer) => {
   return nftContractFactory;
 };
 
-const deployEndemicERC721 = async (deployer, erc721FactoryAddress) => {
+const deployEndemicERC721 = async (erc721FactoryAddress) => {
   const EndemicERC721 = await ethers.getContractFactory('EndemicERC721');
   const nftContract = await EndemicERC721.deploy(erc721FactoryAddress);
   await nftContract.deployed();
   return nftContract;
 };
 
-const deployEndemicERC721WithFactory = async (deployer) => {
-  const nftFactory = await deployEndemicERC721Factory(deployer);
-  const nftContract = await deployEndemicERC721(deployer, nftFactory.address);
+const deployEndemicERC721WithFactory = async () => {
+  const nftFactory = await deployEndemicERC721Factory();
+  const nftContract = await deployEndemicERC721(nftFactory.address);
 
   await nftFactory.updateImplementation(nftContract.address);
 
@@ -182,23 +182,15 @@ const deployRoyaltiesProvider = async (deployer) => {
 
 const deployFeeProvider = async (
   deployer,
-  masterNFTAddress,
   contractRegistryAddress,
-  makerFee = 250, // 2.5% maker fee
-  takerFee = 300, // 3% taker fee
-  initialFee = 2200 // 22% initial sale fee
+  secondarySaleFee = 250,
+  takerFee = 300,
+  primarySaleFee = 2200
 ) => {
   const FeeProvider = await ethers.getContractFactory('FeeProvider');
   const feeProviderContract = await upgrades.deployProxy(
     FeeProvider,
-    [
-      initialFee,
-      makerFee,
-      takerFee,
-      500,
-      masterNFTAddress,
-      contractRegistryAddress,
-    ],
+    [primarySaleFee, secondarySaleFee, takerFee, contractRegistryAddress],
     {
       deployer,
       initializer: '__FeeProvider_init',

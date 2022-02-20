@@ -8,7 +8,7 @@ describe('ContractRegistry', function () {
   let owner, user1;
 
   async function deploy() {
-    [owner, user1, saleContract] = await ethers.getSigners();
+    [owner, user1, exchangeContract] = await ethers.getSigners();
 
     contractRegistryContract = await deployContractRegistry(owner);
   }
@@ -16,35 +16,45 @@ describe('ContractRegistry', function () {
   describe('Owner functions', () => {
     beforeEach(deploy);
 
-    it('should fail to add sale contract if not owner', async function () {
+    it('should fail to add exchange contract if not owner', async function () {
       await expect(
         contractRegistryContract
           .connect(user1)
-          .addSaleContract(saleContract.address)
+          .addExchangeContract(exchangeContract.address)
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('should fail to remove sale contract if not owner', async function () {
+    it('should fail to remove exhange contract if not owner', async function () {
       await expect(
         contractRegistryContract
           .connect(user1)
-          .removeSaleContract(saleContract.address)
+          .removeExchangeContract(exchangeContract.address)
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('should add sale contract', async function () {
-      await contractRegistryContract.addSaleContract(saleContract.address);
+    it('should add exchange contract', async function () {
+      await contractRegistryContract.addExchangeContract(
+        exchangeContract.address
+      );
       expect(
-        await contractRegistryContract.isSaleContract(saleContract.address)
+        await contractRegistryContract.isExchangeContract(
+          exchangeContract.address
+        )
       ).to.equal(true);
     });
 
-    it('should remove sale contract', async function () {
-      await contractRegistryContract.addSaleContract(saleContract.address);
-      await contractRegistryContract.removeSaleContract(saleContract.address);
+    it('should remove exchange contract', async function () {
+      await contractRegistryContract.addExchangeContract(
+        exchangeContract.address
+      );
+      await contractRegistryContract.removeExchangeContract(
+        exchangeContract.address
+      );
 
       expect(
-        await contractRegistryContract.isSaleContract(saleContract.address)
+        await contractRegistryContract.isExchangeContract(
+          exchangeContract.address
+        )
       ).to.equal(false);
     });
   });

@@ -1,20 +1,17 @@
-const { ethers, upgrades } = require('hardhat');
+const { ethers, network } = require('hardhat');
+const { getForNetwork } = require('../utils/addresses');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
+  const { endemicErc721Factory } = getForNetwork(network);
 
-  console.log('Deploying EndemicNFT with the account:', deployer.address);
-  const EndemicNFT = await ethers.getContractFactory('EndemicNFT');
-  const endemicNFTProxy = await upgrades.deployProxy(
-    EndemicNFT,
-    ['Endemic NFT', 'END', 'ipfs://'],
-    {
-      deployer,
-      initializer: '__EndemicNFT_init',
-    }
-  );
-  await endemicNFTProxy.deployed();
-  console.log('EndemicNFT proxy deployed to:', endemicNFTProxy.address);
+  console.log('Deploying EndemicERC721 with the account:', deployer.address);
+
+  const EndemicERC721 = await ethers.getContractFactory('EndemicERC721');
+  const endemicERC721 = await EndemicNFT.deploy(endemicErc721Factory);
+
+  await endemicERC721.deployed();
+  console.log('EndemicERC721 proxy deployed to:', endemicERC721.address);
 }
 
 main()

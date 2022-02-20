@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "../erc-721/IEndemicERC721.sol";
+import "../erc-721/interfaces/IEndemicERC721.sol";
 import "../erc-1155/IERC1155.sol";
 import "./LibAuction.sol";
 

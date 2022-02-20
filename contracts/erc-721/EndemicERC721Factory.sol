@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "./interfaces/IEndemicERC721.sol";
+
 import "../NoDelegateCall.sol";
 import "./EndemicERC721.sol";
-import "./IEndemicERC721.sol";
 
 contract EndemicERC721Factory is AccessControl, NoDelegateCall {
     using Address for address;

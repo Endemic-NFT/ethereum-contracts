@@ -4,10 +4,10 @@ const { deployEndemicERC721WithFactory } = require('../helpers/deploy');
 
 describe('EndemicERC721', function () {
   let nftContract;
-  let owner, user, user2, user3;
+  let owner, user, royaltiesRecipient;
 
   beforeEach(async function () {
-    [owner, user, user2, user3] = await ethers.getSigners();
+    [owner, user, royaltiesRecipient] = await ethers.getSigners();
 
     const deployResult = await deployEndemicERC721WithFactory(owner);
 
@@ -55,7 +55,7 @@ describe('EndemicERC721', function () {
             user.address,
             'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
           )
-      ).to.be.revertedWith('EndemicERC721: caller is not the owner');
+      ).to.be.revertedWith('CallerNotOwner');
     });
 
     it('should mint an NFT after burn', async function () {
@@ -107,7 +107,46 @@ describe('EndemicERC721', function () {
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
 
-      await expect(nftContract.connect(user).burn(0)).to.be.reverted;
+      await expect(nftContract.connect(user).burn(0)).to.be.revertedWith(
+        'CallerNotTokenOwner'
+      );
+    });
+  });
+
+  describe('Royalties', function () {
+    it('should support ERC2981 interface', async () => {
+      const ERC2981InterfaceId = 0x2a55205a;
+      expect(await nftContract.supportsInterface(ERC2981InterfaceId)).to.equal(
+        true
+      );
+    });
+    it('should be able to set royalties if owner', async () => {
+      await nftContract.setRoyalties(royaltiesRecipient.address, 500);
+      expect(await nftContract.royaltiesRecipient()).to.equal(
+        royaltiesRecipient.address
+      );
+      expect(await nftContract.royaltiesAmount()).to.equal('500');
+    });
+    it('should not be able to set royalties if not owner', async () => {
+      await expect(
+        nftContract.connect(user).setRoyalties(royaltiesRecipient.address, 500)
+      ).to.be.revertedWith('CallerNotOwner');
+    });
+    it('should respect royalties amount limit', async () => {
+      await expect(
+        nftContract.setRoyalties(royaltiesRecipient.address, 10001)
+      ).to.be.revertedWith('RoyaltiesTooHigh');
+    });
+    it('should calculate royalties correctly', async () => {
+      await nftContract.setRoyalties(royaltiesRecipient.address, 1000);
+      const royaltyInfo = await nftContract.royaltyInfo(
+        1,
+        ethers.utils.parseUnits('1')
+      );
+      expect(royaltyInfo.receiver).to.equal(royaltiesRecipient.address);
+      expect(royaltyInfo.royaltyAmount).to.equal(
+        ethers.utils.parseUnits('0.1')
+      );
     });
   });
 });

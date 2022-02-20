@@ -3,28 +3,18 @@ const { getForNetwork } = require('../utils/addresses');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { endemicMasterKeyProxy, contractRegistryProxy } = getForNetwork(
-    network.name
-  );
+  const { contractRegistryProxy } = getForNetwork(network.name);
 
   console.log('Deploying FeeProvider with the account:', deployer.address);
 
-  const initialSaleFee = 2000;
+  const initialSaleFee = 1500;
   const secondarySaleMakerFee = 250;
   const takerFee = 250;
-  const masterKeyCut = 0;
 
   const FeeProvider = await ethers.getContractFactory('FeeProvider');
   const feeProviderProxy = await upgrades.deployProxy(
     FeeProvider,
-    [
-      initialSaleFee,
-      secondarySaleMakerFee,
-      takerFee,
-      masterKeyCut,
-      endemicMasterKeyProxy,
-      contractRegistryProxy,
-    ],
+    [initialSaleFee, secondarySaleMakerFee, takerFee, contractRegistryProxy],
     {
       deployer,
       initializer: '__FeeProvider_init',
