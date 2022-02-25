@@ -55,8 +55,8 @@
 
 //     nftContract = await deployEndemicNFT(owner);
 
-//     await contractRegistryContract.addSaleContract(endemicExchange.address);
-//     await contractRegistryContract.addSaleContract(bid.address);
+//     await contractRegistryContract.addExchangeContract(endemicExchange.address);
+//     await contractRegistryContract.addExchangeContract(bid.address);
 
 //     await mint(1, owner.address);
 //   }

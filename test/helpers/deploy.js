@@ -1,5 +1,21 @@
 const { ethers, upgrades } = require('hardhat');
 
+const deployEndemicRewards = async (endemicTokenAddress) => {
+  const EndemicRewards = await ethers.getContractFactory('EndemicRewards');
+
+  const endemicRewards = await EndemicRewards.deploy(endemicTokenAddress);
+  await endemicRewards.deployed();
+  return endemicRewards;
+};
+
+const deployEndemicToken = async (deployer) => {
+  const EndemicToken = await ethers.getContractFactory('EndemicToken');
+
+  const endemicToken = await EndemicToken.deploy(deployer.address);
+  await endemicToken.deployed();
+  return endemicToken;
+};
+
 const deployEndemicERC721Factory = async () => {
   const EndemicERC721Factory = await ethers.getContractFactory(
     'EndemicERC721Factory'
@@ -63,19 +79,19 @@ const deployEndemicExchange = async (
 };
 
 const deployEndemicExchangeWithDeps = async (
-  makerFee = 0,
+  secondarySaleFee = 0,
   takerFee = 0,
-  initialFee = 0
+  primarySaleFee = 0
 ) => {
   const contractRegistryContract = await deployContractRegistry();
   const royaltiesProviderContract = await deployRoyaltiesProvider();
   const feeProviderContract = await deployFeeProvider(
     contractRegistryContract.address,
-    makerFee,
+    secondarySaleFee,
     takerFee,
-    initialFee
+    primarySaleFee
   );
-  const endemicExchange = await deployEndemicExchange(
+  const endemicExchangeContract = await deployEndemicExchange(
     feeProviderContract.address,
     royaltiesProviderContract.address
   );
@@ -84,7 +100,7 @@ const deployEndemicExchangeWithDeps = async (
     contractRegistryContract,
     feeProviderContract,
     royaltiesProviderContract,
-    endemicExchange,
+    endemicExchangeContract,
   };
 };
 
@@ -174,6 +190,8 @@ const deployContractRegistry = async () => {
 };
 
 module.exports = {
+  deployEndemicRewards,
+  deployEndemicToken,
   deployEndemicERC721Factory,
   deployEndemicERC721,
   deployEndemicERC721WithFactory,

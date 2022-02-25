@@ -130,6 +130,9 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         bidIndex = bidCounterByToken[nftContract][tokenId];
         bidCounterByToken[nftContract][tokenId]++;
 
+        bidIdByTokenAndBidder[nftContract][tokenId][_msgSender()] = bidId;
+        bidIndexByBidId[bidId] = bidIndex;
+
         bidsByToken[nftContract][tokenId][bidIndex] = Bid({
             id: bidId,
             bidder: _msgSender(),
@@ -248,11 +251,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         uint256 price = bid.price;
         uint256 priceWithFee = bid.priceWithFee;
 
-        delete bidsByToken[_msgSender()][_tokenId][bidIndex];
-        delete bidIndexByBidId[bidId];
-        delete bidIdByTokenAndBidder[_msgSender()][_tokenId][bidder];
-
-        delete bidCounterByToken[_msgSender()][_tokenId];
+        _removeBid(bidIndex, bidId, _msgSender(), _tokenId, bidder);
 
         uint256 totalCut = _calculateCut(
             _msgSender(),
@@ -387,14 +386,26 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         address bidder,
         uint256 priceWithFee
     ) internal {
-        // Delete bid references
+        _removeBid(bidIndex, bidId, nftContract, tokenId, bidder);
+
+        (bool success, ) = payable(bidder).call{value: priceWithFee}("");
+        require(success, "Refund failed.");
+
+        emit BidCancelled(bidId, nftContract, tokenId, bidder);
+    }
+
+    function _removeBid(
+        uint256 bidIndex,
+        bytes32 bidId,
+        address nftContract,
+        uint256 tokenId,
+        address bidder
+    ) internal {
         delete bidIndexByBidId[bidId];
         delete bidIdByTokenAndBidder[nftContract][tokenId][bidder];
 
-        // Check if the bid is at the end of the mapping
         uint256 lastBidIndex = bidCounterByToken[nftContract][tokenId].sub(1);
         if (lastBidIndex != bidIndex) {
-            // Move last bid to the removed place
             Bid storage lastBid = bidsByToken[nftContract][tokenId][
                 lastBidIndex
             ];
@@ -404,11 +415,6 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
 
         delete bidsByToken[nftContract][tokenId][lastBidIndex];
         bidCounterByToken[nftContract][tokenId]--;
-
-        (bool success, ) = payable(bidder).call{value: priceWithFee}("");
-        require(success, "Refund failed.");
-
-        emit BidCancelled(bidId, nftContract, tokenId, bidder);
     }
 
     function _getBid(

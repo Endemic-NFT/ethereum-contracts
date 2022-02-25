@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./LibAuction.sol";
 
 import "../erc-721/interfaces/IEndemicERC721.sol";
-import "../erc-1155/IERC1155.sol";
+import "../erc-1155/interfaces/IEndemicERC1155.sol";
 import "../fee/interfaces/IFeeProvider.sol";
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
@@ -16,8 +16,8 @@ abstract contract TransferManager is OwnableUpgradeable {
 
     address public feeClaimAddress;
 
-    IFeeProvider feeProvider;
-    IRoyaltiesProvider royaltiesProvider;
+    IFeeProvider public feeProvider;
+    IRoyaltiesProvider public royaltiesProvider;
 
     function __TransferManager___init_unchained(
         address _feeProvider,

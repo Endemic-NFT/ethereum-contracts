@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "./ERC1155Base.sol";
 
+// TODO https://github.com/Endemic-NFT/endemic-ethereum-contracts/issues/5
 contract EndemicERC1155 is ERC1155Base {
     using CountersUpgradeable for CountersUpgradeable.Counter;
     CountersUpgradeable.Counter private _tokenIdCounter;

@@ -1,6 +1,5 @@
 // const { expect } = require('chai');
-// const { ethers, network, upgrades } = require('hardhat');
-// const BN = require('bignumber.js');
+// const { ethers, network } = require('hardhat');
 // const {
 //   deployEndemicNFT,
 //   deployBid,
@@ -43,12 +42,11 @@
 //       ...otherSigners
 //     ] = await ethers.getSigners();
 
-//     contractRegistryContract = await deployContractRegistry(owner);
-//     masterNftContract = await deployEndemicMasterNFT(owner);
+//     contractRegistryContract = await deployContractRegistry();
+//     masterNftContract = await deployEndemicMasterNFT();
 
-//     royaltiesProviderContract = await deployRoyaltiesProvider(owner);
+//     royaltiesProviderContract = await deployRoyaltiesProvider();
 //     feeProviderContract = await deployFeeProvider(
-//       owner,
 //       masterNftContract.address,
 //       contractRegistryContract.address,
 //       makerFee,
@@ -57,14 +55,13 @@
 //     );
 
 //     bidContract = await deployBid(
-//       owner,
 //       feeProviderContract.address,
 //       royaltiesProviderContract.address,
 //       masterNftContract.address
 //     );
 
-//     nftContract = await deployEndemicNFT(owner);
-//     nftContract2 = await deployEndemicNFT(user1);
+//     nftContract = await deployEndemicNFT();
+//     nftContract2 = await deployEndemicNFT();
 
 //     await contractRegistryContract.addSaleContract(bidContract.address);
 
@@ -178,6 +175,44 @@
 //           value: ethers.utils.parseUnits('0.5'),
 //         })
 //       ).to.be.revertedWith('Pausable: paused');
+//     });
+
+//     it('should successfully create multiple bids on same token', async () => {
+//       await bidContract.placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.515'),
+//       });
+
+//       await bidContract.connect(user2).placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.616'),
+//       });
+
+//       await bidContract.connect(user3).placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.717'),
+//       });
+
+//       const activeBid1 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         owner.address
+//       );
+//       expect(activeBid1.bidIndex).to.equal(0);
+//       expect(activeBid1.bidder).to.equal(owner.address);
+
+//       const activeBid2 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         user2.address
+//       );
+//       expect(activeBid2.bidIndex).to.equal(1);
+//       expect(activeBid2.bidder).to.equal(user2.address);
+
+//       const activeBid3 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         user3.address
+//       );
+//       expect(activeBid3.bidIndex).to.equal(2);
+//       expect(activeBid3.bidder).to.equal(user3.address);
 //     });
 //   });
 
@@ -294,6 +329,56 @@
 
 //       expect(bid.bidder).to.equal(user2.address);
 //       expect(bid.priceWithFee).to.equal(ethers.utils.parseUnits('0.4'));
+//     });
+
+//     it('should be able to cancel bid where there are multiple bids on same token', async () => {
+//       await bidContract.placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.515'),
+//       });
+
+//       await bidContract.connect(user2).placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.616'),
+//       });
+
+//       await bidContract.connect(user3).placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.717'),
+//       });
+
+//       const activeBid1 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         owner.address
+//       );
+//       expect(activeBid1.bidIndex).to.equal(0);
+//       expect(activeBid1.bidder).to.equal(owner.address);
+
+//       const activeBid2 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         user2.address
+//       );
+//       expect(activeBid2.bidIndex).to.equal(1);
+//       expect(activeBid2.bidder).to.equal(user2.address);
+
+//       const activeBid3 = await bidContract.getBidByBidder(
+//         nftContract.address,
+//         1,
+//         user3.address
+//       );
+//       expect(activeBid3.bidIndex).to.equal(2);
+//       expect(activeBid3.bidder).to.equal(user3.address);
+
+//       const cancelTx1 = await bidContract.cancelBid(nftContract.address, 1);
+//       await expect(cancelTx1)
+//         .to.emit(bidContract, 'BidCancelled')
+//         .withArgs(activeBid1.bidId, nftContract.address, 1, owner.address);
+
+//       const cancelTx2 = await bidContract
+//         .connect(user2)
+//         .cancelBid(nftContract.address, 1);
+//       await expect(cancelTx2)
+//         .to.emit(bidContract, 'BidCancelled')
+//         .withArgs(activeBid2.bidId, nftContract.address, 1, user2.address);
 //     });
 //   });
 
@@ -502,6 +587,42 @@
 //       );
 //       expect(feeBalanceAfter.sub(feeBalanceBefore)).to.equal(
 //         ethers.utils.parseUnits('0')
+//       );
+//     });
+
+//     it('should be able to accept bid after purchase', async () => {
+//       await bidContract.placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.515'),
+//       });
+
+//       await bidContract.connect(user2).placeBid(nftContract.address, 1, 1000, {
+//         value: ethers.utils.parseUnits('0.616'),
+//       });
+
+//       const bidId1 = (
+//         await bidContract.getBidByToken(nftContract.address, 1, 0)
+//       )[0];
+
+//       const bidId2 = (
+//         await bidContract.getBidByToken(nftContract.address, 1, 1)
+//       )[0];
+
+//       await safeTransferWithBytes(
+//         nftContract,
+//         user1,
+//         user1.address,
+//         bidContract.address,
+//         1,
+//         bidId1
+//       );
+
+//       await safeTransferWithBytes(
+//         nftContract,
+//         owner,
+//         owner.address,
+//         bidContract.address,
+//         1,
+//         bidId2
 //       );
 //     });
 //   });

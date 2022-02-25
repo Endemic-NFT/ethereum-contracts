@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./EndemicERC1155.sol";
 
+// TODO
 contract EndemicERC1155Factory is AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     IBeacon public beacon;

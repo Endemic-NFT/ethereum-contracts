@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "../erc-721/interfaces/IEndemicERC721.sol";
-import "../erc-1155/IERC1155.sol";
+import "../erc-1155/interfaces/IEndemicERC1155.sol";
 import "./LibAuction.sol";
 
 library LibNFT {
@@ -20,12 +20,6 @@ library LibNFT {
         requireTokenOwnership(assetClass, contractId, tokenId, amount, seller);
         requireTokenApproval(assetClass, contractId, tokenId, seller);
     }
-
-    function isApproved(
-        address _seller,
-        address _nftContract,
-        uint256 _tokenId
-    ) internal view returns (bool) {}
 
     function requireCorrectInterface(bytes4 _assetClass, address _nftContract)
         internal

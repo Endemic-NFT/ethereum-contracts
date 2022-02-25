@@ -117,6 +117,9 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
         bidIndex = bidCounterByCollection[nftContract];
         bidCounterByCollection[nftContract]++;
 
+        bidIdByCollectionAndBidder[nftContract][_msgSender()] = bidId;
+        bidIndexByBidId[bidId] = bidIndex;
+
         bidsByCollection[nftContract][bidIndex] = Bid({
             id: bidId,
             bidder: _msgSender(),
@@ -208,11 +211,7 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
         uint256 price = bid.price;
         uint256 priceWithFee = bid.priceWithFee;
 
-        delete bidsByCollection[_msgSender()][bidIndex];
-        delete bidIndexByBidId[bidId];
-        delete bidIdByCollectionAndBidder[_msgSender()][bidder];
-
-        delete bidCounterByCollection[_msgSender()];
+        _removeBid(bidIndex, bidId, _msgSender(), bidder);
 
         uint256 totalCut = _calculateCut(
             _msgSender(),
@@ -339,6 +338,20 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
         address bidder,
         uint256 priceWithFee
     ) internal {
+        _removeBid(bidIndex, bidId, nftContract, bidder);
+
+        (bool success, ) = payable(bidder).call{value: priceWithFee}("");
+        require(success, "Refund failed.");
+
+        emit BidCancelled(bidId, nftContract, bidder);
+    }
+
+    function _removeBid(
+        uint256 bidIndex,
+        bytes32 bidId,
+        address nftContract,
+        address bidder
+    ) internal {
         // Delete bid references
         delete bidIndexByBidId[bidId];
         delete bidIdByCollectionAndBidder[nftContract][bidder];
@@ -354,11 +367,6 @@ abstract contract CollectionBidCore is PausableUpgradeable, OwnableUpgradeable {
 
         delete bidsByCollection[nftContract][lastBidIndex];
         bidCounterByCollection[nftContract]--;
-
-        (bool success, ) = payable(bidder).call{value: priceWithFee}("");
-        require(success, "Refund failed.");
-
-        emit BidCancelled(bidId, nftContract, bidder);
     }
 
     function _getBid(address nftContract, uint256 index)
