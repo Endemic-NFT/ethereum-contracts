@@ -3,7 +3,7 @@ const { ethers } = require('hardhat');
 const BN = require('bignumber.js');
 const {
   deployRoyaltiesProvider,
-  deployEndemicERC721WithFactory,
+  deployEndemicCollectionWithFactory,
 } = require('./helpers/deploy');
 
 describe('RoyaltiesProvider', function () {
@@ -15,7 +15,7 @@ describe('RoyaltiesProvider', function () {
       await ethers.getSigners();
 
     royaltiesProviderContract = await deployRoyaltiesProvider();
-    const deployResults = await deployEndemicERC721WithFactory();
+    const deployResults = await deployEndemicCollectionWithFactory();
     nftContractFactory = deployResults.nftFactory;
 
     const tx = await nftContractFactory.createTokenForOwner({
@@ -30,8 +30,8 @@ describe('RoyaltiesProvider', function () {
       (e) => e.event === 'NFTContractCreated'
     ).args.nftContract;
 
-    const EndemicERC721 = await ethers.getContractFactory('EndemicERC721');
-    nftContract = await EndemicERC721.attach(nftContractAddresss);
+    const Collection = await ethers.getContractFactory('Collection');
+    nftContract = await Collection.attach(nftContractAddresss);
   }
 
   describe('Intial state', async () => {

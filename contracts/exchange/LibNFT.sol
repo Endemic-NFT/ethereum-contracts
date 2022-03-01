@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "../erc-721/interfaces/IEndemicERC721.sol";
-import "../erc-1155/interfaces/IEndemicERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
 import "./LibAuction.sol";
 
 library LibNFT {

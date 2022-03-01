@@ -1,16 +1,16 @@
 const { expect, use } = require('chai');
 const { ethers } = require('hardhat');
 const Web3 = require('web3');
-const { deployEndemicERC721WithFactory } = require('../helpers/deploy');
+const { deployEndemicCollectionWithFactory } = require('../helpers/deploy');
 
-describe('EndemicERC721Factory', function () {
+describe('EndemicCollectionFactory', function () {
   let factoryContract = null;
   let owner, user, signer;
 
   beforeEach(async function () {
     [owner, user, signer] = await ethers.getSigners();
 
-    const deployResult = await deployEndemicERC721WithFactory(owner);
+    const deployResult = await deployEndemicCollectionWithFactory(owner);
     factoryContract = deployResult.nftFactory;
   });
 

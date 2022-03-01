@@ -16,26 +16,26 @@ const deployEndemicToken = async (deployer) => {
   return endemicToken;
 };
 
-const deployEndemicERC721Factory = async () => {
-  const EndemicERC721Factory = await ethers.getContractFactory(
-    'EndemicERC721Factory'
+const deployCollectionFactory = async () => {
+  const EndemicCollectionFactory = await ethers.getContractFactory(
+    'EndemicCollectionFactory'
   );
-  const nftContractFactory = await EndemicERC721Factory.deploy();
+  const nftContractFactory = await EndemicCollectionFactory.deploy();
   await nftContractFactory.deployed();
 
   return nftContractFactory;
 };
 
-const deployEndemicERC721 = async (erc721FactoryAddress) => {
-  const EndemicERC721 = await ethers.getContractFactory('EndemicERC721');
-  const nftContract = await EndemicERC721.deploy(erc721FactoryAddress);
+const deployCollection = async (erc721FactoryAddress) => {
+  const Collection = await ethers.getContractFactory('Collection');
+  const nftContract = await Collection.deploy(erc721FactoryAddress);
   await nftContract.deployed();
   return nftContract;
 };
 
-const deployEndemicERC721WithFactory = async () => {
-  const nftFactory = await deployEndemicERC721Factory();
-  const nftContract = await deployEndemicERC721(nftFactory.address);
+const deployEndemicCollectionWithFactory = async () => {
+  const nftFactory = await deployCollectionFactory();
+  const nftContract = await deployCollection(nftFactory.address);
 
   await nftFactory.updateImplementation(nftContract.address);
 
@@ -192,9 +192,9 @@ const deployContractRegistry = async () => {
 module.exports = {
   deployEndemicRewards,
   deployEndemicToken,
-  deployEndemicERC721Factory,
-  deployEndemicERC721,
-  deployEndemicERC721WithFactory,
+  deployCollectionFactory,
+  deployCollection,
+  deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
   deployBid,
   deployCollectionBid,

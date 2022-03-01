@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const { ethers, network, upgrades } = require('hardhat');
 const BN = require('bignumber.js');
 const {
-  deployEndemicERC721WithFactory,
+  deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
   deployContractRegistry,
@@ -70,7 +70,7 @@ describe('EndemicExchange', function () {
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
 
-    nftContract = (await deployEndemicERC721WithFactory()).nftContract;
+    nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
     await contractRegistryContract.addExchangeContract(endemicExchange.address);
 
     erc1155Contract = await deployEndemicERC1155();
@@ -579,7 +579,7 @@ describe('EndemicExchange', function () {
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.1'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.09'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -638,7 +638,7 @@ describe('EndemicExchange', function () {
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.2'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.19'));
     });
 
     it('should fail to bid after someone else has bid', async function () {
@@ -880,7 +880,7 @@ describe('EndemicExchange', function () {
 
       const user1Diff = user1Bal2.sub(user1Bal1);
       // 0.2 minus 22% fee (220)
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.156'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.136'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -963,7 +963,7 @@ describe('EndemicExchange', function () {
       // Checks if endemicExchange gets 2.5% maker fee + 3% taker fee
       // 2.5% of 0.5 + 0.015 taker fee
       expect(claimEthBalanceDiff).to.equal(ethers.utils.parseUnits('0.0275'));
-      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4875'));
+      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4375'));
 
       // New owner
       const tokenOwner = await nftContract.ownerOf(1);

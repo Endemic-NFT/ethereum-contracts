@@ -5,12 +5,12 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "./interfaces/IEndemicERC721.sol";
+import "./interfaces/ICollectionInitializer.sol";
 
 import "../NoDelegateCall.sol";
-import "./EndemicERC721.sol";
+import "./Collection.sol";
 
-contract EndemicERC721Factory is AccessControl, NoDelegateCall {
+contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
     using Address for address;
     using Clones for address;
 
@@ -74,14 +74,14 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
     {
         require(
             newImplementation.isContract(),
-            "EndemicERC721Factory: Implementation is not a contract"
+            "EndemicCollectionFactory: Implementation is not a contract"
         );
         implementation = newImplementation;
 
-        IEndemicERC721(implementation).initialize(
+        ICollectionInitializer(implementation).initialize(
             msg.sender,
-            "Endemic Collection Template",
-            "ECT"
+            "Collection Template",
+            "CT"
         );
     }
 
@@ -95,7 +95,7 @@ contract EndemicERC721Factory is AccessControl, NoDelegateCall {
             keccak256(abi.encodePacked(owner, block.timestamp))
         );
 
-        IEndemicERC721(proxy).initialize(owner, name, symbol);
+        ICollectionInitializer(proxy).initialize(owner, name, symbol);
 
         emit NFTContractCreated(proxy, owner, name, symbol, category);
     }

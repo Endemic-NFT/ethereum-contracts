@@ -4,18 +4,18 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log(
-    'Deploying EndemicERC721Factory with the account:',
+    'Deploying EndemicCollectionFactory with the account:',
     deployer.address
   );
 
-  const EndemicERC721Factory = await ethers.getContractFactory(
-    'EndemicERC721Factory'
+  const EndemicCollectionFactory = await ethers.getContractFactory(
+    'EndemicCollectionFactory'
   );
-  const endemicERC721Factory = await EndemicERC721Factory.deploy();
+  const endemicERC721Factory = await EndemicCollectionFactory.deploy();
   await endemicERC721Factory.deployed();
 
   console.log(
-    'Deployed EndemicERC721Factory to:',
+    'Deployed EndemicCollectionFactory to:',
     endemicERC721Factory.address
   );
 }

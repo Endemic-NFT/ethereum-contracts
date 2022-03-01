@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import "../erc-721/interfaces/IEndemicERC721.sol";
 import "../fee/interfaces/IFeeProvider.sol";
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
@@ -268,11 +268,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         feeProvider.onSale(_msgSender(), _tokenId);
 
         // Transfer token to bidder
-        IEndemicERC721(_msgSender()).safeTransferFrom(
-            address(this),
-            bidder,
-            _tokenId
-        );
+        IERC721(_msgSender()).safeTransferFrom(address(this), bidder, _tokenId);
 
         // transfer fees
         if (totalCut > 0) {

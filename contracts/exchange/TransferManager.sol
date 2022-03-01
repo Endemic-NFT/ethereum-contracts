@@ -3,11 +3,11 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 import "./LibAuction.sol";
 
-import "../erc-721/interfaces/IEndemicERC721.sol";
-import "../erc-1155/interfaces/IEndemicERC1155.sol";
 import "../fee/interfaces/IFeeProvider.sol";
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
