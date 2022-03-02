@@ -2,33 +2,40 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "../fee/interfaces/IFeeProvider.sol";
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
-abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
+error InvalidValueSent();
+error InvalidTokenOwner();
+error DurationTooShort();
+error DurationTooLong();
+error BidExists();
+error NoActiveBid();
+
+abstract contract BidCore is
+    PausableUpgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using AddressUpgradeable for address;
 
     uint256 public MAX_BID_DURATION;
     uint256 public MIN_BID_DURATION;
     bytes4 public ERC721_Received;
 
-    // Bid count by token address => token id => bid counts
-    mapping(address => mapping(uint256 => uint256)) public bidCounterByToken;
-    // Index of the bid at bidsByToken mapping by bid id => bid index
-    mapping(bytes32 => uint256) public bidIndexByBidId;
-    // Bid id by token address => token id => bidder address => bidId
-    mapping(address => mapping(uint256 => mapping(address => bytes32)))
-        public bidIdByTokenAndBidder;
-    // Bid by token address => token id => bid index => bid
-    mapping(address => mapping(uint256 => mapping(uint256 => Bid)))
-        internal bidsByToken;
+    uint256 private nextBidId;
+
+    mapping(uint256 => Bid) internal bidsById;
+
+    // Bid by token address => token id => bidder => bidId
+    mapping(address => mapping(uint256 => mapping(address => uint256)))
+        internal bidIdsByBidder;
 
     address feeClaimAddress;
 
@@ -36,7 +43,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
     IRoyaltiesProvider royaltiesProvider;
 
     struct Bid {
-        bytes32 id;
+        uint256 id;
         address nftContract;
         uint256 tokenId;
         address bidder;
@@ -46,7 +53,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
     }
 
     event BidCreated(
-        bytes32 id,
+        uint256 id,
         address indexed nftContract,
         uint256 indexed tokenId,
         address indexed bidder,
@@ -55,7 +62,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
     );
 
     event BidAccepted(
-        bytes32 id,
+        uint256 id,
         address indexed nftContract,
         uint256 indexed tokenId,
         address bidder,
@@ -64,7 +71,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
     );
 
     event BidCancelled(
-        bytes32 id,
+        uint256 id,
         address indexed nftContract,
         uint256 indexed tokenId,
         address indexed bidder
@@ -82,64 +89,52 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         ERC721_Received = 0x150b7a02;
         MAX_BID_DURATION = 182 days;
         MIN_BID_DURATION = 1 minutes;
+
+        nextBidId = 1;
     }
 
     function placeBid(
         address nftContract,
         uint256 tokenId,
         uint256 duration
-    ) external payable whenNotPaused {
-        require(msg.value > 0, "Invalid value sent");
+    ) external payable whenNotPaused nonReentrant {
+        if (msg.value <= 0) {
+            revert InvalidValueSent();
+        }
 
         IERC721 nft = IERC721(nftContract);
         address nftOwner = nft.ownerOf(tokenId);
 
-        require(
-            nftOwner != address(0) && nftOwner != _msgSender(),
-            "Token is burned or owned by the sender"
-        );
+        if (nftOwner == address(0) || nftOwner == _msgSender()) {
+            revert InvalidTokenOwner();
+        }
 
-        require(duration >= MIN_BID_DURATION, "Bid duration too short");
-        require(duration <= MAX_BID_DURATION, "Bid duration too long");
+        if (duration < MIN_BID_DURATION) {
+            revert DurationTooShort();
+        }
 
-        uint256 expiresAt = block.timestamp.add(duration);
+        if (duration > MAX_BID_DURATION) {
+            revert DurationTooLong();
+        }
 
-        bytes32 bidId = keccak256(
-            abi.encodePacked(
-                block.timestamp,
-                _msgSender(),
-                nftContract,
-                tokenId,
-                msg.value,
-                duration
-            )
-        );
-
+        uint256 bidId = nextBidId++;
         uint256 takerFee = feeProvider.getTakerFee();
 
-        uint256 priceWithFee = msg.value;
-        uint256 price = msg.value.mul(10000).div(takerFee.add(10000));
+        if (_bidderHasBid(nftContract, tokenId, _msgSender())) {
+            revert BidExists();
+        }
 
-        uint256 bidIndex;
+        uint256 price = (msg.value * (10000)) / (takerFee + 10000);
+        uint256 expiresAt = block.timestamp + duration;
 
-        require(
-            !_bidderHasBid(nftContract, tokenId, _msgSender()),
-            "Bid already exists"
-        );
-
-        bidIndex = bidCounterByToken[nftContract][tokenId];
-        bidCounterByToken[nftContract][tokenId]++;
-
-        bidIdByTokenAndBidder[nftContract][tokenId][_msgSender()] = bidId;
-        bidIndexByBidId[bidId] = bidIndex;
-
-        bidsByToken[nftContract][tokenId][bidIndex] = Bid({
+        bidIdsByBidder[nftContract][tokenId][_msgSender()] = bidId;
+        bidsById[bidId] = Bid({
             id: bidId,
             bidder: _msgSender(),
             nftContract: nftContract,
             tokenId: tokenId,
             price: price,
-            priceWithFee: priceWithFee,
+            priceWithFee: msg.value,
             expiresAt: expiresAt
         });
 
@@ -153,74 +148,9 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         );
     }
 
-    function getBidByBidder(
-        address nftContract,
-        uint256 tokenId,
-        address _bidder
-    )
-        public
-        view
-        returns (
-            uint256 bidIndex,
-            bytes32 bidId,
-            address bidder,
-            uint256 price,
-            uint256 priceWithFee,
-            uint256 expiresAt
-        )
-    {
-        bidId = bidIdByTokenAndBidder[nftContract][tokenId][_bidder];
-        bidIndex = bidIndexByBidId[bidId];
-        (bidId, bidder, price, priceWithFee, expiresAt) = getBidByToken(
-            nftContract,
-            tokenId,
-            bidIndex
-        );
-        if (_bidder != bidder) {
-            revert("Bidder has not an active bid for this token");
-        }
-    }
-
-    function getBidByToken(
-        address nftContract,
-        uint256 tokenId,
-        uint256 index
-    )
-        public
-        view
-        returns (
-            bytes32,
-            address,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        Bid memory bid = _getBid(nftContract, tokenId, index);
-        return (bid.id, bid.bidder, bid.price, bid.priceWithFee, bid.expiresAt);
-    }
-
-    function cancelBid(address nftContract, uint256 tokenId)
-        external
-        whenNotPaused
-    {
-        (
-            uint256 bidIndex,
-            bytes32 bidId,
-            ,
-            ,
-            uint256 priceWithFee,
-
-        ) = getBidByBidder(nftContract, tokenId, _msgSender());
-
-        _cancelBid(
-            bidIndex,
-            bidId,
-            nftContract,
-            tokenId,
-            _msgSender(),
-            priceWithFee
-        );
+    function cancelBid(uint256 bidId) external whenNotPaused nonReentrant {
+        Bid memory bid = bidsById[bidId];
+        _cancelBid(bid);
     }
 
     function pause() external onlyOwner {
@@ -231,16 +161,8 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         _unpause();
     }
 
-    function onERC721Received(
-        address _from,
-        address, /*_to*/
-        uint256 _tokenId,
-        bytes memory _data
-    ) public whenNotPaused returns (bytes4) {
-        bytes32 bidId = _bytesToBytes32(_data);
-        uint256 bidIndex = bidIndexByBidId[bidId];
-
-        Bid memory bid = _getBid(_msgSender(), _tokenId, bidIndex);
+    function acceptBid(uint256 bidId) external whenNotPaused nonReentrant {
+        Bid memory bid = bidsById[bidId];
 
         require(
             bid.id == bidId && bid.expiresAt >= block.timestamp,
@@ -248,27 +170,30 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         );
 
         address bidder = bid.bidder;
+        uint256 tokenId = bid.tokenId;
+        address contractId = bid.nftContract;
         uint256 price = bid.price;
         uint256 priceWithFee = bid.priceWithFee;
 
-        _removeBid(bidIndex, bidId, _msgSender(), _tokenId, bidder);
+        delete bidsById[bidId];
+        delete bidIdsByBidder[contractId][tokenId][bidder];
 
         uint256 totalCut = _calculateCut(
+            contractId,
+            tokenId,
             _msgSender(),
-            _tokenId,
-            _from,
             price,
             priceWithFee
         );
 
         (address royaltiesRecipient, uint256 royaltiesCut) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(_msgSender(), _tokenId, price);
+            .calculateRoyaltiesAndGetRecipient(contractId, tokenId, price);
 
         // sale happened
-        feeProvider.onSale(_msgSender(), _tokenId);
+        feeProvider.onSale(contractId, tokenId);
 
         // Transfer token to bidder
-        IERC721(_msgSender()).safeTransferFrom(address(this), bidder, _tokenId);
+        IERC721(contractId).safeTransferFrom(_msgSender(), bidder, tokenId);
 
         // transfer fees
         if (totalCut > 0) {
@@ -282,13 +207,26 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
 
         // Transfer ETH from bidder to seller
         _transferFundsToSeller(
-            _from,
-            priceWithFee.sub(totalCut).sub(royaltiesCut)
+            _msgSender(),
+            priceWithFee - totalCut - royaltiesCut
         );
 
-        emit BidAccepted(bidId, _msgSender(), _tokenId, bidder, _from, price);
+        emit BidAccepted(
+            bidId,
+            contractId,
+            tokenId,
+            bidder,
+            _msgSender(),
+            price
+        );
+    }
 
-        return ERC721_Received;
+    function getBid(uint256 bidId) external view returns (Bid memory) {
+        Bid memory bid = bidsById[bidId];
+        if (bid.id != bidId) {
+            revert NoActiveBid();
+        }
+        return bid;
     }
 
     function _calculateCut(
@@ -304,9 +242,9 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
             _tokenId,
             price
         );
-        uint256 takerCut = priceWithFee.sub(price);
+        uint256 takerCut = priceWithFee - price;
 
-        return makerCut.add(takerCut);
+        return makerCut + takerCut;
     }
 
     function _transferFees(uint256 _totalCut) internal {
@@ -335,7 +273,7 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         address[] memory _tokenAddresses,
         uint256[] memory _tokenIds,
         address[] memory _bidders
-    ) public {
+    ) public onlyOwner nonReentrant {
         uint256 loopLength = _tokenAddresses.length;
 
         require(
@@ -357,72 +295,27 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         uint256 tokenId,
         address bidder
     ) internal {
-        (
-            uint256 bidIndex,
-            bytes32 bidId,
-            ,
-            ,
-            uint256 priceWithFee,
-            uint256 expiresAt
-        ) = getBidByBidder(nftContract, tokenId, bidder);
+        uint256 bidId = bidIdsByBidder[nftContract][tokenId][bidder];
+        Bid memory bid = bidsById[bidId];
 
         require(
-            expiresAt < block.timestamp,
+            bid.expiresAt < block.timestamp,
             "The bid to remove should be expired"
         );
 
-        _cancelBid(bidIndex, bidId, nftContract, tokenId, bidder, priceWithFee);
+        _cancelBid(bid);
     }
 
-    function _cancelBid(
-        uint256 bidIndex,
-        bytes32 bidId,
-        address nftContract,
-        uint256 tokenId,
-        address bidder,
-        uint256 priceWithFee
-    ) internal {
-        _removeBid(bidIndex, bidId, nftContract, tokenId, bidder);
+    function _cancelBid(Bid memory bid) internal {
+        delete bidsById[bid.id];
+        delete bidIdsByBidder[bid.nftContract][bid.tokenId][bid.bidder];
 
-        (bool success, ) = payable(bidder).call{value: priceWithFee}("");
+        (bool success, ) = payable(bid.bidder).call{value: bid.priceWithFee}(
+            ""
+        );
         require(success, "Refund failed.");
 
-        emit BidCancelled(bidId, nftContract, tokenId, bidder);
-    }
-
-    function _removeBid(
-        uint256 bidIndex,
-        bytes32 bidId,
-        address nftContract,
-        uint256 tokenId,
-        address bidder
-    ) internal {
-        delete bidIndexByBidId[bidId];
-        delete bidIdByTokenAndBidder[nftContract][tokenId][bidder];
-
-        uint256 lastBidIndex = bidCounterByToken[nftContract][tokenId].sub(1);
-        if (lastBidIndex != bidIndex) {
-            Bid storage lastBid = bidsByToken[nftContract][tokenId][
-                lastBidIndex
-            ];
-            bidsByToken[nftContract][tokenId][bidIndex] = lastBid;
-            bidIndexByBidId[lastBid.id] = bidIndex;
-        }
-
-        delete bidsByToken[nftContract][tokenId][lastBidIndex];
-        bidCounterByToken[nftContract][tokenId]--;
-    }
-
-    function _getBid(
-        address nftContract,
-        uint256 tokenId,
-        uint256 index
-    ) internal view returns (Bid memory) {
-        require(
-            index < bidCounterByToken[nftContract][tokenId],
-            "Invalid index"
-        );
-        return bidsByToken[nftContract][tokenId][index];
+        emit BidCancelled(bid.id, bid.nftContract, bid.tokenId, bid.bidder);
     }
 
     function _bidderHasBid(
@@ -430,29 +323,9 @@ abstract contract BidCore is PausableUpgradeable, OwnableUpgradeable {
         uint256 tokenId,
         address bidder
     ) internal view returns (bool) {
-        bytes32 bidId = bidIdByTokenAndBidder[nftContract][tokenId][bidder];
-        uint256 bidIndex = bidIndexByBidId[bidId];
-
-        if (bidIndex < bidCounterByToken[nftContract][tokenId]) {
-            Bid memory bid = bidsByToken[nftContract][tokenId][bidIndex];
-            return bid.bidder == bidder;
-        }
-        return false;
-    }
-
-    function _bytesToBytes32(bytes memory data)
-        internal
-        pure
-        returns (bytes32)
-    {
-        require(data.length == 32, "The data should be 32 bytes length");
-
-        bytes32 bidId;
-        assembly {
-            bidId := mload(add(data, 0x20))
-        }
-
-        return bidId;
+        uint256 bidId = bidIdsByBidder[nftContract][tokenId][bidder];
+        Bid memory bid = bidsById[bidId];
+        return bid.bidder == bidder;
     }
 
     uint256[50] private __gap;

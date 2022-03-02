@@ -24,6 +24,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string symbol,
         string category
     );
+    event ImplementationUpdated(address indexed implementation);
 
     struct DeployParams {
         string name;
@@ -83,6 +84,8 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
             "Collection Template",
             "CT"
         );
+
+        emit ImplementationUpdated(newImplementation);
     }
 
     function _deployContract(
