@@ -36,15 +36,15 @@ library LibAuction {
         }
     }
 
-    function isOnAuction(LibAuction.Auction storage auction)
+    function isOnAuction(LibAuction.Auction memory auction)
         internal
-        view
+        pure
         returns (bool)
     {
         return (auction.startedAt > 0);
     }
 
-    function currentPrice(LibAuction.Auction storage auction)
+    function currentPrice(LibAuction.Auction memory auction)
         internal
         view
         returns (uint256)

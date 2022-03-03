@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./EndemicExchangeCore.sol";
+import "./EndemicAuction.sol";
+import "./EndemicOffer.sol";
 
-contract EndemicExchange is EndemicExchangeCore {
+contract EndemicExchange is EndemicAuction, EndemicOffer {
     /// @param _feeProvider - fee provider contract
     /// @param _feeClaimAddress - address to claim fee between 0-10,000.
     /// @param _royaltiesProvider - royalyies provider contract
@@ -17,14 +18,14 @@ contract EndemicExchange is EndemicExchangeCore {
         require(_feeClaimAddress != address(0));
 
         __Context_init_unchained();
-        __Pausable_init_unchained();
         __Ownable_init_unchained();
-        __TransferManager___init_unchained(
-            _feeProvider,
-            _royaltiesProvider,
-            _feeClaimAddress
-        );
+
+        __EndemicOffer___init_unchained();
+
+        feeProvider = IFeeProvider(_feeProvider);
+        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
+        feeClaimAddress = _feeClaimAddress;
     }
 
-    uint256[50] private __gap;
+    uint256[100] private __gap;
 }
