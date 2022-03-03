@@ -27,5 +27,15 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         feeClaimAddress = _feeClaimAddress;
     }
 
+    function updateConfiguration(
+        address _feeProvider,
+        address _royaltiesProvider,
+        address _feeClaimAddress
+    ) external onlyOwner {
+        feeProvider = IFeeProvider(_feeProvider);
+        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
+        feeClaimAddress = _feeClaimAddress;
+    }
+
     uint256[100] private __gap;
 }
