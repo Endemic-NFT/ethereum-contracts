@@ -10,6 +10,10 @@ const {
 } = require('./helpers/deploy');
 const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('./helpers/ids');
 
+const INVALID_AUCTION_ERROR = "custom error 'InvalidAuction()'";
+const BID_LOWER_THAN_PRICE_ERROR = "custom error 'BidLowerThanPrice()'";
+const UNAUTHORIZED_ERROR = "custom error 'Unauthorized()'";
+
 describe('EndemicExchange', function () {
   let endemicExchange,
     nftContract,
@@ -536,19 +540,19 @@ describe('EndemicExchange', function () {
         endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
-      ).to.be.revertedWith('Bid amount can not be lower then auction price');
+      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
 
       await expect(
         endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
-      ).to.be.revertedWith('Bid amount can not be lower then auction price');
+      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
 
       await expect(
         endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith('Bid amount can not be lower then auction price');
+      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -559,13 +563,13 @@ describe('EndemicExchange', function () {
         endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith('NFT is not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await expect(
         endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith('NFT is not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid on ERC721', async function () {
@@ -587,7 +591,7 @@ describe('EndemicExchange', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid on ERC1155', async function () {
@@ -614,7 +618,7 @@ describe('EndemicExchange', function () {
       // Auction is now complete
       await expect(
         endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
@@ -649,7 +653,7 @@ describe('EndemicExchange', function () {
         endemicExchange.connect(user3).bid(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith('NFT is not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await endemicExchange.connect(user2).bid(erc1155AuctionId, 3, {
         value: ethers.utils.parseUnits('0.309'),
@@ -658,7 +662,7 @@ describe('EndemicExchange', function () {
         endemicExchange.connect(user3).bid(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith('NFT is not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid in middle of auction', async function () {
@@ -766,17 +770,17 @@ describe('EndemicExchange', function () {
             user1.address
           )
         )
-      ).to.be.revertedWith('Invalid auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should fail to conclude auction if not seller', async function () {
       await expect(
         endemicExchange.connect(user2).cancelAuction(erc721AuctionId)
-      ).to.be.revertedWith('Sender is not seller');
+      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
 
       await expect(
         endemicExchange.connect(user2).cancelAuction(erc1155AuctionId)
-      ).to.be.revertedWith('Sender is not seller');
+      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
     });
 
     it('should be able to conclude auction', async function () {
@@ -786,10 +790,10 @@ describe('EndemicExchange', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
       await expect(
         endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should trigger event after canceling auction', async function () {
@@ -1089,11 +1093,11 @@ describe('EndemicExchange', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await expect(
         endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
     it('should be able to cancel auction as auction owner when paused', async function () {
@@ -1103,11 +1107,11 @@ describe('EndemicExchange', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await expect(
         endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith('Not on auction');
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
   });
 

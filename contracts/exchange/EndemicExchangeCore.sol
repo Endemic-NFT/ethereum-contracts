@@ -9,6 +9,12 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./TransferManager.sol";
 import "./LibNFT.sol";
 
+error InvalidAuction();
+error Unauthorized();
+error InvalidAmount();
+error BidLowerThanPrice();
+error InvalidAssetClass();
+
 abstract contract EndemicExchangeCore is
     PausableUpgradeable,
     OwnableUpgradeable,
@@ -103,12 +109,10 @@ abstract contract EndemicExchangeCore is
     {
         LibAuction.Auction storage auction = idToAuction[id];
 
-        require(LibAuction.isOnAuction(auction), "NFT is not on auction");
-        require(auction.seller != _msgSender(), "Cant buy from self");
-        require(
-            auction.amount >= tokenAmount && tokenAmount >= 0,
-            "Amount incorrect"
-        );
+        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
+        if (auction.seller == _msgSender()) revert Unauthorized();
+        if (auction.amount < tokenAmount || tokenAmount < 0)
+            revert InvalidAmount();
 
         LibNFT.requireTokenOwnership(
             auction.assetClass,
@@ -126,10 +130,7 @@ abstract contract EndemicExchangeCore is
         );
 
         uint256 price = LibAuction.currentPrice(auction) * tokenAmount;
-        require(
-            msg.value >= price,
-            "Bid amount can not be lower then auction price"
-        );
+        if (msg.value < price) revert BidLowerThanPrice();
 
         address seller = auction.seller;
         bytes32 auctionId = auction.id;
@@ -142,7 +143,7 @@ abstract contract EndemicExchangeCore is
         } else if (auction.assetClass == LibAuction.ERC1155_ASSET_CLASS) {
             _deductFromAuction(auction, tokenAmount);
         } else {
-            revert("Invalid asset class");
+            revert InvalidAssetClass();
         }
 
         uint256 totalFees = _transferFunds(contractId, tokenId, seller, price);
@@ -167,14 +168,16 @@ abstract contract EndemicExchangeCore is
 
     function cancelAuction(bytes32 id) external {
         LibAuction.Auction storage auction = idToAuction[id];
-        require(LibAuction.isOnAuction(auction), "Invalid auction");
-        require(_msgSender() == auction.seller, "Sender is not seller");
+        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
+        if (_msgSender() != auction.seller) revert Unauthorized();
+
         _cancelAuction(auction);
     }
 
     function cancelAuctionWhenPaused(bytes32 id) external whenPaused onlyOwner {
         LibAuction.Auction storage auction = idToAuction[id];
-        require(LibAuction.isOnAuction(auction));
+        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
+
         _cancelAuction(auction);
     }
 
@@ -191,7 +194,7 @@ abstract contract EndemicExchangeCore is
         )
     {
         LibAuction.Auction storage auction = idToAuction[id];
-        require(LibAuction.isOnAuction(auction), "Not on auction");
+        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
         return (
             auction.seller,
             auction.startingPrice,
@@ -204,7 +207,7 @@ abstract contract EndemicExchangeCore is
 
     function getCurrentPrice(bytes32 id) external view returns (uint256) {
         LibAuction.Auction storage auction = idToAuction[id];
-        require(LibAuction.isOnAuction(auction));
+        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
         return LibAuction.currentPrice(auction);
     }
 
