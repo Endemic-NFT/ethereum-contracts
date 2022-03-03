@@ -12,7 +12,9 @@ error InvalidValueSent();
 error InvalidTokenOwner();
 error DurationTooShort();
 error OfferExists();
+error InvalidOffer();
 error NoActiveOffer();
+error RefundFailed();
 
 abstract contract EndemicOffer is
     OwnableUpgradeable,
@@ -132,10 +134,9 @@ abstract contract EndemicOffer is
     function acceptOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
 
-        require(
-            offer.id == offerId && offer.expiresAt >= block.timestamp,
-            "Invalid offer"
-        );
+        if (offer.id != offerId || offer.expiresAt < block.timestamp) {
+            revert InvalidOffer();
+        }
 
         delete offersById[offerId];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
@@ -262,7 +263,7 @@ abstract contract EndemicOffer is
         (bool success, ) = payable(offer.bidder).call{
             value: offer.priceWithFee
         }("");
-        require(success, "Refund failed.");
+        if (!success) revert RefundFailed();
 
         emit OfferCancelled(
             offer.id,
