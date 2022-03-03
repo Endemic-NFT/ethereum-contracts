@@ -96,7 +96,7 @@ abstract contract EndemicOffer is
         uint256 offerId = nextOfferId++;
         uint256 takerFee = feeProvider.getTakerFee();
 
-        if (_offerderHasOffer(nftContract, tokenId, _msgSender())) {
+        if (_bidderHasOffer(nftContract, tokenId, _msgSender())) {
             revert OfferExists();
         }
 
@@ -203,45 +203,41 @@ abstract contract EndemicOffer is
     }
 
     function _calculateCut(
-        address _tokenAddress,
-        uint256 _tokenId,
-        address _seller,
-        uint256 _price,
-        uint256 _priceWithFee
+        address tokenAddress,
+        uint256 tokenId,
+        address seller,
+        uint256 price,
+        uint256 priceWithFee
     ) internal view returns (uint256) {
         uint256 makerCut = feeProvider.calculateMakerFee(
-            _seller,
-            _tokenAddress,
-            _tokenId,
-            _price
+            seller,
+            tokenAddress,
+            tokenId,
+            price
         );
-        uint256 takerCut = _priceWithFee - _price;
+        uint256 takerCut = priceWithFee - price;
 
         return makerCut + takerCut;
     }
 
     function removeExpiredOffers(
-        address[] memory _tokenAddresses,
-        uint256[] memory _tokenIds,
-        address[] memory _offerders
+        address[] memory tokenAddresses,
+        uint256[] memory tokenIds,
+        address[] memory offerders
     ) public onlyOwner nonReentrant {
-        uint256 loopLength = _tokenAddresses.length;
+        uint256 loopLength = tokenAddresses.length;
 
         require(
-            loopLength == _tokenIds.length,
+            loopLength == tokenIds.length,
             "Parameter arrays should have the same length"
         );
         require(
-            loopLength == _offerders.length,
+            loopLength == offerders.length,
             "Parameter arrays should have the same length"
         );
 
         for (uint256 i = 0; i < loopLength; i++) {
-            _removeExpiredOffer(
-                _tokenAddresses[i],
-                _tokenIds[i],
-                _offerders[i]
-            );
+            _removeExpiredOffer(tokenAddresses[i], tokenIds[i], offerders[i]);
         }
     }
 
@@ -280,14 +276,14 @@ abstract contract EndemicOffer is
         );
     }
 
-    function _offerderHasOffer(
-        address _nftContract,
-        uint256 _tokenId,
-        address _bidder
+    function _bidderHasOffer(
+        address nftContract,
+        uint256 tokenId,
+        address bidder
     ) internal view returns (bool) {
-        uint256 offerId = offerIdsByOfferder[_nftContract][_tokenId][_bidder];
+        uint256 offerId = offerIdsByOfferder[nftContract][tokenId][bidder];
         Offer memory offer = offersById[offerId];
-        return offer.bidder == _bidder;
+        return offer.bidder == bidder;
     }
 
     uint256[100] private __gap;

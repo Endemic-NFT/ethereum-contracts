@@ -16,17 +16,17 @@ abstract contract EndemicExchangeCore {
     }
 
     function _transferRoyalties(
-        address _royaltiesRecipient,
-        uint256 _royaltiesCut
+        address royaltiesRecipient,
+        uint256 royaltiesCut
     ) internal {
-        (bool royaltiesSuccess, ) = payable(_royaltiesRecipient).call{
-            value: _royaltiesCut
+        (bool royaltiesSuccess, ) = payable(royaltiesRecipient).call{
+            value: royaltiesCut
         }("");
         require(royaltiesSuccess, "Royalties Transfer failed.");
     }
 
-    function _transferFunds(address _recipient, uint256 _value) internal {
-        (bool success, ) = payable(_recipient).call{value: _value}("");
+    function _transferFunds(address recipient, uint256 value) internal {
+        (bool success, ) = payable(recipient).call{value: value}("");
         require(success, "Transfer funds failed.");
     }
 
