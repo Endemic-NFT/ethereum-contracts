@@ -26,10 +26,6 @@ deployFactory:
 deployBid:
 	npx hardhat run scripts/bid/deploy-bid.js --network ${network}
 
-.PHONY: deployCollectionBid
-deployCollectionBid:
-	npx hardhat run scripts/bid/deploy-collection-bid.js --network ${network}
-
 .PHONY: upgradeEndemicExchange
 upgradeEndemicExchange:
 	npx hardhat run scripts/exchange/upgrade-endemic-exchange-proxy.js --network ${network}
