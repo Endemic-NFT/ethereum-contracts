@@ -283,5 +283,5 @@ abstract contract EndemicOffer is
         return offer.bidder == bidder;
     }
 
-    uint256[100] private __gap;
+    uint256[1000] private __gap;
 }

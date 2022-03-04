@@ -110,7 +110,7 @@ abstract contract EndemicAuction is
     {
         LibAuction.Auction memory auction = idToAuction[id];
 
-        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
+        if (!LibAuction.isActiveAuction(auction)) revert InvalidAuction();
         if (auction.seller == _msgSender()) revert Unauthorized();
         if (auction.amount < tokenAmount || tokenAmount < 0)
             revert InvalidAmount();
@@ -130,8 +130,9 @@ abstract contract EndemicAuction is
             auction.seller
         );
 
-        uint256 price = LibAuction.currentPrice(auction) * tokenAmount;
-        if (price <= 0) revert InvalidPrice();
+        uint256 currentPrice = LibAuction.getCurrentPrice(auction) *
+            tokenAmount;
+        if (currentPrice <= 0) revert InvalidPrice();
 
         if (auction.assetClass == LibAuction.ERC721_ASSET_CLASS) {
             _removeAuction(auction.id);
@@ -141,30 +142,31 @@ abstract contract EndemicAuction is
             revert InvalidAssetClass();
         }
 
-        uint256 takerCut = feeProvider.calculateTakerFee(price);
-        if (msg.value < (price + takerCut)) revert InvalidValueProvided();
+        uint256 takerFee = feeProvider.calculateTakerFee(currentPrice);
+        if (msg.value < (currentPrice + takerFee))
+            revert InvalidValueProvided();
 
-        (address royaltiesRecipient, uint256 royaltiesCut) = royaltiesProvider
+        (address royaltiesRecipient, uint256 royaltieFee) = royaltiesProvider
             .calculateRoyaltiesAndGetRecipient(
                 auction.contractId,
                 auction.tokenId,
-                price
+                currentPrice
             );
 
-        uint256 makerCut = feeProvider.calculateMakerFee(
+        uint256 makerFee = feeProvider.calculateMakerFee(
             auction.seller,
             auction.contractId,
             auction.tokenId,
-            price
+            currentPrice
         );
 
-        uint256 totalFees = takerCut + makerCut;
-        uint256 sellerProceeds = price - makerCut - royaltiesCut;
+        uint256 totalFees = takerFee + makerFee;
+        uint256 sellerProceeds = currentPrice - makerFee - royaltieFee;
 
         feeProvider.onSale(auction.contractId, auction.tokenId);
 
-        if (royaltiesCut > 0) {
-            _transferRoyalties(royaltiesRecipient, royaltiesCut);
+        if (royaltieFee > 0) {
+            _transferRoyalties(royaltiesRecipient, royaltieFee);
         }
 
         if (totalFees > 0) {
@@ -184,7 +186,7 @@ abstract contract EndemicAuction is
 
         emit AuctionSuccessful(
             auction.id,
-            price,
+            currentPrice,
             _msgSender(),
             tokenAmount,
             totalFees
@@ -213,7 +215,7 @@ abstract contract EndemicAuction is
         )
     {
         LibAuction.Auction memory auction = idToAuction[id];
-        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
+        if (!LibAuction.isActiveAuction(auction)) revert InvalidAuction();
         return (
             auction.seller,
             auction.startingPrice,
@@ -226,8 +228,8 @@ abstract contract EndemicAuction is
 
     function getCurrentPrice(bytes32 id) external view returns (uint256) {
         LibAuction.Auction memory auction = idToAuction[id];
-        if (!LibAuction.isOnAuction(auction)) revert InvalidAuction();
-        return LibAuction.currentPrice(auction);
+        if (!LibAuction.isActiveAuction(auction)) revert InvalidAuction();
+        return LibAuction.getCurrentPrice(auction);
     }
 
     function createAuctionId(
@@ -276,5 +278,5 @@ abstract contract EndemicAuction is
         }
     }
 
-    uint256[100] private __gap;
+    uint256[1000] private __gap;
 }

@@ -157,7 +157,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Auction too short');
+      ).to.be.revertedWith('Invalid duration');
     });
 
     it('should fail to create auction for nonexistant NFT', async function () {
@@ -430,7 +430,7 @@ describe('ExchangeOffer', function () {
             2,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid amount');
+      ).to.be.revertedWith('Invalid token amount');
 
       await expect(
         endemicExchange
@@ -444,7 +444,7 @@ describe('ExchangeOffer', function () {
             0,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid amount');
+      ).to.be.revertedWith('Invalid token amount');
     });
 
     it('should fail to create auction for incorrect asset class', async function () {

@@ -37,5 +37,5 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         feeClaimAddress = _feeClaimAddress;
     }
 
-    uint256[100] private __gap;
+    uint256[1000] private __gap;
 }

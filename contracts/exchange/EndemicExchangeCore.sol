@@ -30,5 +30,5 @@ abstract contract EndemicExchangeCore {
         require(success, "Transfer funds failed.");
     }
 
-    uint256[100] private __gap;
+    uint256[1000] private __gap;
 }
