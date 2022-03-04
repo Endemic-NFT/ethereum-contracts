@@ -15,6 +15,7 @@ error OfferExists();
 error InvalidOffer();
 error NoActiveOffer();
 error RefundFailed();
+error AcceptFromSelf();
 
 abstract contract EndemicOffer is
     OwnableUpgradeable,
@@ -137,6 +138,7 @@ abstract contract EndemicOffer is
         if (offer.id != offerId || offer.expiresAt < block.timestamp) {
             revert InvalidOffer();
         }
+        if (offer.bidder == _msgSender()) revert AcceptFromSelf();
 
         delete offersById[offerId];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
