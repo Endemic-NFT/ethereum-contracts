@@ -36,6 +36,4 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
         feeClaimAddress = _feeClaimAddress;
     }
-
-    uint256[1000] private __gap;
 }
