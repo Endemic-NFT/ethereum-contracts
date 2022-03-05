@@ -13,9 +13,10 @@ error InvalidTokenOwner();
 error DurationTooShort();
 error OfferExists();
 error InvalidOffer();
-error NoActiveOffer();
+error NotExpiredOffer();
 error RefundFailed();
 error AcceptFromSelf();
+error ParametersDiffInSize();
 
 abstract contract EndemicOffer is
     OwnableUpgradeable,
@@ -81,27 +82,20 @@ abstract contract EndemicOffer is
         uint256 tokenId,
         uint256 duration
     ) external payable nonReentrant {
-        if (msg.value <= 0) {
-            revert InvalidValueSent();
-        }
+        if (msg.value <= 0) revert InvalidValueSent();
 
         IERC721 nft = IERC721(nftContract);
         address nftOwner = nft.ownerOf(tokenId);
 
-        if (nftOwner == address(0) || nftOwner == _msgSender()) {
+        if (nftOwner == address(0) || nftOwner == _msgSender())
             revert InvalidTokenOwner();
-        }
-
-        if (duration < MIN_BID_DURATION) {
-            revert DurationTooShort();
-        }
+        if (duration < MIN_BID_DURATION) revert DurationTooShort();
 
         uint256 offerId = nextOfferId++;
         uint256 takerFee = feeProvider.getTakerFee();
 
-        if (_bidderHasOffer(nftContract, tokenId, _msgSender())) {
+        if (_bidderHasOffer(nftContract, tokenId, _msgSender()))
             revert OfferExists();
-        }
 
         uint256 price = (msg.value * 10000) / (takerFee + 10000);
         uint256 expiresAt = block.timestamp + duration;
@@ -197,9 +191,8 @@ abstract contract EndemicOffer is
 
     function getOffer(uint256 offerId) external view returns (Offer memory) {
         Offer memory offer = offersById[offerId];
-        if (offer.id != offerId) {
-            revert NoActiveOffer();
-        }
+        if (offer.id != offerId) revert InvalidOffer();
+
         return offer;
     }
 
@@ -227,15 +220,8 @@ abstract contract EndemicOffer is
         address[] memory offerders
     ) public onlyOwner nonReentrant {
         uint256 loopLength = tokenAddresses.length;
-
-        require(
-            loopLength == tokenIds.length,
-            "Parameter arrays should have the same length"
-        );
-        require(
-            loopLength == offerders.length,
-            "Parameter arrays should have the same length"
-        );
+        if (loopLength != tokenIds.length) revert ParametersDiffInSize();
+        if (loopLength != offerders.length) revert ParametersDiffInSize();
 
         for (uint256 i = 0; i < loopLength; i++) {
             _removeExpiredOffer(tokenAddresses[i], tokenIds[i], offerders[i]);
@@ -250,10 +236,7 @@ abstract contract EndemicOffer is
         uint256 offerId = offerIdsByBidder[nftContract][tokenId][offerder];
         Offer memory offer = offersById[offerId];
 
-        require(
-            offer.expiresAt < block.timestamp,
-            "The offer to remove should be expired"
-        );
+        if (offer.expiresAt >= block.timestamp) revert NotExpiredOffer();
 
         _cancelOffer(offer);
     }

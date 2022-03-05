@@ -6,6 +6,8 @@ const {
 } = require('../helpers/deploy');
 const { FEE_RECIPIENT } = require('../helpers/constants');
 
+const INVALID_OFFER_ERROR = 'InvalidOffer';
+
 describe('ExchangeOffer', function () {
   let endemicExchange,
     nftContract,
@@ -186,9 +188,7 @@ describe('ExchangeOffer', function () {
         ethers.utils.parseUnits('0.001') //gas fees
       );
 
-      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
-        'NoActiveOffer'
-      );
+      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(INVALID_OFFER_ERROR);
     });
 
     it('should not be able to cancel other offers', async () => {
@@ -212,9 +212,7 @@ describe('ExchangeOffer', function () {
         ethers.utils.parseUnits('0.001') //gas fees
       );
 
-      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
-        'NoActiveOffer'
-      );
+      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(INVALID_OFFER_ERROR);
 
       const activeOffer = await endemicExchange.getOffer(2);
       expect(activeOffer.bidder).to.equal(user2.address);
@@ -246,12 +244,8 @@ describe('ExchangeOffer', function () {
         [owner.address, user2.address]
       );
 
-      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
-        'NoActiveOffer'
-      );
-      await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
-        'NoActiveOffer'
-      );
+      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(INVALID_OFFER_ERROR);
+      await expect(endemicExchange.getOffer(2)).to.be.revertedWith(INVALID_OFFER_ERROR);
 
       const offer = await endemicExchange.getOffer(3);
       expect(offer.bidder).to.equal(user2.address);
