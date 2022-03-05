@@ -11,9 +11,7 @@ import "./LibNFT.sol";
 
 error InvalidAuction();
 error Unauthorized();
-error InvalidAmount();
 error InvalidValueProvided();
-error InvalidAssetClass();
 error InvalidPrice();
 
 abstract contract EndemicAuction is
@@ -113,7 +111,7 @@ abstract contract EndemicAuction is
         if (!LibAuction.isActiveAuction(auction)) revert InvalidAuction();
         if (auction.seller == _msgSender()) revert Unauthorized();
         if (auction.amount < tokenAmount || tokenAmount < 0)
-            revert InvalidAmount();
+            revert LibAuction.InvalidAmount();
 
         LibNFT.requireTokenOwnership(
             auction.assetClass,
@@ -139,7 +137,7 @@ abstract contract EndemicAuction is
         } else if (auction.assetClass == LibAuction.ERC1155_ASSET_CLASS) {
             _deductFromAuction(auction, tokenAmount);
         } else {
-            revert InvalidAssetClass();
+            revert LibAuction.InvalidAssetClass();
         }
 
         uint256 takerFee = feeProvider.calculateTakerFee(currentPrice);
@@ -274,7 +272,7 @@ abstract contract EndemicAuction is
                 ""
             );
         } else {
-            revert("Invalid asset class");
+            revert LibAuction.InvalidAssetClass();
         }
     }
 

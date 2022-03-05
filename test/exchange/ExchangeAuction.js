@@ -10,9 +10,13 @@ const {
 const { FEE_RECIPIENT } = require('../helpers/constants');
 const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('../helpers/ids');
 
-const INVALID_AUCTION_ERROR = "custom error 'InvalidAuction()'";
-const INVALID_VALUE_PROVIDED_ERROR = "custom error 'InvalidValueProvided()'";
-const UNAUTHORIZED_ERROR = "custom error 'Unauthorized()'";
+const INVALID_AUCTION_ERROR = 'InvalidAuction';
+const INVALID_VALUE_PROVIDED_ERROR = 'InvalidValueProvided';
+const UNAUTHORIZED_ERROR = 'Unauthorized';
+const INVALID_DURATION_ERROR = 'InvalidDuration';
+const INVALID_AMOUNT_ERROR = 'InvalidAmount';
+const EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR = 'ExchangeNotApprovedForAsset';
+const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
 describe('ExchangeOffer', function () {
   let endemicExchange,
@@ -111,7 +115,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
 
       await expect(
         endemicExchange
@@ -125,7 +129,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
     });
 
     it('should fail to create auction for invalid duration', async function () {
@@ -157,7 +161,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid duration');
+      ).to.be.revertedWith(INVALID_DURATION_ERROR);
     });
 
     it('should fail to create auction for nonexistant NFT', async function () {
@@ -190,7 +194,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset amount');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
     });
 
     it('should fail to create auction without first approving auction contract', async function () {
@@ -206,7 +210,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('EndemicExchange is not approved for the asset');
+      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
 
       await expect(
         endemicExchange
@@ -220,7 +224,7 @@ describe('ExchangeOffer', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('EndemicExchange is not approved for the asset');
+      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
     });
 
     it('should be able to recreate ERC721 auction', async function () {
@@ -430,7 +434,7 @@ describe('ExchangeOffer', function () {
             2,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid token amount');
+      ).to.be.revertedWith(INVALID_AMOUNT_ERROR);
 
       await expect(
         endemicExchange
@@ -444,7 +448,7 @@ describe('ExchangeOffer', function () {
             0,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid token amount');
+      ).to.be.revertedWith(INVALID_AMOUNT_ERROR);
     });
 
     it('should fail to create auction for incorrect asset class', async function () {

@@ -2,6 +2,11 @@
 pragma solidity ^0.8.4;
 
 library LibAuction {
+    error InvalidDuration();
+    error InvalidPriceConfiguration();
+    error InvalidAssetClass();
+    error InvalidAmount();
+
     bytes4 public constant ERC721_ASSET_CLASS = bytes4(keccak256("ERC721"));
     bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
 
@@ -22,24 +27,21 @@ library LibAuction {
     }
 
     function validate(Auction memory auction) internal pure {
-        require(
-            auction.duration >= MIN_DURATION &&
-                auction.duration <= MAX_DURATION,
-            "Invalid duration"
-        );
-        require(
-            auction.startingPrice >= 0.0001 ether &&
-                auction.endingPrice >= 0.0001 ether &&
-                auction.startingPrice >= auction.endingPrice,
-            "Invalid price configuration"
-        );
+        if (auction.duration < MIN_DURATION || MAX_DURATION < auction.duration)
+            revert InvalidDuration();
+
+        if (
+            auction.startingPrice < 0.0001 ether ||
+            auction.endingPrice < 0.0001 ether ||
+            auction.startingPrice < auction.endingPrice
+        ) revert InvalidPriceConfiguration();
 
         if (auction.assetClass == ERC721_ASSET_CLASS) {
-            require(auction.amount == 1, "Invalid token amount");
+            if (auction.amount != 1) revert InvalidAmount();
         } else if (auction.assetClass == ERC1155_ASSET_CLASS) {
-            require(auction.amount > 0, "Invalid token amount");
+            if (auction.amount <= 0) revert InvalidAmount();
         } else {
-            revert("Invalid asset class");
+            revert InvalidAssetClass();
         }
     }
 

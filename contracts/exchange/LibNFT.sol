@@ -7,6 +7,10 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "./LibAuction.sol";
 
 library LibNFT {
+    error InvalidImplementation();
+    error ExchangeNotApprovedForAsset();
+    error SellerNotAssetOwner();
+
     bytes4 public constant ERC721_Interface = bytes4(0x80ac58cd);
     bytes4 public constant ERC1155_Interface = bytes4(0xd9b67a26);
 
@@ -27,17 +31,13 @@ library LibNFT {
         view
     {
         if (_assetClass == LibAuction.ERC721_ASSET_CLASS) {
-            require(
-                IERC721(_nftContract).supportsInterface(ERC721_Interface),
-                "Contract has an invalid ERC721 implementation"
-            );
+            if (!IERC721(_nftContract).supportsInterface(ERC721_Interface))
+                revert InvalidImplementation();
         } else if (_assetClass == LibAuction.ERC1155_ASSET_CLASS) {
-            require(
-                IERC1155(_nftContract).supportsInterface(ERC1155_Interface),
-                "Contract has an invalid ERC1155 implementation"
-            );
+            if (!IERC1155(_nftContract).supportsInterface(ERC1155_Interface))
+                revert InvalidImplementation();
         } else {
-            revert("Invalid asset class");
+            revert LibAuction.InvalidAssetClass();
         }
     }
 
@@ -49,17 +49,13 @@ library LibNFT {
         address seller
     ) internal view {
         if (assetClass == LibAuction.ERC721_ASSET_CLASS) {
-            require(
-                IERC721(nftContract).ownerOf(tokenId) == seller,
-                "Seller is not owner of the asset"
-            );
+            if (IERC721(nftContract).ownerOf(tokenId) != seller)
+                revert SellerNotAssetOwner();
         } else if (assetClass == LibAuction.ERC1155_ASSET_CLASS) {
-            require(
-                IERC1155(nftContract).balanceOf(seller, tokenId) >= amount,
-                "Seller is not owner of the asset amount"
-            );
+            if (IERC1155(nftContract).balanceOf(seller, tokenId) < amount)
+                revert SellerNotAssetOwner();
         } else {
-            revert("Invalid asset class");
+            revert LibAuction.InvalidAssetClass();
         }
     }
 
@@ -71,18 +67,15 @@ library LibNFT {
     ) internal view {
         if (assetClass == LibAuction.ERC721_ASSET_CLASS) {
             IERC721 nft = IERC721(nftContract);
-            require(
-                nft.getApproved(tokenId) == address(this) ||
-                    nft.isApprovedForAll(seller, address(this)),
-                "EndemicExchange is not approved for the asset"
-            );
+            if (
+                nft.getApproved(tokenId) != address(this) &&
+                !nft.isApprovedForAll(seller, address(this))
+            ) revert ExchangeNotApprovedForAsset();
         } else if (assetClass == LibAuction.ERC1155_ASSET_CLASS) {
-            require(
-                IERC1155(nftContract).isApprovedForAll(seller, address(this)),
-                "EndemicExchange is not approved for the asset"
-            );
+            if (!IERC1155(nftContract).isApprovedForAll(seller, address(this)))
+                revert ExchangeNotApprovedForAsset();
         } else {
-            revert("Invalid asset class");
+            revert LibAuction.InvalidAssetClass();
         }
     }
 }
