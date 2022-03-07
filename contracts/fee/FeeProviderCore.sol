@@ -15,6 +15,7 @@ abstract contract FeeProviderCore is OwnableUpgradeable, IFeeProvider {
     using AddressUpgradeable for address;
 
     IContractRegistry public contractRegistry;
+
     uint256 public primarySaleFee;
     uint256 public secondarySaleFee;
     uint256 public takerFee;

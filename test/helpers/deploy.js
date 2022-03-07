@@ -1,4 +1,5 @@
 const { ethers, upgrades } = require('hardhat');
+const { FEE_RECIPIENT } = require('./constants');
 
 const deployEndemicRewards = async (endemicTokenAddress) => {
   const EndemicRewards = await ethers.getContractFactory('EndemicRewards');
@@ -65,11 +66,7 @@ const deployEndemicExchange = async (
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [
-      feeProviderAddress,
-      royaltiesProviderAddress,
-      '0x1d1C46273cEcC00F7503AB3E97A40a199bcd6b31',
-    ],
+    [feeProviderAddress, royaltiesProviderAddress, FEE_RECIPIENT],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -102,23 +99,6 @@ const deployEndemicExchangeWithDeps = async (
     royaltiesProviderContract,
     endemicExchangeContract,
   };
-};
-
-const deployBid = async (feeProviderAddress, royaltiesProviderAddress) => {
-  const Bid = await ethers.getContractFactory('Bid');
-  const bidContract = await upgrades.deployProxy(
-    Bid,
-    [
-      feeProviderAddress,
-      royaltiesProviderAddress,
-      '0x1D96e9bA0a7c1fdCEB33F3f4C71ca9117FfbE5CD',
-    ],
-    {
-      initializer: '__Bid_init',
-    }
-  );
-  await bidContract.deployed();
-  return bidContract;
 };
 
 const deployCollectionBid = async (
@@ -196,7 +176,6 @@ module.exports = {
   deployCollection,
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
-  deployBid,
   deployCollectionBid,
   deployEndemicERC1155,
   deployFeeProvider,

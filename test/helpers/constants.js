@@ -1,0 +1,5 @@
+const FEE_RECIPIENT = '0x1d1C46273cEcC00F7503AB3E97A40a199bcd6b31';
+
+module.exports = {
+  FEE_RECIPIENT,
+};

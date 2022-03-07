@@ -1,20 +1,24 @@
 const { expect } = require('chai');
-const { ethers, network, upgrades } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const BN = require('bignumber.js');
 const {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
-  deployContractRegistry,
-  deployFeeProvider,
-} = require('./helpers/deploy');
-const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('./helpers/ids');
+} = require('../helpers/deploy');
 
-const INVALID_AUCTION_ERROR = "custom error 'InvalidAuction()'";
-const BID_LOWER_THAN_PRICE_ERROR = "custom error 'BidLowerThanPrice()'";
-const UNAUTHORIZED_ERROR = "custom error 'Unauthorized()'";
+const { FEE_RECIPIENT } = require('../helpers/constants');
+const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('../helpers/ids');
 
-describe('EndemicExchange', function () {
+const INVALID_AUCTION_ERROR = 'InvalidAuction';
+const INVALID_VALUE_PROVIDED_ERROR = 'InvalidValueProvided';
+const UNAUTHORIZED_ERROR = 'Unauthorized';
+const INVALID_DURATION_ERROR = 'InvalidDuration';
+const INVALID_AMOUNT_ERROR = 'InvalidAmount';
+const EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR = 'ExchangeNotApprovedForAsset';
+const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
+
+describe('ExchangeOffer', function () {
   let endemicExchange,
     nftContract,
     erc1155Contract,
@@ -22,7 +26,14 @@ describe('EndemicExchange', function () {
     royaltiesProviderContract,
     contractRegistryContract;
 
-  let owner, user1, user2, user3, minter, signer, feeRecipient;
+  let owner,
+    user1,
+    user2,
+    user3,
+    minter,
+    signer,
+    feeRecipient,
+    royaltiesRecipient;
 
   async function mintERC721(recipient) {
     await nftContract
@@ -60,6 +71,7 @@ describe('EndemicExchange', function () {
       minter,
       signer,
       feeRecipient,
+      royaltiesRecipient,
       ...otherSigners
     ] = await ethers.getSigners();
 
@@ -85,29 +97,6 @@ describe('EndemicExchange', function () {
     await mintERC1155(user1.address, 3);
   }
 
-  describe('Initial State', function () {
-    beforeEach(deploy);
-
-    it('should have owner', async function () {
-      expect(await endemicExchange.owner()).to.equal(owner.address);
-    });
-
-    it('should have correct fee claim address', async () => {
-      expect(await endemicExchange.feeClaimAddress()).to.equal(
-        '0x1d1C46273cEcC00F7503AB3E97A40a199bcd6b31'
-      );
-    });
-
-    it('should have correct providers set', async () => {
-      expect(await endemicExchange.feeProvider()).to.equal(
-        feeProviderContract.address
-      );
-      expect(await endemicExchange.royaltiesProvider()).to.equal(
-        royaltiesProviderContract.address
-      );
-    });
-  });
-
   describe('Create auction', function () {
     beforeEach(async function () {
       await deploy();
@@ -126,7 +115,7 @@ describe('EndemicExchange', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
 
       await expect(
         endemicExchange
@@ -140,7 +129,7 @@ describe('EndemicExchange', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
     });
 
     it('should fail to create auction for invalid duration', async function () {
@@ -172,7 +161,7 @@ describe('EndemicExchange', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Auction too short');
+      ).to.be.revertedWith(INVALID_DURATION_ERROR);
     });
 
     it('should fail to create auction for nonexistant NFT', async function () {
@@ -205,7 +194,7 @@ describe('EndemicExchange', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Seller is not owner of the asset amount');
+      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
     });
 
     it('should fail to create auction without first approving auction contract', async function () {
@@ -221,7 +210,7 @@ describe('EndemicExchange', function () {
             1,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('EndemicExchange is not approved for the asset');
+      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
 
       await expect(
         endemicExchange
@@ -235,7 +224,7 @@ describe('EndemicExchange', function () {
             1,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('EndemicExchange is not approved for the asset');
+      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
     });
 
     it('should be able to recreate ERC721 auction', async function () {
@@ -445,7 +434,7 @@ describe('EndemicExchange', function () {
             2,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid amount');
+      ).to.be.revertedWith(INVALID_AMOUNT_ERROR);
 
       await expect(
         endemicExchange
@@ -459,7 +448,7 @@ describe('EndemicExchange', function () {
             0,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith('Invalid amount');
+      ).to.be.revertedWith(INVALID_AMOUNT_ERROR);
     });
 
     it('should fail to create auction for incorrect asset class', async function () {
@@ -540,19 +529,19 @@ describe('EndemicExchange', function () {
         endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
-      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
+      ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
         endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
-      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
+      ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
         endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
           value: ethers.utils.parseUnits('0.103'),
         })
-      ).to.be.revertedWith(BID_LOWER_THAN_PRICE_ERROR);
+      ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -770,7 +759,7 @@ describe('EndemicExchange', function () {
             user1.address
           )
         )
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
     });
 
     it('should fail to conclude auction if not seller', async function () {
@@ -1011,107 +1000,6 @@ describe('EndemicExchange', function () {
         1
       );
       expect(secondarySaleFee).to.equal(250);
-    });
-  });
-
-  describe('Cancel auctions while paused', function () {
-    let erc721AuctionId, erc1155AuctionId;
-
-    beforeEach(async function () {
-      await deploy();
-      await nftContract.connect(user1).approve(endemicExchange.address, 1);
-      await erc1155Contract
-        .connect(user1)
-        .setApprovalForAll(endemicExchange.address, true);
-
-      await endemicExchange
-        .connect(user1)
-        .createAuction(
-          nftContract.address,
-          1,
-          ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
-          60,
-          1,
-          ERC721_ASSET_CLASS
-        );
-
-      await endemicExchange
-        .connect(user1)
-        .createAuction(
-          erc1155Contract.address,
-          1,
-          ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
-          60,
-          3,
-          ERC1155_ASSET_CLASS
-        );
-
-      erc721AuctionId = await endemicExchange.createAuctionId(
-        nftContract.address,
-        1,
-        user1.address
-      );
-
-      erc1155AuctionId = await endemicExchange.createAuctionId(
-        erc1155Contract.address,
-        1,
-        user1.address
-      );
-    });
-
-    it('should fail to cancel auction when not paused', async function () {
-      await expect(
-        endemicExchange.connect(owner).cancelAuctionWhenPaused(erc721AuctionId)
-      ).to.be.revertedWith('Pausable: not paused');
-
-      await expect(
-        endemicExchange.connect(owner).cancelAuctionWhenPaused(erc1155AuctionId)
-      ).to.be.revertedWith('Pausable: not paused');
-    });
-
-    it('should fail to cancel auction when not owner', async function () {
-      await endemicExchange.connect(owner).pause();
-      await expect(
-        endemicExchange.connect(user2).cancelAuctionWhenPaused(erc721AuctionId)
-      ).to.be.revertedWith('Ownable: caller is not the owner');
-
-      await expect(
-        endemicExchange.connect(user2).cancelAuctionWhenPaused(erc1155AuctionId)
-      ).to.be.revertedWith('Ownable: caller is not the owner');
-    });
-
-    it('should be able to cancel auction as owner when paused', async function () {
-      await endemicExchange.connect(owner).pause();
-      await endemicExchange
-        .connect(owner)
-        .cancelAuctionWhenPaused(erc721AuctionId);
-      await endemicExchange
-        .connect(owner)
-        .cancelAuctionWhenPaused(erc1155AuctionId);
-
-      await expect(
-        endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
-
-      await expect(
-        endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
-    });
-
-    it('should be able to cancel auction as auction owner when paused', async function () {
-      await endemicExchange.connect(owner).pause();
-      await endemicExchange.connect(user1).cancelAuction(erc721AuctionId);
-      await endemicExchange.connect(user1).cancelAuction(erc1155AuctionId);
-
-      await expect(
-        endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
-
-      await expect(
-        endemicExchange.getAuction(erc1155AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
   });
 
