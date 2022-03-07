@@ -5,6 +5,7 @@ interface ICollectionInitializer {
     function initialize(
         address creator,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        uint256 rolayties
     ) external;
 }

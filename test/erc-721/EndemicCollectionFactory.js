@@ -54,21 +54,22 @@ describe('EndemicCollectionFactory', function () {
       name: 'My Collection',
       symbol: 'MC',
       category: 'Art',
+      royalties: 1500,
     });
 
     const receipt = await tx.wait();
     const eventData = receipt.events.find(
       ({ event }) => event === 'NFTContractCreated'
     );
-    const [newAddress, contractOwner, name, symbol, category] = eventData.args;
+    const [newAddress, contractOwner, name, symbol, category, royalties] =
+      eventData.args;
 
     expect(newAddress).to.properAddress;
     expect(contractOwner).to.equal(user.address);
     expect(name).to.equal('My Collection');
     expect(symbol).to.equal('MC');
     expect(category).to.equal('Art');
-
-    // todo attach contract and check data
+    expect(royalties).to.equal('1500');
   });
 
   it('should fail to deploy a new contract if not minter', async function () {
@@ -77,6 +78,7 @@ describe('EndemicCollectionFactory', function () {
         name: 'My Collection',
         symbol: 'MC',
         category: 'Art',
+        royalties: 1500,
       })
     ).to.be.reverted;
   });
@@ -87,19 +89,22 @@ describe('EndemicCollectionFactory', function () {
       name: 'My Collection',
       symbol: 'MC',
       category: 'Art',
+      royalties: 1500,
     });
 
     const receipt = await tx.wait();
     const eventData = receipt.events.find(
       ({ event }) => event === 'NFTContractCreated'
     );
-    const [newAddress, contractOwner, name, symbol, category] = eventData.args;
+    const [newAddress, contractOwner, name, symbol, category, royalties] =
+      eventData.args;
 
     expect(newAddress).to.properAddress;
     expect(contractOwner).to.equal(user.address);
     expect(name).to.equal('My Collection');
     expect(symbol).to.equal('MC');
     expect(category).to.equal('Art');
+    expect(royalties).to.equal('1500');
   });
 
   it('should fail to deploy new contract for owner if not admin', async function () {

@@ -23,6 +23,7 @@ describe('RoyaltiesProvider', function () {
       name: 'My Collection',
       symbol: 'MC',
       category: 'Art',
+      royalties: 1000,
     });
 
     const res = await tx.wait();
