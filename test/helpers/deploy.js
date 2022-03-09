@@ -80,10 +80,8 @@ const deployEndemicExchangeWithDeps = async (
   takerFee = 0,
   primarySaleFee = 0
 ) => {
-  const contractRegistryContract = await deployContractRegistry();
   const royaltiesProviderContract = await deployRoyaltiesProvider();
   const feeProviderContract = await deployFeeProvider(
-    contractRegistryContract.address,
     secondarySaleFee,
     takerFee,
     primarySaleFee
@@ -93,8 +91,11 @@ const deployEndemicExchangeWithDeps = async (
     royaltiesProviderContract.address
   );
 
+  await feeProviderContract.updateEndemicExchangeAddress(
+    endemicExchangeContract.address
+  );
+
   return {
-    contractRegistryContract,
     feeProviderContract,
     royaltiesProviderContract,
     endemicExchangeContract,
@@ -117,7 +118,6 @@ const deployRoyaltiesProvider = async () => {
 };
 
 const deployFeeProvider = async (
-  contractRegistryAddress,
   secondarySaleFee = 250,
   takerFee = 300,
   primarySaleFee = 2200
@@ -125,7 +125,7 @@ const deployFeeProvider = async (
   const FeeProvider = await ethers.getContractFactory('FeeProvider');
   const feeProviderContract = await upgrades.deployProxy(
     FeeProvider,
-    [primarySaleFee, secondarySaleFee, takerFee, contractRegistryAddress],
+    [primarySaleFee, secondarySaleFee, takerFee],
     {
       initializer: '__FeeProvider_init',
     }
@@ -133,20 +133,6 @@ const deployFeeProvider = async (
 
   await feeProviderContract.deployed();
   return feeProviderContract;
-};
-
-const deployContractRegistry = async () => {
-  const ContractRegistry = await ethers.getContractFactory('ContractRegistry');
-  const contractRegistryContracat = await upgrades.deployProxy(
-    ContractRegistry,
-    [],
-    {
-      initializer: '__ContractRegistry_init',
-    }
-  );
-
-  await contractRegistryContracat.deployed();
-  return contractRegistryContracat;
 };
 
 module.exports = {
@@ -158,6 +144,5 @@ module.exports = {
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
   deployFeeProvider,
-  deployContractRegistry,
   deployRoyaltiesProvider,
 };

@@ -41,7 +41,7 @@ abstract contract EndemicOffer is
         uint256 tokenId;
         address bidder;
         uint256 price;
-        uint256 priceWithFee;
+        uint256 priceWithTakerFee;
         uint256 expiresAt;
     }
 
@@ -82,7 +82,7 @@ abstract contract EndemicOffer is
         uint256 tokenId,
         uint256 duration
     ) external payable nonReentrant {
-        if (msg.value <= 0) revert InvalidValueSent();
+        if (msg.value == 0) revert InvalidValueSent();
 
         IERC721 nft = IERC721(nftContract);
         address nftOwner = nft.ownerOf(tokenId);
@@ -107,7 +107,7 @@ abstract contract EndemicOffer is
             nftContract: nftContract,
             tokenId: tokenId,
             price: price,
-            priceWithFee: msg.value,
+            priceWithTakerFee: msg.value,
             expiresAt: expiresAt
         });
 
@@ -137,46 +137,22 @@ abstract contract EndemicOffer is
         delete offersById[offerId];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
-        uint256 totalCut = _calculateCut(
-            offer.nftContract,
-            offer.tokenId,
-            _msgSender(),
-            offer.price,
-            offer.priceWithFee
-        );
-
-        (address royaltiesRecipient, uint256 royaltiesCut) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(
-                offer.nftContract,
-                offer.tokenId,
-                offer.price
-            );
-
-        // sale happened
-        feeProvider.onSale(offer.nftContract, offer.tokenId);
-
         // Transfer token to bidder
-        IERC721(offer.nftContract).safeTransferFrom(
+        IERC721(offer.nftContract).transferFrom(
             _msgSender(),
             offer.bidder,
             offer.tokenId
         );
 
-        // transfer fees
-        if (totalCut > 0) {
-            _transferFees(totalCut);
-        }
-
-        // transfer royalties
-        if (royaltiesCut > 0) {
-            _transferRoyalties(royaltiesRecipient, royaltiesCut);
-        }
-
-        // Transfer ETH from bidder to seller
-        _transferFunds(
+        uint256 totalFees = _distributeFunds(
+            offer.nftContract,
+            offer.tokenId,
             _msgSender(),
-            offer.priceWithFee - totalCut - royaltiesCut
+            offer.price
         );
+
+        // sale happened
+        feeProvider.onSale(offer.nftContract, offer.tokenId);
 
         emit OfferAccepted(
             offerId,
@@ -185,7 +161,7 @@ abstract contract EndemicOffer is
             offer.bidder,
             _msgSender(),
             offer.price,
-            totalCut
+            totalFees
         );
     }
 
@@ -196,35 +172,20 @@ abstract contract EndemicOffer is
         return offer;
     }
 
-    function _calculateCut(
-        address tokenAddress,
-        uint256 tokenId,
-        address seller,
-        uint256 price,
-        uint256 priceWithFee
-    ) internal view returns (uint256) {
-        uint256 makerCut = feeProvider.calculateMakerFee(
-            seller,
-            tokenAddress,
-            tokenId,
-            price
-        );
-        uint256 takerCut = priceWithFee - price;
-
-        return makerCut + takerCut;
-    }
-
-    function removeExpiredOffers(
-        address[] memory tokenAddresses,
-        uint256[] memory tokenIds,
-        address[] memory offerders
-    ) public onlyOwner nonReentrant {
-        uint256 loopLength = tokenAddresses.length;
-        if (loopLength != tokenIds.length) revert ParametersDiffInSize();
-        if (loopLength != offerders.length) revert ParametersDiffInSize();
-
-        for (uint256 i = 0; i < loopLength; i++) {
-            _removeExpiredOffer(tokenAddresses[i], tokenIds[i], offerders[i]);
+    /**
+     * @notice Allows owner to cancel offers, refunding eth to bidders
+     * @dev This should only be used for extreme cases
+     */
+    function adminCancelOffers(uint256[] calldata offerIds)
+        public
+        onlyOwner
+        nonReentrant
+    {
+        unchecked {
+            for (uint256 i = 0; i < offerIds.length; i++) {
+                Offer memory offer = offersById[offerIds[i]];
+                _cancelOffer(offer);
+            }
         }
     }
 
@@ -246,7 +207,7 @@ abstract contract EndemicOffer is
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
         (bool success, ) = payable(offer.bidder).call{
-            value: offer.priceWithFee
+            value: offer.priceWithTakerFee
         }("");
         if (!success) revert RefundFailed();
 

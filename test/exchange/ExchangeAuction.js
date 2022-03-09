@@ -23,8 +23,7 @@ describe('ExchangeOffer', function () {
     nftContract,
     erc1155Contract,
     feeProviderContract,
-    royaltiesProviderContract,
-    contractRegistryContract;
+    royaltiesProviderContract;
 
   let owner,
     user1,
@@ -81,14 +80,11 @@ describe('ExchangeOffer', function () {
       initialFee
     );
 
-    contractRegistryContract = result.contractRegistryContract;
     feeProviderContract = result.feeProviderContract;
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
-    await contractRegistryContract.addExchangeContract(endemicExchange.address);
-
     erc1155Contract = await deployEndemicERC1155();
 
     await mintERC721(user1.address);
