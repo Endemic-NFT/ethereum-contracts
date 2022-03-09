@@ -7,7 +7,6 @@ import "../royalties/interfaces/IRoyaltiesProvider.sol";
 error FeeTransferFailed();
 error RoyaltiesTransferFailed();
 error FundsTransferFailed();
-error InvalidValueProvided();
 
 abstract contract EndemicExchangeCore {
     address public feeClaimAddress;
@@ -15,27 +14,45 @@ abstract contract EndemicExchangeCore {
     IFeeProvider public feeProvider;
     IRoyaltiesProvider public royaltiesProvider;
 
-    function _distributeFunds(
+    function _calculateFees(
         address nftContract,
         uint256 tokenId,
         address seller,
         uint256 price
-    ) internal returns (uint256 totalFees) {
-        uint256 takerFee = feeProvider.calculateTakerFee(price);
-        // make sure enough funds are send once we calculate taker fee for price
-        if (msg.value < (price + takerFee)) revert InvalidValueProvided();
+    )
+        internal
+        view
+        returns (
+            uint256 makerFee,
+            uint256 takerFee,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalFees
+        )
+    {
+        takerFee = feeProvider.calculateTakerFee(price);
 
-        (address royaltiesRecipient, uint256 royaltieFee) = royaltiesProvider
+        (royaltiesRecipient, royaltieFee) = royaltiesProvider
             .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, price);
 
-        uint256 makerFee = feeProvider.calculateMakerFee(
+        makerFee = feeProvider.calculateMakerFee(
             seller,
             nftContract,
             tokenId,
             price
         );
 
-        totalFees = takerFee + makerFee;
+        totalFees = makerFee + takerFee;
+    }
+
+    function _distributeFunds(
+        uint256 price,
+        uint256 makerFee,
+        uint256 totalFees,
+        uint256 royaltieFee,
+        address royaltiesRecipient,
+        address seller
+    ) internal {
         uint256 sellerProceeds = price - makerFee - royaltieFee;
 
         if (royaltieFee > 0) {

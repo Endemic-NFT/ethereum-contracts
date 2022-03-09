@@ -64,8 +64,6 @@ contract FeeProvider is OwnableUpgradeable, IFeeProvider {
         public
         onlyOwner
     {
-        if (_endemicExchange == address(0)) revert NullAddress();
-
         endemicExchange = _endemicExchange;
     }
 

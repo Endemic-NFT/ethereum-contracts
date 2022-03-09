@@ -345,6 +345,7 @@ describe('ExchangeOffer', function () {
       const acceptOfferTx = await endemicExchange
         .connect(user1)
         .acceptOffer(offer.id);
+
       await expect(acceptOfferTx)
         .to.emit(endemicExchange, 'OfferAccepted')
         .withArgs(

@@ -18,7 +18,7 @@ const INVALID_AMOUNT_ERROR = 'InvalidAmount';
 const EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR = 'ExchangeNotApprovedForAsset';
 const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
-describe('ExchangeOffer', function () {
+describe('ExchangeAuction', function () {
   let endemicExchange,
     nftContract,
     erc1155Contract,

@@ -12,6 +12,7 @@ import "./LibNFT.sol";
 error InvalidAuction();
 error Unauthorized();
 error InvalidPrice();
+error InvalidValueProvided();
 
 abstract contract EndemicAuction is
     OwnableUpgradeable,
@@ -138,6 +139,24 @@ abstract contract EndemicAuction is
             revert LibAuction.InvalidAssetClass();
         }
 
+        (
+            uint256 makerFee,
+            uint256 takerFee,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalFees
+        ) = _calculateFees(
+                auction.contractId,
+                auction.tokenId,
+                auction.seller,
+                currentPrice
+            );
+
+        if (msg.value < (currentPrice + takerFee))
+            revert InvalidValueProvided();
+
+        feeProvider.onSale(auction.contractId, auction.tokenId);
+
         _transferNFT(
             auction.seller,
             _msgSender(),
@@ -147,13 +166,14 @@ abstract contract EndemicAuction is
             auction.assetClass
         );
 
-        uint256 totalFees = _distributeFunds(
-            auction.contractId,
-            auction.tokenId,
-            auction.seller,
-            currentPrice
+        _distributeFunds(
+            currentPrice,
+            makerFee,
+            totalFees,
+            royaltieFee,
+            royaltiesRecipient,
+            auction.seller
         );
-        feeProvider.onSale(auction.contractId, auction.tokenId);
 
         emit AuctionSuccessful(
             auction.id,

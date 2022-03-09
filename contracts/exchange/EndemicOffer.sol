@@ -25,7 +25,7 @@ abstract contract EndemicOffer is
 {
     using AddressUpgradeable for address;
 
-    uint256 public MIN_BID_DURATION;
+    uint256 public constant MIN_OFFER_DURATION = 1 hours;
 
     uint256 private nextOfferId;
 
@@ -72,8 +72,6 @@ abstract contract EndemicOffer is
     );
 
     function __EndemicOffer___init_unchained() internal {
-        MIN_BID_DURATION = 1 hours;
-
         nextOfferId = 1;
     }
 
@@ -87,16 +85,14 @@ abstract contract EndemicOffer is
         IERC721 nft = IERC721(nftContract);
         address nftOwner = nft.ownerOf(tokenId);
 
-        if (nftOwner == address(0) || nftOwner == _msgSender())
-            revert InvalidTokenOwner();
-        if (duration < MIN_BID_DURATION) revert DurationTooShort();
-
-        uint256 offerId = nextOfferId++;
-        uint256 takerFee = feeProvider.getTakerFee();
-
+        if (nftOwner == _msgSender()) revert InvalidTokenOwner();
+        if (duration < MIN_OFFER_DURATION) revert DurationTooShort();
         if (_bidderHasOffer(nftContract, tokenId, _msgSender()))
             revert OfferExists();
 
+        uint256 offerId = nextOfferId++;
+
+        uint256 takerFee = feeProvider.getTakerFee();
         uint256 price = (msg.value * 10000) / (takerFee + 10000);
         uint256 expiresAt = block.timestamp + duration;
 
@@ -137,6 +133,21 @@ abstract contract EndemicOffer is
         delete offersById[offerId];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
+        (
+            uint256 makerFee,
+            ,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalFees
+        ) = _calculateFees(
+                offer.nftContract,
+                offer.tokenId,
+                _msgSender(),
+                offer.price
+            );
+
+        feeProvider.onSale(offer.nftContract, offer.tokenId);
+
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(
             _msgSender(),
@@ -144,15 +155,16 @@ abstract contract EndemicOffer is
             offer.tokenId
         );
 
-        uint256 totalFees = _distributeFunds(
-            offer.nftContract,
-            offer.tokenId,
-            _msgSender(),
-            offer.price
+        _distributeFunds(
+            offer.price,
+            makerFee,
+            totalFees,
+            royaltieFee,
+            royaltiesRecipient,
+            _msgSender()
         );
 
         // sale happened
-        feeProvider.onSale(offer.nftContract, offer.tokenId);
 
         emit OfferAccepted(
             offerId,
@@ -177,7 +189,7 @@ abstract contract EndemicOffer is
      * @dev This should only be used for extreme cases
      */
     function adminCancelOffers(uint256[] calldata offerIds)
-        public
+        external
         onlyOwner
         nonReentrant
     {
@@ -192,9 +204,9 @@ abstract contract EndemicOffer is
     function _removeExpiredOffer(
         address nftContract,
         uint256 tokenId,
-        address offerder
+        address bidder
     ) internal {
-        uint256 offerId = offerIdsByBidder[nftContract][tokenId][offerder];
+        uint256 offerId = offerIdsByBidder[nftContract][tokenId][bidder];
         Offer memory offer = offersById[offerId];
 
         if (offer.expiresAt >= block.timestamp) revert NotExpiredOffer();
