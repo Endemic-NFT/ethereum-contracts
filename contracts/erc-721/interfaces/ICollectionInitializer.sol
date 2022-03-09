@@ -6,6 +6,6 @@ interface ICollectionInitializer {
         address creator,
         string memory name,
         string memory symbol,
-        uint256 rolayties
+        uint256 royalties
     ) external;
 }
