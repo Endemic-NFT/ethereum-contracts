@@ -193,11 +193,9 @@ abstract contract EndemicOffer is
         onlyOwner
         nonReentrant
     {
-        unchecked {
-            for (uint256 i = 0; i < offerIds.length; i++) {
-                Offer memory offer = offersById[offerIds[i]];
-                _cancelOffer(offer);
-            }
+        for (uint256 i = 0; i < offerIds.length; i++) {
+            Offer memory offer = offersById[offerIds[i]];
+            _cancelOffer(offer);
         }
     }
 

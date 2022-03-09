@@ -120,13 +120,6 @@ abstract contract EndemicAuction is
             auction.seller
         );
 
-        LibNFT.requireTokenApproval(
-            auction.assetClass,
-            auction.contractId,
-            auction.tokenId,
-            auction.seller
-        );
-
         uint256 currentPrice = LibAuction.getCurrentPrice(auction) *
             tokenAmount;
         if (currentPrice == 0) revert InvalidPrice();
@@ -202,13 +195,11 @@ abstract contract EndemicAuction is
         nonReentrant
         onlyOwner
     {
-        unchecked {
-            for (uint256 i = 0; i < ids.length; i++) {
-                LibAuction.Auction memory auction = idToAuction[ids[i]];
-                if (LibAuction.isActiveAuction(auction)) {
-                    _removeAuction(auction.id);
-                    emit AuctionCancelled(auction.id);
-                }
+        for (uint256 i = 0; i < ids.length; i++) {
+            LibAuction.Auction memory auction = idToAuction[ids[i]];
+            if (LibAuction.isActiveAuction(auction)) {
+                _removeAuction(auction.id);
+                emit AuctionCancelled(auction.id);
             }
         }
     }
