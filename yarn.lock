@@ -524,16 +524,16 @@
   version "4.5.0"
   resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-4.5.0.tgz"
 
-"@openzeppelin/hardhat-upgrades@1.14.0":
-  version "1.14.0"
-  resolved "https://registry.npmjs.org/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.14.0.tgz"
+"@openzeppelin/hardhat-upgrades@1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.15.0.tgz#6b6503ccf2c54032c314c686c8d8bea23b5d8cb1"
   dependencies:
-    "@openzeppelin/upgrades-core" "^1.12.0"
+    "@openzeppelin/upgrades-core" "^1.13.0"
     chalk "^4.1.0"
 
-"@openzeppelin/upgrades-core@^1.12.0":
-  version "1.12.0"
-  resolved "https://registry.npmjs.org/@openzeppelin/upgrades-core/-/upgrades-core-1.12.0.tgz"
+"@openzeppelin/upgrades-core@^1.13.0":
+  version "1.13.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.13.0.tgz#fa6ce5e236020e3553115f173528fcdaa67d66e2"
   dependencies:
     bn.js "^5.1.2"
     cbor "^8.0.0"
