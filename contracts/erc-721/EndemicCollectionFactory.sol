@@ -39,7 +39,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string name;
         string symbol;
         string category;
-        uint256 royalities;
+        uint256 royalties;
     }
 
     constructor() {
