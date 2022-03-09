@@ -9,7 +9,7 @@
     "lint": "eslint \"scripts/**/*.js\" --fix"
   },
   "dependencies": {
-    "@nomiclabs/hardhat-etherscan": "3.0.1",
+    "@nomiclabs/hardhat-etherscan": "3.0.3",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.1",
     "@openzeppelin/hardhat-upgrades": "1.15.0",
