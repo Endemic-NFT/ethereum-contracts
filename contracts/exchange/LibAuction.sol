@@ -15,14 +15,14 @@ library LibAuction {
 
     struct Auction {
         bytes32 id;
-        address contractId;
         uint256 tokenId;
-        address seller;
         uint256 startingPrice;
         uint256 endingPrice;
         uint256 duration;
         uint256 amount;
         uint256 startedAt;
+        address contractId;
+        address seller;
         bytes4 assetClass;
     }
 

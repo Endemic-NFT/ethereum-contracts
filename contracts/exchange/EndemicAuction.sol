@@ -58,14 +58,14 @@ abstract contract EndemicAuction is
 
         LibAuction.Auction memory auction = LibAuction.Auction(
             auctionId,
-            nftContract,
             tokenId,
-            msg.sender,
             startingPrice,
             endingPrice,
             duration,
             amount,
             block.timestamp,
+            nftContract,
+            msg.sender,
             assetClass
         );
 
