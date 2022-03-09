@@ -22,7 +22,8 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         address indexed owner,
         string name,
         string symbol,
-        string category
+        string category,
+        uint256 royalties
     );
     event ImplementationUpdated(address indexed implementation);
 
@@ -30,6 +31,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string name;
         string symbol;
         string category;
+        uint256 royalties;
     }
 
     struct OwnedDeployParams {
@@ -37,6 +39,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string name;
         string symbol;
         string category;
+        uint256 royalties;
     }
 
     constructor() {
@@ -52,7 +55,8 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
             msg.sender,
             params.name,
             params.symbol,
-            params.category
+            params.category,
+            params.royalties
         );
     }
 
@@ -65,7 +69,8 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
             params.owner,
             params.name,
             params.symbol,
-            params.category
+            params.category,
+            params.royalties
         );
     }
 
@@ -82,7 +87,8 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         ICollectionInitializer(implementation).initialize(
             msg.sender,
             "Collection Template",
-            "CT"
+            "CT",
+            1000
         );
 
         emit ImplementationUpdated(newImplementation);
@@ -92,14 +98,27 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         address owner,
         string memory name,
         string memory symbol,
-        string memory category
+        string memory category,
+        uint256 royalties
     ) internal {
         address proxy = implementation.cloneDeterministic(
             keccak256(abi.encodePacked(owner, block.timestamp))
         );
 
-        ICollectionInitializer(proxy).initialize(owner, name, symbol);
+        ICollectionInitializer(proxy).initialize(
+            owner,
+            name,
+            symbol,
+            royalties
+        );
 
-        emit NFTContractCreated(proxy, owner, name, symbol, category);
+        emit NFTContractCreated(
+            proxy,
+            owner,
+            name,
+            symbol,
+            category,
+            royalties
+        );
     }
 }

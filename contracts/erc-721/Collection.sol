@@ -25,6 +25,7 @@ contract Collection is
     address public immutable collectionFactory;
 
     string public constant baseURI = "ipfs://";
+    uint256 public constant MAX_ROYALTIES = 10000;
 
     address public royaltiesRecipient;
     uint256 public royaltiesAmount;
@@ -51,18 +52,21 @@ contract Collection is
     function initialize(
         address creator,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        uint256 royalties
     ) external override initializer {
         if (_msgSender() != address(collectionFactory))
             revert CallerNotContractFactory();
 
-        owner = creator;
+        if (royalties > MAX_ROYALTIES) revert RoyaltiesTooHigh();
 
-        royaltiesRecipient = creator;
-        royaltiesAmount = 1000;
+        owner = creator;
 
         _name = name;
         _symbol = symbol;
+
+        royaltiesRecipient = creator;
+        royaltiesAmount = royalties;
     }
 
     function mint(address recipient, string calldata tokenCID)
@@ -87,8 +91,8 @@ contract Collection is
         return tokenId;
     }
 
-    function setRoyalties(address recipient, uint256 value) external onlyOwner {
-        if (value > 10000) revert RoyaltiesTooHigh();
+    function setRoyalties(address recipient, uint256 value) public onlyOwner {
+        if (value > MAX_ROYALTIES) revert RoyaltiesTooHigh();
         royaltiesRecipient = recipient;
         royaltiesAmount = value;
 

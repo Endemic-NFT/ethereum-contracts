@@ -140,10 +140,6 @@ describe('Collection', function () {
   });
 
   describe('Royalties', function () {
-    it('should have default 10% royalties', async () => {
-      expect(await nftContract.royaltiesAmount()).to.equal('1000');
-      expect(await nftContract.royaltiesRecipient()).to.equal(owner.address);
-    });
     it('should support ERC2981 interface', async () => {
       const ERC2981InterfaceId = 0x2a55205a;
       expect(await nftContract.supportsInterface(ERC2981InterfaceId)).to.equal(
