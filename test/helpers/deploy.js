@@ -135,6 +135,13 @@ const deployFeeProvider = async (
   return feeProviderContract;
 };
 
+const deployTipjar = async () => {
+  const Tipjar = await ethers.getContractFactory('Tipjar');
+  const tipjarContract = await Tipjar.deploy();
+
+  await tipjarContract.deployed();
+  return tipjarContract;
+};
 module.exports = {
   deployEndemicRewards,
   deployEndemicToken,
@@ -145,4 +152,5 @@ module.exports = {
   deployEndemicERC1155,
   deployFeeProvider,
   deployRoyaltiesProvider,
+  deployTipjar,
 };
