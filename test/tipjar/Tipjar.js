@@ -3,13 +3,13 @@ const { ethers } = require('hardhat');
 const { deployTipjar } = require('../helpers/deploy');
 
 describe('Tipjar', function () {
-  let owner, sender, receiver;
+  let sender, receiver;
   let tipjarContract;
   let tip;
   let senderStartingBalance, receiverStartingBalance;
 
   beforeEach(async () => {
-    [owner, sender, receiver] = await ethers.getSigners();
+    [, sender, receiver] = await ethers.getSigners();
     tipjarContract = await deployTipjar();
     tip = ethers.utils.parseEther('0.001');
     senderStartingBalance = await sender.getBalance();
