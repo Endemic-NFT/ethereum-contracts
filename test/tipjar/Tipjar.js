@@ -6,14 +6,13 @@ const { deployTipjar } = require('../helpers/deploy');
 describe('Tipjar', function () {
   let owner, sender, receiver;
   let tipjarContract;
-  let tip, gasLimitMax;
+  let tip;
   let senderStartingBalance, receiverStartingBalance;
 
   beforeEach(async () => {
     [owner, sender, receiver] = await ethers.getSigners();
     tipjarContract = await deployTipjar();
-    tip = ethers.BigNumber.from(100000000000000);
-    gasLimitMax = ethers.BigNumber.from(44000000);
+    tip = ethers.utils.parseEther('0.001');
     senderStartingBalance = await sender.getBalance();
     receiverStartingBalance = await receiver.getBalance();
   });
@@ -58,7 +57,7 @@ describe('Tipjar', function () {
   it('will fail invalid amount', async () => {
     await expect(
       tipjarContract.connect(sender).sendTip(receiver.address, {
-        value: ethers.BigNumber.from(10000000000000),
+        value: ethers.utils.parseEther('0.00001'),
       })
     ).to.be.revertedWith('InvalidAmount');
   });
