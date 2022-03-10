@@ -3,10 +3,10 @@ const { ethers } = require('hardhat');
 const { deployEndemicToken } = require('../helpers/deploy');
 
 describe('EndemicToken', function () {
-  let user1, user2;
+  let user1;
   let endemicToken;
   beforeEach(async () => {
-    [user1, user2] = await ethers.getSigners();
+    [user1] = await ethers.getSigners();
 
     endemicToken = await deployEndemicToken(user1);
   });

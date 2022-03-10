@@ -1,14 +1,13 @@
-const { expect, use } = require('chai');
+const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const Web3 = require('web3');
 const { deployEndemicCollectionWithFactory } = require('../helpers/deploy');
 
 describe('EndemicCollectionFactory', function () {
   let factoryContract = null;
-  let owner, user, signer;
+  let owner, user;
 
   beforeEach(async function () {
-    [owner, user, signer] = await ethers.getSigners();
+    [owner, user] = await ethers.getSigners();
 
     const deployResult = await deployEndemicCollectionWithFactory(owner);
     factoryContract = deployResult.nftFactory;

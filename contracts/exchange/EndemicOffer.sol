@@ -140,6 +140,7 @@ abstract contract EndemicOffer is
             uint256 royaltieFee,
             uint256 totalCut
         ) = _calculateFees(offer.nftContract, offer.tokenId, offer.price);
+        // sale happened
 
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(
