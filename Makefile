@@ -46,6 +46,10 @@ deployERC1155Factory:
 deployContractImporter:
 	npx hardhat run scripts/import/deploy-contract-importer.js --network ${network}
 
+.PHONY: deployTipjar
+deployTipjar:
+	npx hardhat run scripts/import/deploy-tipjar.js --network ${network}
+
 .PHONY: verify
 verify:
 	npx hardhat verify --network ${network} ${address}
