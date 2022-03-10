@@ -1,7 +1,3 @@
-.PHONY: deployFeeProvider
-deployFeeProvider:
-	npx hardhat run scripts/fee-provider/deploy-fee-provider.js --network ${network}
-
 .PHONY: deployRoyaltiesProvider
 deployRoyaltiesProvider:
 	npx hardhat run scripts/royalties-provider/deploy-royalties-provider.js --network ${network}
@@ -25,10 +21,6 @@ deployBid:
 .PHONY: upgradeEndemicExchange
 upgradeEndemicExchange:
 	npx hardhat run scripts/exchange/upgrade-endemic-exchange-proxy.js --network ${network}
-
-.PHONY: upgradeFeeProvider
-upgradeFeeProvider:
-	npx hardhat run scripts/fee-provider/upgrade-fee-provider-proxy.js --network ${network}
 
 .PHONY: deployInitialERC1155
 deployInitialERC1155:

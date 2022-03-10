@@ -19,11 +19,7 @@ const EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR = 'ExchangeNotApprovedForAsset';
 const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
 describe('ExchangeAuction', function () {
-  let endemicExchange,
-    nftContract,
-    erc1155Contract,
-    feeProviderContract,
-    royaltiesProviderContract;
+  let endemicExchange, nftContract, erc1155Contract, royaltiesProviderContract;
 
   let owner,
     user1,
@@ -61,7 +57,7 @@ describe('ExchangeAuction', function () {
     return `${contractId}-${tokenId}-${seller}`;
   };
 
-  async function deploy(makerFee = 0, takerFee, initialFee = 0) {
+  async function deploy(makerFee = 0, takerFee) {
     [
       owner,
       user1,
@@ -74,13 +70,8 @@ describe('ExchangeAuction', function () {
       ...otherSigners
     ] = await ethers.getSigners();
 
-    const result = await deployEndemicExchangeWithDeps(
-      makerFee,
-      takerFee,
-      initialFee
-    );
+    const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
-    feeProviderContract = result.feeProviderContract;
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
 
@@ -646,7 +637,7 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits('0.1'),
           user2.address,
           1,
-          ethers.utils.parseUnits('0')
+          ethers.utils.parseUnits('0.003')
         );
 
       await expect(bid1)
@@ -664,7 +655,7 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits('0.2'),
           user2.address,
           2,
-          ethers.utils.parseUnits('0')
+          ethers.utils.parseUnits('0.006')
         );
     });
   });
@@ -772,15 +763,14 @@ describe('ExchangeAuction', function () {
 
   describe('Fee', function () {
     beforeEach(async function () {
-      await deploy(250, 300, 2200);
+      await deploy(250, 300);
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await erc1155Contract
         .connect(user1)
         .setApprovalForAll(endemicExchange.address, true);
     });
 
-    it('should take cut on initial sale', async function () {
-      // saves current contract and user1 balances and creates auction
+    it('should take cut on primary sale', async function () {
       const claimEthBalance1 = await endemicExchange.provider.getBalance(
         '0x1d1C46273cEcC00F7503AB3E97A40a199bcd6b31'
       );
@@ -822,7 +812,7 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits('0.2'),
           user2.address,
           1,
-          ethers.utils.parseUnits('0.05')
+          ethers.utils.parseUnits('0.011')
         );
 
       const claimEthBalance2 = await endemicExchange.provider.getBalance(
@@ -832,14 +822,14 @@ describe('ExchangeAuction', function () {
       const token2Owner = await nftContract.ownerOf(1);
       const claimEthBalanceDiff = claimEthBalance2.sub(claimEthBalance1);
 
-      // 22% of 0.2 + 3% fee
+      // 3% of 0.2 + 3% fee
       expect(claimEthBalanceDiff.toString()).to.equal(
-        ethers.utils.parseUnits('0.05')
+        ethers.utils.parseUnits('0.011')
       );
 
       const user1Diff = user1Bal2.sub(user1Bal1);
-      // 0.2 minus 22% fee (220)
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.136'));
+      // 0.2 minus 3% fee
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.175'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -928,45 +918,6 @@ describe('ExchangeAuction', function () {
       const tokenOwner = await nftContract.ownerOf(1);
       expect(tokenOwner).to.equal(user3.address);
     });
-
-    it('should calculate seller fee correctly', async () => {
-      const primarySaleFee = await feeProviderContract.getMakerFee(
-        user2.address,
-        nftContract.address,
-        2
-      );
-      expect(primarySaleFee).to.equal(2200);
-
-      await endemicExchange
-        .connect(user1)
-        .createAuction(
-          nftContract.address,
-          1,
-          ethers.utils.parseUnits('1'),
-          ethers.utils.parseUnits('1'),
-          60,
-          1,
-          ERC721_ASSET_CLASS
-        );
-
-      const auctionid = await endemicExchange.createAuctionId(
-        nftContract.address,
-        1,
-        user1.address
-      );
-
-      await endemicExchange.connect(user2).bid(auctionid, 1, {
-        value: ethers.utils.parseUnits('1.03'),
-      });
-
-      // Primary sale completed, now fee should be 2.5%
-      const secondarySaleFee = await feeProviderContract.getMakerFee(
-        user2.address,
-        nftContract.address,
-        1
-      );
-      expect(secondarySaleFee).to.equal(250);
-    });
   });
 
   describe('Royalties', function () {
@@ -1031,14 +982,14 @@ describe('ExchangeAuction', function () {
 
       const claimEthBalanceDiff = claimEthBalance2.sub(claimEthBalance1);
 
-      // 22% of 0.2 + 3% fee
+      // 3% of 0.2 + 3% fee
       expect(claimEthBalanceDiff.toString()).to.equal(
-        ethers.utils.parseUnits('0.05')
+        ethers.utils.parseUnits('0.011')
       );
 
       const user1Diff = user1Bal2.sub(user1Bal1);
-      // 0.2 minus 22% fee minus 10% royalties
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.136'));
+      // 0.2 minus 3% fee minus 10% royalties
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.175'));
 
       const feeRecipientDiff = feeRecipientBalance2.sub(feeRecipientBalance1);
       expect(feeRecipientDiff.toString()).to.equal(
