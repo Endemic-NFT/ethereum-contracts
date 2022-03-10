@@ -22,15 +22,11 @@ describe('ExchangeOffer', function () {
       );
   }
 
-  async function deploy(makerFee = 300, takerFee = 300, initialFee = 2200) {
+  async function deploy(makerFee = 300, takerFee = 300) {
     [owner, user1, user2, user3, royaltiesRecipient] =
       await ethers.getSigners();
 
-    const result = await deployEndemicExchangeWithDeps(
-      makerFee,
-      takerFee,
-      initialFee
-    );
+    const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
@@ -313,12 +309,12 @@ describe('ExchangeOffer', function () {
     it('should be able to accept offer', async () => {
       // sending wants to offer 0.5 eth
       // taker fee is 3% = 0.015 eth
-      // user sends 0.515 e th
+      // user sends 0.515 eth
       // owner of nft sees offer with 0.5 eth
-      // maker initial sale fee is 22% = 0.11 eth
+      // maker sale fee is 3% = 0.015 eth
       // royalties are 10% 0.05
-      // owner will get 0.34 eth
-      // total fee is 0.125
+      // owner will get 0.435 ETH
+      // total fee is 0.030
       const royaltiesRecipientBalance1 = await royaltiesRecipient.getBalance();
       const feeBalance1 = await nftContract.provider.getBalance(FEE_RECIPIENT);
 
@@ -343,14 +339,14 @@ describe('ExchangeOffer', function () {
           owner.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
-          ethers.utils.parseUnits('0.125')
+          ethers.utils.parseUnits('0.030')
         );
 
       expect(await nftContract.ownerOf(1)).to.equal(owner.address);
 
       const user1Balance2 = await user1.getBalance();
       expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.34'),
+        ethers.utils.parseUnits('0.435'),
         ethers.utils.parseUnits('0.001') //gas
       );
 
@@ -358,7 +354,7 @@ describe('ExchangeOffer', function () {
         '0x1d1C46273cEcC00F7503AB3E97A40a199bcd6b31'
       );
       expect(feeBalance2.sub(feeBalance1).toString()).to.equal(
-        ethers.utils.parseUnits('0.125')
+        ethers.utils.parseUnits('0.030')
       );
 
       const royaltiesRecipientBalance2 = await royaltiesRecipient.getBalance();

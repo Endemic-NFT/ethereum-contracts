@@ -92,8 +92,7 @@ abstract contract EndemicOffer is
 
         uint256 offerId = nextOfferId++;
 
-        uint256 takerFee = feeProvider.getTakerFee();
-        uint256 price = (msg.value * 10000) / (takerFee + 10000);
+        uint256 price = (msg.value * MAX_FEE) / (takerFee + MAX_FEE);
         uint256 expiresAt = block.timestamp + duration;
 
         offerIdsByBidder[nftContract][tokenId][_msgSender()] = offerId;
@@ -134,20 +133,13 @@ abstract contract EndemicOffer is
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
         (
-            uint256 makerFee,
+            uint256 makerCut,
             ,
             address royaltiesRecipient,
             uint256 royaltieFee,
-            uint256 totalFees
-        ) = _calculateFees(
-                offer.nftContract,
-                offer.tokenId,
-                _msgSender(),
-                offer.price
-            );
-
+            uint256 totalCut
+        ) = _calculateFees(offer.nftContract, offer.tokenId, offer.price);
         // sale happened
-        feeProvider.onSale(offer.nftContract, offer.tokenId);
 
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(
@@ -158,8 +150,8 @@ abstract contract EndemicOffer is
 
         _distributeFunds(
             offer.price,
-            makerFee,
-            totalFees,
+            makerCut,
+            totalCut,
             royaltieFee,
             royaltiesRecipient,
             _msgSender()
@@ -172,7 +164,7 @@ abstract contract EndemicOffer is
             offer.bidder,
             _msgSender(),
             offer.price,
-            totalFees
+            totalCut
         );
     }
 

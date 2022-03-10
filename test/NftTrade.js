@@ -19,16 +19,12 @@ describe('NftTrade', function () {
       );
   }
 
-  async function deploy(makerFee = 0, takerFee, initialFee = 0) {
+  async function deploy(makerFee = 0, takerFee = 300) {
     [owner, user1, user2] = await ethers.getSigners();
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
 
-    const result = await deployEndemicExchangeWithDeps(
-      makerFee,
-      takerFee,
-      initialFee
-    );
+    const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
     endemicExchange = result.endemicExchangeContract;
 
@@ -63,7 +59,7 @@ describe('NftTrade', function () {
 
     //user2 buys NFT
     await endemicExchange.connect(user2).bid(auctionId, 1, {
-      value: ethers.utils.parseUnits('1'),
+      value: ethers.utils.parseUnits('1.03'),
     });
     expect(await nftContract.ownerOf(1)).to.equal(user2.address);
 

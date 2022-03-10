@@ -60,13 +60,14 @@ const deployEndemicERC1155 = async () => {
 };
 
 const deployEndemicExchange = async (
-  feeProviderAddress,
-  royaltiesProviderAddress
+  royaltiesProviderAddress,
+  secondarySaleFee,
+  takerFee
 ) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [feeProviderAddress, royaltiesProviderAddress, FEE_RECIPIENT],
+    [royaltiesProviderAddress, FEE_RECIPIENT, secondarySaleFee, takerFee],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -76,27 +77,18 @@ const deployEndemicExchange = async (
 };
 
 const deployEndemicExchangeWithDeps = async (
-  secondarySaleFee = 0,
-  takerFee = 0,
-  primarySaleFee = 0
+  makerFee = 250,
+  takerFee = 300
 ) => {
   const royaltiesProviderContract = await deployRoyaltiesProvider();
-  const feeProviderContract = await deployFeeProvider(
-    secondarySaleFee,
-    takerFee,
-    primarySaleFee
-  );
-  const endemicExchangeContract = await deployEndemicExchange(
-    feeProviderContract.address,
-    royaltiesProviderContract.address
-  );
 
-  await feeProviderContract.updateEndemicExchangeAddress(
-    endemicExchangeContract.address
+  const endemicExchangeContract = await deployEndemicExchange(
+    royaltiesProviderContract.address,
+    makerFee,
+    takerFee
   );
 
   return {
-    feeProviderContract,
     royaltiesProviderContract,
     endemicExchangeContract,
   };
@@ -117,24 +109,6 @@ const deployRoyaltiesProvider = async () => {
   return royaltiesProviderProxy;
 };
 
-const deployFeeProvider = async (
-  secondarySaleFee = 250,
-  takerFee = 300,
-  primarySaleFee = 2200
-) => {
-  const FeeProvider = await ethers.getContractFactory('FeeProvider');
-  const feeProviderContract = await upgrades.deployProxy(
-    FeeProvider,
-    [primarySaleFee, secondarySaleFee, takerFee],
-    {
-      initializer: '__FeeProvider_init',
-    }
-  );
-
-  await feeProviderContract.deployed();
-  return feeProviderContract;
-};
-
 module.exports = {
   deployEndemicRewards,
   deployEndemicToken,
@@ -143,6 +117,5 @@ module.exports = {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
-  deployFeeProvider,
   deployRoyaltiesProvider,
 };

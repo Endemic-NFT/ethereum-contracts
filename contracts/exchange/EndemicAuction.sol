@@ -126,22 +126,15 @@ abstract contract EndemicAuction is
         }
 
         (
-            uint256 makerFee,
-            uint256 takerFee,
+            uint256 makerCut,
+            uint256 takerCut,
             address royaltiesRecipient,
             uint256 royaltieFee,
-            uint256 totalFees
-        ) = _calculateFees(
-                auction.contractId,
-                auction.tokenId,
-                auction.seller,
-                currentPrice
-            );
+            uint256 totalCut
+        ) = _calculateFees(auction.contractId, auction.tokenId, currentPrice);
 
-        if (msg.value < (currentPrice + takerFee))
+        if (msg.value < (currentPrice + takerCut))
             revert InvalidValueProvided();
-
-        feeProvider.onSale(auction.contractId, auction.tokenId);
 
         _transferNFT(
             auction.seller,
@@ -154,8 +147,8 @@ abstract contract EndemicAuction is
 
         _distributeFunds(
             currentPrice,
-            makerFee,
-            totalFees,
+            makerCut,
+            totalCut,
             royaltieFee,
             royaltiesRecipient,
             auction.seller
@@ -166,7 +159,7 @@ abstract contract EndemicAuction is
             currentPrice,
             _msgSender(),
             tokenAmount,
-            totalFees
+            totalCut
         );
     }
 

@@ -1,5 +1,4 @@
 const rinkeby = {
-  feeProviderProxy: '',
   royaltiesProviderProxy: '',
   endemicErc721: '',
   endemicErc721Factory: '',
