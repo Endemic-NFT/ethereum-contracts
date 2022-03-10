@@ -18,15 +18,6 @@ describe('Tipjar', function () {
     receiverStartingBalance = await receiver.getBalance();
   });
 
-  it('has expected gas limit', async () => {
-    const { gasLimit } = await tipjarContract
-      .connect(sender)
-      .sendTip(receiver.address, {
-        value: tip,
-      });
-    expect(gasLimit.lt(gasLimitMax)).to.be.true;
-  });
-
   it('has decreased sender balance for expected amount', async () => {
     await tipjarContract.connect(sender).sendTip(receiver.address, {
       value: tip,
@@ -46,11 +37,29 @@ describe('Tipjar', function () {
     expect(receiverEndBalance.sub(receiverStartingBalance)).to.equals(tip);
   });
 
-  it('will fail empty tip', async () => {
+  it('transaction emit event', async () => {
+    await expect(
+      tipjarContract.connect(sender).sendTip(receiver.address, {
+        value: tip,
+      })
+    )
+      .to.emit(tipjarContract, 'TipReceived')
+      .withArgs(receiver.address, tip);
+  });
+
+  it('will fail empty amount', async () => {
     await expect(
       tipjarContract.connect(sender).sendTip(receiver.address, {
         value: 0,
       })
-    ).to.be.revertedWith('AmountSentToSmall');
+    ).to.be.revertedWith('InvalidAmount');
+  });
+
+  it('will fail invalid amount', async () => {
+    await expect(
+      tipjarContract.connect(sender).sendTip(receiver.address, {
+        value: ethers.BigNumber.from(10000000000000),
+      })
+    ).to.be.revertedWith('InvalidAmount');
   });
 });
