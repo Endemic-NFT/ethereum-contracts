@@ -146,6 +146,7 @@ abstract contract EndemicOffer is
                 offer.price
             );
 
+        // sale happened
         feeProvider.onSale(offer.nftContract, offer.tokenId);
 
         // Transfer token to bidder
@@ -163,8 +164,6 @@ abstract contract EndemicOffer is
             royaltiesRecipient,
             _msgSender()
         );
-
-        // sale happened
 
         emit OfferAccepted(
             offerId,
