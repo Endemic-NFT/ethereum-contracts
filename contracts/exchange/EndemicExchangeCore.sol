@@ -16,30 +16,8 @@ abstract contract EndemicExchangeCore {
     uint256 public makerFee;
     uint256 public takerFee;
 
-    uint256 internal constant FEE_BASIS_POINTS = 10000;
+    uint256 internal constant MAX_FEE = 10000;
     address internal constant ZERO_ADDRESS = address(0);
-
-    function __EndemicExchangeCore_init(
-        address _royaltiesProvider,
-        address _feeClaimAddress,
-        uint256 _makerFee,
-        uint256 _takerFee
-    ) internal {
-        if (
-            _royaltiesProvider == ZERO_ADDRESS ||
-            _feeClaimAddress == ZERO_ADDRESS
-        ) revert InvalidAddress();
-
-        if (_makerFee >= FEE_BASIS_POINTS || _takerFee >= FEE_BASIS_POINTS) {
-            revert InvalidFees();
-        }
-
-        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
-        feeClaimAddress = _feeClaimAddress;
-
-        makerFee = _makerFee;
-        takerFee = _takerFee;
-    }
 
     function _calculateFees(
         address nftContract,
@@ -91,7 +69,7 @@ abstract contract EndemicExchangeCore {
         pure
         returns (uint256)
     {
-        return (amount * fee) / FEE_BASIS_POINTS;
+        return (amount * fee) / MAX_FEE;
     }
 
     function _transferFees(uint256 value) internal {
@@ -112,6 +90,28 @@ abstract contract EndemicExchangeCore {
     function _transferFunds(address recipient, uint256 value) internal {
         (bool success, ) = payable(recipient).call{value: value}("");
         if (!success) revert FundsTransferFailed();
+    }
+
+    function _updateConfiguration(
+        address _royaltiesProvider,
+        address _feeClaimAddress,
+        uint256 _makerFee,
+        uint256 _takerFee
+    ) internal {
+        if (
+            _royaltiesProvider == ZERO_ADDRESS ||
+            _feeClaimAddress == ZERO_ADDRESS
+        ) revert InvalidAddress();
+
+        if (_makerFee >= MAX_FEE || _takerFee >= MAX_FEE) {
+            revert InvalidFees();
+        }
+
+        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
+        feeClaimAddress = _feeClaimAddress;
+
+        makerFee = _makerFee;
+        takerFee = _takerFee;
     }
 
     uint256[1000] private __gap;
