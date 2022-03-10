@@ -48,7 +48,7 @@ deployContractImporter:
 
 .PHONY: deployTipjar
 deployTipjar:
-	npx hardhat run scripts/import/deploy-tipjar.js --network ${network}
+	npx hardhat run scripts/tipjar/deploy-tipjar.js --network ${network}
 
 .PHONY: verify
 verify:
