@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-error AmountSentToSmall();
+error InvalidAmount();
+error FailedToSendEther();
 
 contract Tipjar {
-    event TipReceived(address recipient, uint256 amount);
+    uint256 public constant MINIMAL_TIP_AMOUNT = 0.0001 ether;
+    event TipReceived(address indexed recipient, uint256 indexed amount);
 
-    function sendTip(address payable _to) public payable {
-        if (msg.value < 100000000000000) revert AmountSentToSmall();
+    function sendTip(address payable to) external payable {
+        if (msg.value < MINIMAL_TIP_AMOUNT) revert InvalidAmount();
 
-        (bool sent, ) = _to.call{value: msg.value}("");
-        require(sent, "Failed to send Ether");
+        (bool sent, ) = to.call{value: msg.value}("");
 
-        emit TipReceived(_to, msg.value);
+        if (!sent) revert FailedToSendEther();
+
+        emit TipReceived(to, msg.value);
     }
 }
