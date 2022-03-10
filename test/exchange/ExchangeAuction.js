@@ -7,7 +7,6 @@ const {
   deployEndemicERC1155,
 } = require('../helpers/deploy');
 
-const { FEE_RECIPIENT } = require('../helpers/constants');
 const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('../helpers/ids');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
@@ -25,14 +24,7 @@ describe('ExchangeAuction', function () {
     feeProviderContract,
     royaltiesProviderContract;
 
-  let owner,
-    user1,
-    user2,
-    user3,
-    minter,
-    signer,
-    feeRecipient,
-    royaltiesRecipient;
+  let owner, user1, user2, user3, feeRecipient;
 
   async function mintERC721(recipient) {
     await nftContract
@@ -57,22 +49,8 @@ describe('ExchangeAuction', function () {
     });
   }
 
-  const createAuctionId = (contractId, tokenId, seller) => {
-    return `${contractId}-${tokenId}-${seller}`;
-  };
-
   async function deploy(makerFee = 0, takerFee, initialFee = 0) {
-    [
-      owner,
-      user1,
-      user2,
-      user3,
-      minter,
-      signer,
-      feeRecipient,
-      royaltiesRecipient,
-      ...otherSigners
-    ] = await ethers.getSigners();
+    [owner, user1, user2, user3, feeRecipient] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(
       makerFee,
@@ -651,7 +629,6 @@ describe('ExchangeAuction', function () {
     });
 
     it('should be able to bid in middle of auction', async function () {
-      const user1Bal1 = await user1.getBalance();
       await network.provider.send('evm_increaseTime', [60]);
       await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
         value: ethers.utils.parseUnits('0.103'),

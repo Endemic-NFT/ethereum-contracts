@@ -1,6 +1,5 @@
 const { expect } = require('chai');
-const { ethers, network } = require('hardhat');
-const BN = require('bignumber.js');
+const { ethers } = require('hardhat');
 const {
   deployEndemicExchangeWithDeps,
   deployEndemicCollectionWithFactory,
@@ -8,12 +7,8 @@ const {
 const { ERC721_ASSET_CLASS } = require('./helpers/ids');
 
 describe('NftTrade', function () {
-  let endemicExchange,
-    nftContract,
-    feeProviderContract,
-    royaltiesProviderContract;
-
-  let owner, user1, user2, user3, minter, signer;
+  let endemicExchange, nftContract;
+  let owner, user1, user2;
 
   async function mint(id, recipient) {
     await nftContract
@@ -25,8 +20,7 @@ describe('NftTrade', function () {
   }
 
   async function deploy(makerFee = 0, takerFee, initialFee = 0) {
-    [owner, user1, user2, user3, minter, signer, ...otherSigners] =
-      await ethers.getSigners();
+    [owner, user1, user2] = await ethers.getSigners();
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
 
@@ -36,8 +30,6 @@ describe('NftTrade', function () {
       initialFee
     );
 
-    feeProviderContract = result.feeProviderContract;
-    royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
 
     await mint(1, owner.address);

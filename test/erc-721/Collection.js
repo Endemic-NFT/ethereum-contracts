@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers, upgrades } = require('hardhat');
+const { ethers } = require('hardhat');
 const { deployEndemicCollectionWithFactory } = require('../helpers/deploy');
 
 describe('Collection', function () {
@@ -93,7 +93,7 @@ describe('Collection', function () {
         await nftContract.isApprovedForAll(owner.address, operator.address)
       ).to.equal(false);
 
-      const mintTx = await nftContract
+      await nftContract
         .connect(owner)
         .mintAndApprove(
           user.address,

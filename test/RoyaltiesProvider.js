@@ -1,6 +1,5 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const BN = require('bignumber.js');
 const {
   deployRoyaltiesProvider,
   deployEndemicCollectionWithFactory,
@@ -9,6 +8,7 @@ const {
 describe('RoyaltiesProvider', function () {
   let royaltiesProviderContract, nftContract, nftContractFactory;
   let owner, nftContractOwner, user2, feeRecipient, feeRecipient2;
+  let account, fee;
 
   async function deploy() {
     [owner, nftContractOwner, user2, feeRecipient, feeRecipient2] =
