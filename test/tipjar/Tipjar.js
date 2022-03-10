@@ -42,7 +42,15 @@ describe('Tipjar', function () {
       })
     )
       .to.emit(tipjarContract, 'TipReceived')
-      .withArgs(receiver.address, tip);
+      .withArgs(sender.address, receiver.address, tip);
+  });
+
+  it('will fail when sender is recipient', async () => {
+    await expect(
+      tipjarContract.connect(sender).sendTip(sender.address, {
+        value: tip,
+      })
+    ).to.be.revertedWith('SenderIsRecipient');
   });
 
   it('will fail empty amount', async () => {
