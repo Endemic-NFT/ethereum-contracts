@@ -3,9 +3,7 @@ const { getForNetwork } = require('../utils/addresses');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { endemicExchangeProxy, royaltiesProviderProxy } = getForNetwork(
-    network.name
-  );
+  const { endemicExchangeProxy } = getForNetwork(network.name);
 
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   await upgrades.upgradeProxy(endemicExchangeProxy, EndemicExchange, {

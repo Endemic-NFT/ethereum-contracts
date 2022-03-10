@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers, network } = require('hardhat');
+const { ethers } = require('hardhat');
 const {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
@@ -9,10 +9,7 @@ const { FEE_RECIPIENT } = require('../helpers/constants');
 const INVALID_OFFER_ERROR = 'InvalidOffer';
 
 describe('ExchangeOffer', function () {
-  let endemicExchange,
-    nftContract,
-    feeProviderContract,
-    royaltiesProviderContract;
+  let endemicExchange, nftContract, royaltiesProviderContract;
 
   let owner, user1, user2, user3, royaltiesRecipient;
 
@@ -26,16 +23,8 @@ describe('ExchangeOffer', function () {
   }
 
   async function deploy(makerFee = 300, takerFee = 300, initialFee = 2200) {
-    [
-      owner,
-      user1,
-      user2,
-      user3,
-      minter,
-      signer,
-      royaltiesRecipient,
-      ...otherSigners
-    ] = await ethers.getSigners();
+    [owner, user1, user2, user3, royaltiesRecipient] =
+      await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(
       makerFee,
@@ -43,7 +32,6 @@ describe('ExchangeOffer', function () {
       initialFee
     );
 
-    feeProviderContract = result.feeProviderContract;
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
 
@@ -395,7 +383,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange.connect(user1).acceptOffer(offer1.id);
       await nftContract.approve(endemicExchange.address, 1);
-      const acceptOfferTx = await endemicExchange.acceptOffer(offer2.id);
+      await endemicExchange.acceptOffer(offer2.id);
     });
   });
 });
