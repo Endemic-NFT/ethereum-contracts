@@ -1,6 +1,5 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const BN = require('bignumber.js');
 const { deployTipjar } = require('../helpers/deploy');
 
 describe('Tipjar', function () {
