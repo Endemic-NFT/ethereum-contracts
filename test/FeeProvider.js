@@ -1,16 +1,10 @@
 const { expect } = require('chai');
 const { ethers, upgrades } = require('hardhat');
 const BN = require('bignumber.js');
-const {
-  deployContractRegistry,
-  deployFeeProvider,
-} = require('./helpers/deploy');
+const { deployFeeProvider } = require('./helpers/deploy');
 
 describe('FeeProvider', function () {
-  let feeProviderContract,
-    contractRegistryContract,
-    nftContract,
-    exchangeContract;
+  let feeProviderContract, nftContract, exchangeContract;
   let owner, user1;
 
   async function deploy(
@@ -20,16 +14,13 @@ describe('FeeProvider', function () {
   ) {
     [owner, user1, nftContract, exchangeContract] = await ethers.getSigners();
 
-    contractRegistryContract = await deployContractRegistry();
-
     feeProviderContract = await deployFeeProvider(
-      contractRegistryContract.address,
       secondarySaleFee,
       takerFee,
       primarySaleFee
     );
 
-    await contractRegistryContract.addExchangeContract(
+    await feeProviderContract.updateEndemicExchangeAddress(
       exchangeContract.address
     );
   }
@@ -181,6 +172,16 @@ describe('FeeProvider', function () {
           )
         ).toString()
       ).to.equal('500');
+    });
+  });
+
+  describe('On sale', () => {
+    beforeEach(deploy);
+
+    it('should fail if caller is not exchange contract', async function () {
+      await expect(
+        feeProviderContract.connect(user1).onSale(nftContract.address, 1)
+      ).to.be.revertedWith('CallerNotExchangeContract');
     });
   });
 

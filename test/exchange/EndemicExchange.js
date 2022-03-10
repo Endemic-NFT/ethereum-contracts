@@ -4,10 +4,7 @@ const { deployEndemicExchangeWithDeps } = require('../helpers/deploy');
 const { FEE_RECIPIENT } = require('../helpers/constants');
 
 describe('EndemicExchange', () => {
-  let endemicExchange,
-    feeProviderContract,
-    royaltiesProviderContract,
-    contractRegistryContract;
+  let endemicExchange, feeProviderContract, royaltiesProviderContract;
 
   let owner, contractAddress1, contractAddress2, contractAddress3;
 
@@ -21,7 +18,6 @@ describe('EndemicExchange', () => {
       initialFee
     );
 
-    contractRegistryContract = result.contractRegistryContract;
     feeProviderContract = result.feeProviderContract;
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;

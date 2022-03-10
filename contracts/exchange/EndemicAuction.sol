@@ -11,8 +11,8 @@ import "./LibNFT.sol";
 
 error InvalidAuction();
 error Unauthorized();
-error InvalidValueProvided();
 error InvalidPrice();
+error InvalidValueProvided();
 
 abstract contract EndemicAuction is
     OwnableUpgradeable,
@@ -110,8 +110,7 @@ abstract contract EndemicAuction is
 
         if (!LibAuction.isActiveAuction(auction)) revert InvalidAuction();
         if (auction.seller == _msgSender()) revert Unauthorized();
-        if (auction.amount < tokenAmount || tokenAmount < 0)
-            revert LibAuction.InvalidAmount();
+        if (auction.amount < tokenAmount) revert LibAuction.InvalidAmount();
 
         LibNFT.requireTokenOwnership(
             auction.assetClass,
@@ -121,16 +120,9 @@ abstract contract EndemicAuction is
             auction.seller
         );
 
-        LibNFT.requireTokenApproval(
-            auction.assetClass,
-            auction.contractId,
-            auction.tokenId,
-            auction.seller
-        );
-
         uint256 currentPrice = LibAuction.getCurrentPrice(auction) *
             tokenAmount;
-        if (currentPrice <= 0) revert InvalidPrice();
+        if (currentPrice == 0) revert InvalidPrice();
 
         if (auction.assetClass == LibAuction.ERC721_ASSET_CLASS) {
             _removeAuction(auction.id);
@@ -140,38 +132,23 @@ abstract contract EndemicAuction is
             revert LibAuction.InvalidAssetClass();
         }
 
-        uint256 takerFee = feeProvider.calculateTakerFee(currentPrice);
-        if (msg.value < (currentPrice + takerFee))
-            revert InvalidValueProvided();
-
-        (address royaltiesRecipient, uint256 royaltieFee) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(
+        (
+            uint256 makerFee,
+            uint256 takerFee,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalFees
+        ) = _calculateFees(
                 auction.contractId,
                 auction.tokenId,
+                auction.seller,
                 currentPrice
             );
 
-        uint256 makerFee = feeProvider.calculateMakerFee(
-            auction.seller,
-            auction.contractId,
-            auction.tokenId,
-            currentPrice
-        );
-
-        uint256 totalFees = takerFee + makerFee;
-        uint256 sellerProceeds = currentPrice - makerFee - royaltieFee;
+        if (msg.value < (currentPrice + takerFee))
+            revert InvalidValueProvided();
 
         feeProvider.onSale(auction.contractId, auction.tokenId);
-
-        if (royaltieFee > 0) {
-            _transferRoyalties(royaltiesRecipient, royaltieFee);
-        }
-
-        if (totalFees > 0) {
-            _transferFees(totalFees);
-        }
-
-        _transferFunds(auction.seller, sellerProceeds);
 
         _transferNFT(
             auction.seller,
@@ -180,6 +157,15 @@ abstract contract EndemicAuction is
             auction.tokenId,
             tokenAmount,
             auction.assetClass
+        );
+
+        _distributeFunds(
+            currentPrice,
+            makerFee,
+            totalFees,
+            royaltieFee,
+            royaltiesRecipient,
+            auction.seller
         );
 
         emit AuctionSuccessful(
@@ -198,6 +184,24 @@ abstract contract EndemicAuction is
         _removeAuction(auction.id);
 
         emit AuctionCancelled(auction.id);
+    }
+
+    /**
+     * @notice Allows owner to cancel auctions
+     * @dev This should only be used for extreme cases
+     */
+    function adminCancelAuctions(bytes32[] calldata ids)
+        external
+        nonReentrant
+        onlyOwner
+    {
+        for (uint256 i = 0; i < ids.length; i++) {
+            LibAuction.Auction memory auction = idToAuction[ids[i]];
+            if (LibAuction.isActiveAuction(auction)) {
+                _removeAuction(auction.id);
+                emit AuctionCancelled(auction.id);
+            }
+        }
     }
 
     function getAuction(bytes32 id)
@@ -262,7 +266,7 @@ abstract contract EndemicAuction is
         bytes4 assetClass
     ) internal {
         if (assetClass == LibAuction.ERC721_ASSET_CLASS) {
-            IERC721(nftContract).safeTransferFrom(owner, receiver, tokenId);
+            IERC721(nftContract).transferFrom(owner, receiver, tokenId);
         } else if (assetClass == LibAuction.ERC1155_ASSET_CLASS) {
             IERC1155(nftContract).safeTransferFrom(
                 owner,

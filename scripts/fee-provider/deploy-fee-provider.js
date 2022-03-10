@@ -1,10 +1,7 @@
-const { ethers, upgrades, network } = require('hardhat');
-const { getForNetwork } = require('../utils/addresses');
+const { ethers, upgrades } = require('hardhat');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { contractRegistryProxy } = getForNetwork(network.name);
-
   console.log('Deploying FeeProvider with the account:', deployer.address);
 
   const initialSaleFee = 1500;
@@ -14,7 +11,7 @@ async function main() {
   const FeeProvider = await ethers.getContractFactory('FeeProvider');
   const feeProviderProxy = await upgrades.deployProxy(
     FeeProvider,
-    [initialSaleFee, secondarySaleMakerFee, takerFee, contractRegistryProxy],
+    [initialSaleFee, secondarySaleMakerFee, takerFee],
     {
       deployer,
       initializer: '__FeeProvider_init',

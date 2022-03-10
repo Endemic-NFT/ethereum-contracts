@@ -388,7 +388,8 @@ contract ModifiedERC721A is Context, ERC165, IERC721, IERC721Metadata {
      *
      * Requirements:
      *
-     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called for each safe transfer.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received},
+     * which is called for each safe transfer.
      * - `quantity` must be greater than 0.
      *
      * Emits a {Transfer} event.
@@ -623,7 +624,8 @@ contract ModifiedERC721A is Context, ERC165, IERC721, IERC721Metadata {
     }
 
     /**
-     * @dev Hook that is called before a set of serially-ordered token ids are about to be transferred. This includes minting.
+     * @dev Hook that is called before a set of serially-ordered token ids are about to be transferred.
+     * This includes minting.
      * And also called before burning one token.
      *
      * startTokenId - the first token id to be transferred
