@@ -79,13 +79,6 @@ abstract contract EndemicAuction is
             auction.seller
         );
 
-        LibNFT.requireTokenApproval(
-            auction.assetClass,
-            auction.contractId,
-            auction.tokenId,
-            auction.seller
-        );
-
         idToAuction[auctionId] = auction;
 
         emit AuctionCreated(

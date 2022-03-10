@@ -193,36 +193,6 @@ describe('ExchangeAuction', function () {
       ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
     });
 
-    it('should fail to create auction without first approving auction contract', async function () {
-      await expect(
-        endemicExchange
-          .connect(user1)
-          .createAuction(
-            nftContract.address,
-            1,
-            ethers.utils.parseUnits('0.3'),
-            ethers.utils.parseUnits('0.1'),
-            60,
-            1,
-            ERC721_ASSET_CLASS
-          )
-      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
-
-      await expect(
-        endemicExchange
-          .connect(user1)
-          .createAuction(
-            erc1155Contract.address,
-            1,
-            ethers.utils.parseUnits('0.3'),
-            ethers.utils.parseUnits('0.1'),
-            60,
-            1,
-            ERC1155_ASSET_CLASS
-          )
-      ).to.be.revertedWith(EXCHANGE_NOT_APPROVED_FOR_ASSET_ERROR);
-    });
-
     it('should be able to recreate ERC721 auction', async function () {
       // Create the auction
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
