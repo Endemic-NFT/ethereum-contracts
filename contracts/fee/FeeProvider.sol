@@ -51,9 +51,11 @@ contract FeeProvider is OwnableUpgradeable, IFeeProvider {
         uint256 _secondarySaleFee,
         uint256 _takerFee
     ) public onlyOwner {
-        require(_primarySaleFee <= BASIS_POINTS);
-        require(_secondarySaleFee <= BASIS_POINTS);
-        require(_takerFee <= BASIS_POINTS);
+        require(
+            _primarySaleFee <= BASIS_POINTS &&
+                _secondarySaleFee <= BASIS_POINTS &&
+                _takerFee <= BASIS_POINTS
+        );
 
         primarySaleFee = _primarySaleFee;
         secondarySaleFee = _secondarySaleFee;
