@@ -403,9 +403,7 @@ describe('ExchangeAuction', function () {
             2,
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith(
-        "function selector was not recognized and there's no fallback function"
-      );
+      ).to.be.revertedWith('InvalidInterface');
     });
   });
 
