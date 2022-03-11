@@ -92,8 +92,7 @@ abstract contract EndemicOffer is
 
         uint256 offerId = nextOfferId++;
 
-        uint256 price = (msg.value * FEE_BASIS_POINTS) /
-            (takerFee + FEE_BASIS_POINTS);
+        uint256 price = (msg.value * MAX_FEE) / (takerFee + MAX_FEE);
         uint256 expiresAt = block.timestamp + duration;
 
         offerIdsByBidder[nftContract][tokenId][_msgSender()] = offerId;
@@ -140,6 +139,7 @@ abstract contract EndemicOffer is
             uint256 royaltieFee,
             uint256 totalCut
         ) = _calculateFees(offer.nftContract, offer.tokenId, offer.price);
+        // sale happened
 
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(

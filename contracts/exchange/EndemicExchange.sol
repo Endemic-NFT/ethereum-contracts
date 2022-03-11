@@ -16,13 +16,14 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         __Context_init_unchained();
         __Ownable_init_unchained();
 
-        __EndemicExchangeCore_init(
+        __EndemicOffer___init_unchained();
+
+        _updateConfiguration(
             _royaltiesProvider,
             _feeClaimAddress,
             _makerFee,
             _takerFee
         );
-        __EndemicOffer___init_unchained();
     }
 
     function updateConfiguration(
@@ -31,13 +32,11 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         uint256 _makerFee,
         uint256 _takerFee
     ) external onlyOwner {
-        if (_makerFee >= FEE_BASIS_POINTS || _takerFee >= FEE_BASIS_POINTS) {
-            revert InvalidFees();
-        }
-
-        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
-        feeClaimAddress = _feeClaimAddress;
-        makerFee = _makerFee;
-        takerFee = _takerFee;
+        _updateConfiguration(
+            _royaltiesProvider,
+            _feeClaimAddress,
+            _makerFee,
+            _takerFee
+        );
     }
 }

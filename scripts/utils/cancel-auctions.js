@@ -1,8 +1,6 @@
 const { ethers } = require('hardhat');
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-
   const endemicExchangeAddress = '0x45b87060571e9d372c0762497b6893374f3638Ee';
   const auctionsToCancel = [
     {

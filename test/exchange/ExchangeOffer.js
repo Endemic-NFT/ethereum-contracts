@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers, network } = require('hardhat');
+const { ethers } = require('hardhat');
 const {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
@@ -23,16 +23,8 @@ describe('ExchangeOffer', function () {
   }
 
   async function deploy(makerFee = 300, takerFee = 300) {
-    [
-      owner,
-      user1,
-      user2,
-      user3,
-      minter,
-      signer,
-      royaltiesRecipient,
-      ...otherSigners
-    ] = await ethers.getSigners();
+    [owner, user1, user2, user3, royaltiesRecipient] =
+      await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
@@ -387,7 +379,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange.connect(user1).acceptOffer(offer1.id);
       await nftContract.approve(endemicExchange.address, 1);
-      const acceptOfferTx = await endemicExchange.acceptOffer(offer2.id);
+      await endemicExchange.acceptOffer(offer2.id);
     });
   });
 });
