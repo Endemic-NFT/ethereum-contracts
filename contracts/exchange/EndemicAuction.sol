@@ -24,6 +24,7 @@ abstract contract EndemicAuction is
 
     uint256 private constant MAX_DURATION = 1000 days;
     uint256 private constant MIN_DURATION = 1 minutes;
+    uint256 private constant MIN_PRICE = 0.0001 ether;
 
     mapping(bytes32 => Auction) internal idToAuction;
 
@@ -279,8 +280,8 @@ abstract contract EndemicAuction is
             revert InvalidDuration();
 
         if (
-            auction.startingPrice < 0.0001 ether ||
-            auction.endingPrice < 0.0001 ether ||
+            auction.startingPrice < MIN_PRICE ||
+            auction.endingPrice < MIN_PRICE ||
             auction.startingPrice < auction.endingPrice
         ) revert InvalidPriceConfiguration();
 

@@ -12,13 +12,12 @@ error FundsTransferFailed();
 error InvalidAddress();
 error InvalidFees();
 error InvalidInterface();
-error ExchangeNotApprovedForAsset();
 error SellerNotAssetOwner();
 error InvalidAssetClass();
 
 abstract contract EndemicExchangeCore {
-    bytes4 public constant ERC721_Interface = bytes4(0x80ac58cd);
-    bytes4 public constant ERC1155_Interface = bytes4(0xd9b67a26);
+    bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);
+    bytes4 public constant ERC1155_INTERFACE = bytes4(0xd9b67a26);
 
     bytes4 public constant ERC721_ASSET_CLASS = bytes4(keccak256("ERC721"));
     bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
@@ -132,10 +131,10 @@ abstract contract EndemicExchangeCore {
         address _nftContract
     ) internal view {
         if (_assetClass == ERC721_ASSET_CLASS) {
-            if (!IERC721(_nftContract).supportsInterface(ERC721_Interface))
+            if (!IERC721(_nftContract).supportsInterface(ERC721_INTERFACE))
                 revert InvalidInterface();
         } else if (_assetClass == ERC1155_ASSET_CLASS) {
-            if (!IERC1155(_nftContract).supportsInterface(ERC1155_Interface))
+            if (!IERC1155(_nftContract).supportsInterface(ERC1155_INTERFACE))
                 revert InvalidInterface();
         } else {
             revert InvalidAssetClass();
