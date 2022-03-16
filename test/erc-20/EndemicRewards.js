@@ -8,111 +8,99 @@ const { sign } = require('../helpers/sign');
 
 describe('EndemicRewards', function () {
   let owner, user1, user2;
-  let endemicToken, endemicTokenMining;
+  let endemicToken, endemicRewards;
 
   beforeEach(async () => {
-    [owner, user1, user2] = await ethers.getSigners();
+    [owner, user1, user2, signer] = await ethers.getSigners();
 
     endemicToken = await deployEndemicToken(owner);
-    endemicTokenMining = await deployEndemicRewards(endemicToken.address);
+    endemicRewards = await deployEndemicRewards(endemicToken.address);
 
     await endemicToken.transfer(
-      endemicTokenMining.address,
+      endemicRewards.address,
       ethers.utils.parseUnits('1000')
     ); // 1000 END
+
+    await endemicRewards.addSigner(signer.address);
   });
 
-  const signBalances = async (signer, balances) => {
+  const signBalance = async (signerAcc, balance) => {
     let abiEncoded = ethers.utils.defaultAbiCoder.encode(
-      ['tuple(address recipient, uint256 value)[]'],
-      [balances]
+      ['tuple(address recipient, uint256 value)'],
+      [balance]
     );
 
     const hash = ethers.utils.keccak256(ethers.utils.arrayify(abiEncoded));
-    let sig = await sign(signer, hash);
+    let sig = await sign(signerAcc, hash);
     return sig;
   };
 
-  it('can claims balances signed by owner', async () => {
+  it('can claims balance signed by signer', async () => {
     // Todo
-    let balances = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('10') },
-      { recipient: user2.address, value: ethers.utils.parseUnits('15') },
-    ];
+    const balance = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('10'),
+    };
 
-    const { v, r, s } = await signBalances(owner, balances);
-    await endemicTokenMining.connect(user1).claim(balances, v, r, s);
-    await endemicTokenMining.connect(user2).claim(balances, v, r, s);
+    const { v, r, s } = await signBalance(signer, balance);
+    await endemicRewards.connect(user1).claim(balance, v, r, s);
 
-    const balance = await endemicToken.balanceOf(user1.address);
-    expect(balance.toString()).to.equal(ethers.utils.parseUnits('10'));
-
-    const balance2 = await endemicToken.balanceOf(user2.address);
-    expect(balance2.toString()).to.equal(ethers.utils.parseUnits('15'));
+    expect(await endemicToken.balanceOf(user1.address)).to.equal(
+      ethers.utils.parseUnits('10')
+    );
   });
 
   it("can't claim same balance twice", async () => {
-    let balances = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('10') },
-      { recipient: user2.address, value: ethers.utils.parseUnits('15') },
-    ];
+    const balance = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('10'),
+    };
 
-    const { v, r, s } = await signBalances(owner, balances);
-    await endemicTokenMining.connect(user1).claim(balances, v, r, s);
+    const { v, r, s } = await signBalance(signer, balance);
+    await endemicRewards.connect(user1).claim(balance, v, r, s);
     await expect(
-      endemicTokenMining.connect(user1).claim(balances, v, r, s)
-    ).to.be.revertedWith('nothing to claim');
+      endemicRewards.connect(user1).claim(balance, v, r, s)
+    ).to.be.revertedWith('NothingToClaim');
   });
 
-  it('can claim multiple balances', async () => {
-    let balances1 = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('10') },
-      { recipient: user2.address, value: ethers.utils.parseUnits('15') },
-    ];
+  it('can claim multiple times', async () => {
+    const balance1 = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('10'),
+    };
 
-    const signature1 = await signBalances(owner, balances1);
+    const signature1 = await signBalance(signer, balance1);
 
-    let balances2 = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('20') },
-      { recipient: user2.address, value: ethers.utils.parseUnits('25') },
-    ];
+    const balance2 = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('15'),
+    };
 
-    const signature2 = await signBalances(owner, balances2);
+    const signature2 = await signBalance(signer, balance2);
 
-    await endemicTokenMining
+    await endemicRewards
       .connect(user1)
-      .claim(balances1, signature1.v, signature1.r, signature1.s);
+      .claim(balance1, signature1.v, signature1.r, signature1.s);
 
-    await endemicTokenMining
+    await endemicRewards
       .connect(user1)
-      .claim(balances2, signature2.v, signature2.r, signature2.s);
+      .claim(balance2, signature2.v, signature2.r, signature2.s);
 
-    const balance = await endemicToken.balanceOf(user1.address);
-    expect(balance.toString()).to.equal(ethers.utils.parseUnits('20'));
+    expect(await endemicToken.balanceOf(user1.address)).to.equal(
+      ethers.utils.parseUnits('15')
+    );
   });
 
-  it("can't claim balances not signed by the owner", async () => {
-    let balances = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('10') },
-      { recipient: user2.address, value: ethers.utils.parseUnits('15') },
-    ];
+  it("can't claim balances not signed by the signer", async () => {
+    const balance = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('10'),
+    };
 
-    const { v, r, s } = await signBalances(user1, balances);
-
-    await expect(
-      endemicTokenMining.connect(user1).claim(balances, v, r, s)
-    ).to.be.revertedWith('Owner should sign message');
-  });
-
-  it('reverts if user is not on the list', async () => {
-    let balances = [
-      { recipient: user1.address, value: ethers.utils.parseUnits('10') },
-    ];
-
-    const { v, r, s } = await signBalances(owner, balances);
+    const { v, r, s } = await signBalance(user1, balance);
 
     await expect(
-      endemicTokenMining.connect(user2).claim(balances, v, r, s)
-    ).to.be.revertedWith('caller not found in recipients');
+      endemicRewards.connect(user1).claim(balance, v, r, s)
+    ).to.be.revertedWith('InvalidSigner');
   });
 });
