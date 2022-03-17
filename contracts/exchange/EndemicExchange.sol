@@ -3,8 +3,9 @@ pragma solidity ^0.8.4;
 
 import "./EndemicAuction.sol";
 import "./EndemicOffer.sol";
+import "./EndemicPrivateSale.sol";
 
-contract EndemicExchange is EndemicAuction, EndemicOffer {
+contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicPrivateSale {
     /// @param _feeClaimAddress - address to claim fee between 0-10,000.
     /// @param _royaltiesProvider - royalyies provider contract
     function __EndemicExchange_init(
@@ -17,6 +18,7 @@ contract EndemicExchange is EndemicAuction, EndemicOffer {
         __Ownable_init_unchained();
 
         __EndemicOffer___init_unchained();
+        __EndemicPrivateSale___init_unchained();
 
         _updateConfiguration(
             _royaltiesProvider,
