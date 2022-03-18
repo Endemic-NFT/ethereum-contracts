@@ -17,7 +17,7 @@ const PRICE_NOT_CORRECT = 'PriceNotMatchWithProvidedEther';
 describe('EndemicPrivateSale', () => {
   let endemicExchange, nftContract;
 
-  let owner;
+  let owner, user2;
 
   const RANDOM_R_VALUE =
     '0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d';
@@ -39,7 +39,7 @@ describe('EndemicPrivateSale', () => {
   }
 
   async function deploy() {
-    [owner] = await ethers.getSigners();
+    [owner, user2] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps();
 
@@ -49,6 +49,35 @@ describe('EndemicPrivateSale', () => {
 
     await mintERC721(owner.address);
   }
+
+  const getSignedPrivateSale = async () => {
+    const wallet = ethers.Wallet.createRandom();
+
+    const signer = wallet.connect(endemicExchange.provider);
+
+    await owner.sendTransaction({
+      to: signer.address,
+      value: ethers.utils.parseEther('3000'),
+    });
+
+    await mintERC721(signer.address);
+
+    await nftContract.connect(signer).approve(endemicExchange.address, 2);
+
+    const data = getTypedMessage({
+      chainId: network.config.chainId,
+      verifierContract: endemicExchange.address,
+      nftContract: nftContract.address,
+      seller: signer.address,
+      buyer: owner.address,
+    });
+
+    return signTypedData({
+      privateKey: Buffer.from(signer.privateKey.substring(2), 'hex'),
+      data,
+      version: SignTypedDataVersion.V4,
+    });
+  };
 
   describe('Initial State', function () {
     it('should set domain separator', async function () {
@@ -73,23 +102,6 @@ describe('EndemicPrivateSale', () => {
           RANDOM_S_VALUE
         )
       ).to.be.revertedWith(PRIVATE_SALE_EXPIRED);
-    });
-
-    it('should fail with price not correct (too much provided)', async function () {
-      await expect(
-        endemicExchange.buyFromPrivateSale(
-          nftContract.address,
-          1,
-          ZERO_ONE_ETHER,
-          RANDOM_TIMESTAMP,
-          RANDOM_V_VALUE,
-          RANDOM_R_VALUE,
-          RANDOM_S_VALUE,
-          {
-            value: ONE_ETHER,
-          }
-        )
-      ).to.be.revertedWith(PRICE_NOT_CORRECT);
     });
 
     it('should fail with price not correct (too low provided)', async function () {
@@ -127,34 +139,9 @@ describe('EndemicPrivateSale', () => {
     });
 
     it('should succesfully buy from private sale', async function () {
-      const wallet = ethers.Wallet.createRandom();
+      const signedPrivateSale = await getSignedPrivateSale();
 
-      const signer = wallet.connect(endemicExchange.provider);
-
-      await owner.sendTransaction({
-        to: signer.address,
-        value: ethers.utils.parseEther('3000'),
-      });
-
-      await mintERC721(signer.address);
-
-      await nftContract.connect(signer).approve(endemicExchange.address, 2);
-
-      const data = getTypedMessage({
-        chainId: network.config.chainId,
-        verifierContract: endemicExchange.address,
-        nftContract: nftContract.address,
-        seller: signer.address,
-        buyer: owner.address,
-      });
-
-      const signedMessage = signTypedData({
-        privateKey: Buffer.from(signer.privateKey.substring(2), 'hex'),
-        data,
-        version: SignTypedDataVersion.V4,
-      });
-
-      const signature = signedMessage.substring(2);
+      const signature = signedPrivateSale.substring(2);
       const r = '0x' + signature.substring(0, 64);
       const s = '0x' + signature.substring(64, 128);
       const v = parseInt(signature.substring(128, 130), 16);
@@ -175,6 +162,23 @@ describe('EndemicPrivateSale', () => {
       ).to.emit(endemicExchange, 'PrivateSaleFinalized');
 
       expect(await nftContract.ownerOf(2)).to.equal(owner.address);
+    });
+
+    it('should fail to buy with valid signature and invalid buyer ', async function () {
+      const signedPrivateSale = await getSignedPrivateSale();
+
+      const signature = signedPrivateSale.substring(2);
+      const r = '0x' + signature.substring(0, 64);
+      const s = '0x' + signature.substring(64, 128);
+      const v = parseInt(signature.substring(128, 130), 16);
+
+      await expect(
+        endemicExchange
+          .connect(user2)
+          .buyFromPrivateSale(nftContract.address, 2, 1, 1678968943, v, r, s, {
+            value: 1,
+          })
+      ).to.be.revertedWith(INVALID_SIGNATURE);
     });
   });
 });

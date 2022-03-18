@@ -51,10 +51,6 @@ contract EndemicPrivateSale is
     );
 
     function __EndemicPrivateSale___init_unchained() internal {
-        _updateConfiguration();
-    }
-
-    function _updateConfiguration() internal {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
@@ -80,7 +76,7 @@ contract EndemicPrivateSale is
             revert PrivateSaleExpired();
         }
 
-        if (price != msg.value) {
+        if (msg.value < price) {
             revert PriceNotMatchWithProvidedEther();
         }
 
