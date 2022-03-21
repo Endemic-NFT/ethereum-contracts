@@ -13,6 +13,7 @@ const {
 const INVALID_SIGNATURE = 'InvalidSignature';
 const PRIVATE_SALE_EXPIRED = 'PrivateSaleExpired';
 const PRICE_NOT_CORRECT = 'PriceNotMatchWithProvidedEther';
+const PRIVATE_SALE_SUCCESS = 'PrivateSaleSuccess';
 
 describe('EndemicPrivateSale', () => {
   let endemicExchange, nftContract;
@@ -159,7 +160,7 @@ describe('EndemicPrivateSale', () => {
             value: 1,
           }
         )
-      ).to.emit(endemicExchange, 'PrivateSaleFinalized');
+      ).to.emit(endemicExchange, PRIVATE_SALE_SUCCESS);
 
       expect(await nftContract.ownerOf(2)).to.equal(owner.address);
     });

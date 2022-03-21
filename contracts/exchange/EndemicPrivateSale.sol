@@ -41,11 +41,11 @@ contract EndemicPrivateSale is
     mapping(address => mapping(uint256 => mapping(address => mapping(address => bool))))
         private privateSaleInvalidated;
 
-    event PrivateSaleFinalized(
+    event PrivateSaleSuccess(
         address indexed nftContract,
+        uint256 indexed tokenId,
         address indexed seller,
         address buyer,
-        uint256 indexed tokenId,
         uint256 price,
         uint256 totalFees
     );
@@ -119,6 +119,8 @@ contract EndemicPrivateSale is
         address payable seller,
         uint256 price
     ) internal {
+        privateSaleInvalidated[nftContract][tokenId][seller][buyer] = true;
+
         (
             uint256 makerCut,
             ,
@@ -138,13 +140,11 @@ contract EndemicPrivateSale is
             seller
         );
 
-        privateSaleInvalidated[nftContract][tokenId][seller][buyer] = true;
-
-        emit PrivateSaleFinalized(
+        emit PrivateSaleSuccess(
             nftContract,
+            tokenId,
             seller,
             buyer,
-            tokenId,
             price,
             totalCut
         );
