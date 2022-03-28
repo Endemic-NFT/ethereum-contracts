@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./ModifiedERC721A.sol";
+import "./base/ERC721A.sol";
 
 import "./interfaces/IERC2981Royalties.sol";
 import "./interfaces/ICollectionInitializer.sol";
@@ -15,7 +15,7 @@ error RoyaltiesTooHigh();
 error CallerNotTokenOwner();
 
 contract Collection is
-    ModifiedERC721A,
+    ERC721A,
     Initializable,
     IERC2981Royalties,
     ICollectionInitializer
@@ -43,7 +43,7 @@ contract Collection is
     }
 
     constructor(address _collectionFactory)
-        ModifiedERC721A("Collection Template", "CT")
+        ERC721A("Collection Template", "CT")
     {
         if (!_collectionFactory.isContract()) revert AddressNotContract();
         collectionFactory = _collectionFactory;
@@ -74,7 +74,8 @@ contract Collection is
         onlyOwner
         returns (uint256)
     {
-        uint256 tokenId = _safeMint(recipient);
+        uint256 tokenId = _currentIndex;
+        _safeMint(recipient, 1);
         _tokenCIDs[tokenId] = tokenCID;
         emit Mint(tokenId, owner);
         return tokenId;
@@ -85,9 +86,10 @@ contract Collection is
         string calldata tokenCID,
         address operator
     ) external onlyOwner returns (uint256) {
-        uint256 tokenId = _safeMint(recipient);
-        _tokenCIDs[tokenId] = tokenCID;
+        uint256 tokenId = _currentIndex;
+        _safeMint(recipient, 1);
         setApprovalForAll(operator, true);
+        _tokenCIDs[tokenId] = tokenCID;
         return tokenId;
     }
 
@@ -109,7 +111,7 @@ contract Collection is
     }
 
     function burn(uint256 tokenId) external {
-        TokenOwnership memory prevOwnership = ownershipOf(tokenId);
+        TokenOwnership memory prevOwnership = _ownershipOf(tokenId);
 
         bool isOwner = _msgSender() == prevOwnership.addr;
 
