@@ -7,11 +7,11 @@ const {
 const { sign } = require('../helpers/sign');
 
 describe('EndemicRewards', function () {
-  let owner, user1, user2;
+  let owner, user1, signer;
   let endemicToken, endemicRewards;
 
   beforeEach(async () => {
-    [owner, user1, user2, signer] = await ethers.getSigners();
+    [owner, user1, signer] = await ethers.getSigners();
 
     endemicToken = await deployEndemicToken(owner);
     endemicRewards = await deployEndemicRewards(endemicToken.address);
@@ -102,5 +102,31 @@ describe('EndemicRewards', function () {
     await expect(
       endemicRewards.connect(user1).claim(balance, v, r, s)
     ).to.be.revertedWith('InvalidSigner');
+  });
+
+  it('updates claimed when owner', async () => {
+    const balances = [
+      {
+        recipient: user1.address,
+        value: ethers.utils.parseUnits('10'),
+      },
+    ];
+    endemicRewards.updateClaimed(balances);
+
+    await expect(await endemicRewards.claimed(user1.address)).to.equal(
+      ethers.utils.parseUnits('10')
+    );
+  });
+
+  it('fails to update claimed when not owner', async () => {
+    const balances = [
+      {
+        recipient: user1.address,
+        value: ethers.utils.parseUnits('10'),
+      },
+    ];
+    await expect(
+      endemicRewards.connect(user1).updateClaimed(balances)
+    ).to.be.revertedWith('Ownable: caller is not the owner');
   });
 });
