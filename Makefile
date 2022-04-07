@@ -2,21 +2,17 @@
 deployRoyaltiesProvider:
 	npx hardhat run scripts/royalties-provider/deploy-royalties-provider.js --network ${network}
 
+.PHONY: deployErc721Factory
+deployErc721Factory:
+	npx hardhat run scripts/erc-721/deploy-erc721-factory.js --network ${network}
+
 .PHONY: deployEndemicErc721
-deployErc721:
-	npx hardhat run scripts/erc-721/deploy-endemic-erc721.js --network ${network}
+deployEndemicErc721:
+	npx hardhat run scripts/erc-721/deploy-erc721.js --network ${network}
 
 .PHONY: deployEndemicExchange
 deployEndemicExchange:
 	npx hardhat run scripts/exchange/deploy-endemic-exchange.js --network ${network}
-
-.PHONY: deployErc721Factory
-deployFactory:
-	npx hardhat run scripts/erc-721/deploy-erc721-factory.js --network ${network}
-
-.PHONY: deployBid
-deployBid:
-	npx hardhat run scripts/bid/deploy-bid.js --network ${network}
 
 .PHONY: upgradeEndemicExchange
 upgradeEndemicExchange:
