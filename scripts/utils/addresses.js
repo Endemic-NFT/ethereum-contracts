@@ -8,6 +8,9 @@ const rinkeby = {
   endemicERC1155Proxy: '',
   endemicERC1155Beacon: '',
   endemicERC1155Factory: '',
+
+  endemicENDToken: '',
+  endemicVesting: '',
 };
 
 const networks = {

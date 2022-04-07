@@ -109,6 +109,25 @@ const deployRoyaltiesProvider = async () => {
   return royaltiesProviderProxy;
 };
 
+const deployEndemicVesting = async (deployer, tgeStartTime, startTime) => {
+  const EndemicVesting = await ethers.getContractFactory('EndemicVesting');
+
+  const endemicToken = await deployEndemicToken(deployer);
+
+  const endemicVesting = await EndemicVesting.deploy(
+    tgeStartTime,
+    startTime,
+    endemicToken.address
+  );
+
+  await endemicVesting.deployed();
+
+  return {
+    endemicVesting,
+    endemicToken,
+  };
+};
+
 module.exports = {
   deployEndemicRewards,
   deployEndemicToken,
@@ -118,4 +137,5 @@ module.exports = {
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
   deployRoyaltiesProvider,
+  deployEndemicVesting,
 };
