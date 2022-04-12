@@ -37,8 +37,9 @@ contract EndemicPrivateSale is
 
     bytes32 public DOMAIN_SEPARATOR;
 
-    // Maps nftContract -> tokenId -> seller -> buyer -> invalidated.
-    mapping(address => mapping(uint256 => mapping(address => mapping(address => bool))))
+    // Maps nftContract -> tokenId -> seller -> buyer -> price => deadline => invalidated.
+    // solhint-disable-next-line max-line-length
+    mapping(address => mapping(uint256 => mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => bool))))))
         private privateSaleInvalidated;
 
     event PrivateSaleSuccess(
@@ -83,7 +84,11 @@ contract EndemicPrivateSale is
         address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
         address buyer = _msgSender();
 
-        if (privateSaleInvalidated[nftContract][tokenId][seller][buyer]) {
+        if (
+            privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
+                deadline
+            ]
+        ) {
             revert InvalidPrivateSale();
         }
 
@@ -109,7 +114,14 @@ contract EndemicPrivateSale is
             revert InvalidSignature();
         }
 
-        _finalizePrivateSale(nftContract, tokenId, buyer, seller, price);
+        _finalizePrivateSale(
+            nftContract,
+            tokenId,
+            buyer,
+            seller,
+            price,
+            deadline
+        );
     }
 
     function _finalizePrivateSale(
@@ -117,9 +129,12 @@ contract EndemicPrivateSale is
         uint256 tokenId,
         address buyer,
         address payable seller,
-        uint256 price
+        uint256 price,
+        uint256 deadline
     ) internal {
-        privateSaleInvalidated[nftContract][tokenId][seller][buyer] = true;
+        privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
+            deadline
+        ] = true;
 
         (
             uint256 makerCut,
