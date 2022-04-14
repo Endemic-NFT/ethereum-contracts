@@ -118,6 +118,8 @@ abstract contract EndemicOffer is
 
     function cancelOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
+        if (offer.bidder != _msgSender()) revert InvalidOffer();
+
         _cancelOffer(offer);
     }
 
