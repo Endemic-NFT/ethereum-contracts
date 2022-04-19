@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { deployEndemicVesting } = require('../helpers/deploy');
+const { BigNumber } = ethers;
 
 const VESTING_NOT_STARTED = 'VestingNotStarted';
 const NO_ALLOCATED_TOKENS = 'NoAllocatedTokensForClaimer';
@@ -131,12 +132,20 @@ describe('EndemicVesting', function () {
     });
 
     it('should claim tokens for address when cliff passed and vesting not finished yet', async () => {
+      const initialAllocation = 500;
+      const totalAllocated = 1000;
+
       const allocRequests = await generateAllocRequests(
         END_CLIFF_TIMESTAMP,
-        END_VESTING_TIMESTAMP
+        END_VESTING_TIMESTAMP,
+        initialAllocation,
+        totalAllocated
       );
 
       await endemicVesting.allocateTokens(allocRequests);
+
+      const initalLinearClaim = 526;
+      const closeToDelta = totalAllocated - initalLinearClaim;
 
       //verify claimer allocations before claim
       const ownerAllocsBeforeClaim =
@@ -155,14 +164,19 @@ describe('EndemicVesting', function () {
       const ownerAmountToClaimForSeedBefore = ownerAllocsBeforeClaim[1][0];
       const userAmountToClaimForTeamBefore = userAllocsBeforeClaim[1][5];
 
-      expect(ownerSeedAllocBeforeClaim.totalAllocated).to.equal(100000);
+      expect(ownerSeedAllocBeforeClaim.totalAllocated).to.equal(1000);
       expect(ownerSeedAllocBeforeClaim.totalClaimed).to.equal(0);
 
-      expect(userTeamAllocBeforeClaim.totalAllocated).to.equal(100000);
+      expect(userTeamAllocBeforeClaim.totalAllocated).to.equal(1000);
       expect(userTeamAllocBeforeClaim.totalClaimed).to.equal(0);
-
-      expect(ownerAmountToClaimForSeedBefore).to.equal('52650'); //initial + linear
-      expect(userAmountToClaimForTeamBefore).to.equal('52650'); //initial + linear
+      expect(ownerAmountToClaimForSeedBefore).to.be.closeTo(
+        BigNumber.from(initalLinearClaim),
+        closeToDelta
+      ); //initial + linear
+      expect(userAmountToClaimForTeamBefore).to.be.closeTo(
+        BigNumber.from(initalLinearClaim),
+        closeToDelta
+      ); //initial + linear
 
       //claim tokens for owner and user
       await expect(endemicVesting.claimFor(owner.address, 0)).to.emit(
@@ -191,30 +205,47 @@ describe('EndemicVesting', function () {
       const ownerAmountToClaimForSeedAfter = ownerAllocationsAfterClaim[1][0];
       const userAmountToClaimForTeamAfter = userAllocationsAfterClaim[1][5];
 
-      expect(ownerSeedAlocationAfterClaim.totalAllocated).to.equal(100000);
-      expect(ownerSeedAlocationAfterClaim.totalClaimed).to.equal(52650); //initial + linear
+      expect(ownerSeedAlocationAfterClaim.totalAllocated).to.equal(1000);
+      expect(ownerSeedAlocationAfterClaim.totalClaimed).to.be.closeTo(
+        BigNumber.from(initalLinearClaim),
+        closeToDelta
+      ); //initial + linear
 
-      expect(userTeamAlocationAfterClaim.totalAllocated).to.equal(100000);
-      expect(userTeamAlocationAfterClaim.totalClaimed).to.equal(52650); //initial + linear
+      expect(userTeamAlocationAfterClaim.totalAllocated).to.equal(1000);
+      expect(userTeamAlocationAfterClaim.totalClaimed).to.be.closeTo(
+        BigNumber.from(initalLinearClaim),
+        closeToDelta
+      ); //initial + linear
 
       expect(ownerAmountToClaimForSeedAfter).to.equal(0);
       expect(userAmountToClaimForTeamAfter).to.equal(0);
     });
 
     it('should claim tokens when cliff passed and vesting not finished yet', async () => {
+      const initialAllocation = 500;
+      const totalAllocated = 1000;
+
       const allocRequests = await generateAllocRequests(
         END_CLIFF_TIMESTAMP,
-        END_VESTING_TIMESTAMP
+        END_VESTING_TIMESTAMP,
+        initialAllocation,
+        totalAllocated
       );
 
       await endemicVesting.allocateTokens(allocRequests);
+
+      const initalLinearClaim = 526;
+      const closeToDelta = totalAllocated - initalLinearClaim;
 
       await expect(endemicVesting.connect(user1).claim(5)).to.emit(
         endemicVesting,
         END_TOKEN_CLAIMED
       );
 
-      expect(await endemicToken.balanceOf(user1.address)).to.equal('52650'); //initial + linear
+      expect(await endemicToken.balanceOf(user1.address)).to.be.closeTo(
+        BigNumber.from(initalLinearClaim),
+        closeToDelta
+      ); //initial + linear
     });
 
     it('should claim tokens for address when cliff and vesting passed', async () => {
