@@ -185,22 +185,9 @@ describe('ExchangeOffer', function () {
           value: ethers.utils.parseUnits('0.3'),
         });
 
-      const ownerBalance1 = await owner.getBalance();
-
-      await endemicExchange.cancelOffer(1);
-
-      const ownerBalance2 = await owner.getBalance();
-      expect(ownerBalance2.sub(ownerBalance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.5'),
-        ethers.utils.parseUnits('0.001') //gas fees
-      );
-
-      await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+      await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
         INVALID_OFFER_ERROR
       );
-
-      const activeOffer = await endemicExchange.getOffer(2);
-      expect(activeOffer.bidder).to.equal(user2.address);
     });
 
     it('should be able to cancel offer where there are multiple offers on same token', async () => {
