@@ -10,7 +10,7 @@
     "lint:sol": "solhint 'contracts/**/*.sol'"
   },
   "dependencies": {
-    "@metamask/eth-sig-util": "^4.0.0",
+    "@metamask/eth-sig-util": "^4.0.1",
     "@nomiclabs/hardhat-etherscan": "3.0.3",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
