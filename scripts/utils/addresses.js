@@ -13,8 +13,24 @@ const rinkeby = {
   endemicVesting: '',
 };
 
+const aurora_test = {
+  royaltiesProviderProxy: '',
+  endemicErc721Factory: '0x21aAB5F1458BC5BDaeC902683fd518A647eF52d4',
+  endemicErc721: '0x7d05e42A3bacB672dB99D951c34F8012aB847De5',
+  endemicExchangeProxy: '',
+  contractImporter: '',
+
+  endemicERC1155Proxy: '',
+  endemicERC1155Beacon: '',
+  endemicERC1155Factory: '',
+
+  endemicENDToken: '',
+  endemicVesting: '',
+};
+
 const networks = {
   rinkeby,
+  aurora_test,
 };
 
 const getForNetwork = (network) => networks[network];

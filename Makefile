@@ -6,6 +6,10 @@ deployRoyaltiesProvider:
 deployErc721Factory:
 	npx hardhat run scripts/erc-721/deploy-erc721-factory.js --network ${network}
 
+.PHONY: deployOpenspaceFactory
+deployOpenspaceFactory:
+	npx hardhat run scripts/erc-721/deploy-openspace-factory.js --network ${network}
+
 .PHONY: deployEndemicErc721
 deployEndemicErc721:
 	npx hardhat run scripts/erc-721/deploy-erc721.js --network ${network}

@@ -26,6 +26,16 @@ module.exports = {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
+    aurora_test: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    aurora: {
+      url: 'https://mainnet.aurora.dev',
+      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+      chainId: 1313161554,
+      timeout: 80000,
+    },
   },
   gasReporter: {
     currency: 'USD',

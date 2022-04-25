@@ -3,7 +3,6 @@ const { getForNetwork } = require('../utils/addresses');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log(network);
   const { endemicErc721Factory } = getForNetwork(network.name);
 
   console.log('Deploying Collection with the account:', deployer.address);
