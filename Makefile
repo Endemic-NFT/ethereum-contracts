@@ -52,4 +52,4 @@ deployContractImporter:
 
 .PHONY: verify
 verify:
-	npx hardhat verify --network ${network} ${address}
+	npx hardhat verify --network ${network} "${address}"

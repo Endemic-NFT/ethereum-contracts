@@ -10,7 +10,6 @@ const rinkeby = {
   endemicERC1155Factory: '',
 
   endemicENDToken: '',
-  endemicVesting: '',
 };
 
 const aurora_test = {
@@ -23,14 +22,16 @@ const aurora_test = {
   endemicERC1155Proxy: '',
   endemicERC1155Beacon: '',
   endemicERC1155Factory: '',
+};
 
-  endemicENDToken: '',
-  endemicVesting: '',
+const mainnet = {
+  endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
 };
 
 const networks = {
   rinkeby,
   aurora_test,
+  mainnet,
 };
 
 const getForNetwork = (network) => networks[network];
