@@ -104,29 +104,41 @@ describe('EndemicRewards', function () {
     ).to.be.revertedWith('InvalidSigner');
   });
 
-  it('updates claimed when owner', async () => {
-    const balances = [
-      {
-        recipient: user1.address,
-        value: ethers.utils.parseUnits('10'),
-      },
-    ];
-    endemicRewards.updateClaimed(balances);
+  it("can't claim when paused", async () => {
+    const balance1 = {
+      recipient: user1.address,
+      value: ethers.utils.parseUnits('10'),
+    };
 
-    await expect(await endemicRewards.claimed(user1.address)).to.equal(
-      ethers.utils.parseUnits('10')
-    );
+    const signature1 = await signBalance(signer, balance1);
+
+    await endemicRewards.pause();
+
+    await expect(
+      endemicRewards
+        .connect(user1)
+        .claim(balance1, signature1.v, signature1.r, signature1.s)
+    ).to.be.revertedWith('Pausable: paused');
   });
 
-  it('fails to update claimed when not owner', async () => {
-    const balances = [
-      {
-        recipient: user1.address,
-        value: ethers.utils.parseUnits('10'),
-      },
-    ];
-    await expect(
-      endemicRewards.connect(user1).updateClaimed(balances)
-    ).to.be.revertedWith('Ownable: caller is not the owner');
+  it('can pause and unpause if owner', async () => {
+    await endemicRewards.pause();
+    await expect(await endemicRewards.paused()).to.equal(true);
+
+    await endemicRewards.unpause();
+    await expect(await endemicRewards.paused()).to.equal(false);
+  });
+
+  it("can't pause and unpause if not owner", async () => {
+    await expect(endemicRewards.connect(user1).pause()).to.be.revertedWith(
+      'Ownable: caller is not the owner'
+    );
+    await expect(await endemicRewards.paused()).to.equal(false);
+
+    await endemicRewards.pause();
+    await expect(endemicRewards.connect(user1).unpause()).to.be.revertedWith(
+      'Ownable: caller is not the owner'
+    );
+    await expect(await endemicRewards.paused()).to.equal(true);
   });
 });

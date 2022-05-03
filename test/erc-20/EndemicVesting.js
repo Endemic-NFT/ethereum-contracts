@@ -5,6 +5,7 @@ const { BigNumber } = ethers;
 
 const VESTING_NOT_STARTED = 'VestingNotStarted';
 const NO_ALLOCATED_TOKENS = 'NoAllocatedTokensForClaimer';
+const ALLOCATION_EXISTS = 'AllocationExists';
 const END_TOKEN_CLAIMED = 'ENDTokenClaimed';
 
 describe('EndemicVesting', function () {
@@ -82,6 +83,19 @@ describe('EndemicVesting', function () {
       );
 
       await endemicVesting.allocateTokens(allocRequests);
+    });
+
+    it('should fail to update existing allocation', async () => {
+      const allocRequests = await generateAllocRequests(
+        END_CLIFF_TIMESTAMP,
+        END_VESTING_TIMESTAMP
+      );
+
+      await endemicVesting.allocateTokens(allocRequests);
+
+      await expect(
+        endemicVesting.allocateTokens(allocRequests)
+      ).to.be.revertedWith(ALLOCATION_EXISTS);
     });
   });
 
@@ -349,55 +363,6 @@ describe('EndemicVesting', function () {
       );
 
       expect(await endemicToken.balanceOf(user1.address)).to.equal('50000'); //initial allocated
-    });
-  });
-
-  describe('Update allocation type', function () {
-    it('should successfully update allocation', async () => {
-      const NEW_VESTING_TIMESTAMP = 1680209520;
-      const NEW_CLIFF_TIMESTAMP = 1680209522;
-
-      const allocRequests = await generateAllocRequests(
-        END_CLIFF_TIMESTAMP,
-        END_VESTING_TIMESTAMP
-      );
-
-      await endemicVesting.allocateTokens(allocRequests);
-
-      const claimerAllocsBeforeUpdate =
-        await endemicVesting.getAllocationsForClaimer(user1.address);
-
-      const claimerTeamAllocBeforeUpdate = assignToObject(
-        claimerAllocsBeforeUpdate[0][5]
-      );
-
-      expect(claimerTeamAllocBeforeUpdate.endVesting).to.equal(
-        END_VESTING_TIMESTAMP
-      );
-      expect(claimerTeamAllocBeforeUpdate.endCliff).to.equal(
-        END_CLIFF_TIMESTAMP
-      );
-
-      await endemicVesting.updateAllocation(
-        5,
-        user1.address,
-        NEW_CLIFF_TIMESTAMP,
-        NEW_VESTING_TIMESTAMP
-      );
-
-      const claimerAllocsAfterUpdate =
-        await endemicVesting.getAllocationsForClaimer(user1.address);
-
-      const claimerTeamAllocAfterUpdate = assignToObject(
-        claimerAllocsAfterUpdate[0][5]
-      );
-
-      expect(claimerTeamAllocAfterUpdate.endVesting).to.equal(
-        NEW_VESTING_TIMESTAMP
-      );
-      expect(claimerTeamAllocAfterUpdate.endCliff).to.equal(
-        NEW_CLIFF_TIMESTAMP
-      );
     });
   });
 });

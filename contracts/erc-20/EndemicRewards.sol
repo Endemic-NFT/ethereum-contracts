@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "../roles/SignerRole.sol";
 
@@ -9,7 +10,7 @@ error InvalidSigner();
 error NothingToClaim();
 error TransferFailed();
 
-contract EndemicRewards is SignerRole {
+contract EndemicRewards is SignerRole, Pausable {
     ERC20 public immutable endToken;
 
     mapping(address => uint256) public claimed;
@@ -20,7 +21,6 @@ contract EndemicRewards is SignerRole {
     }
 
     event Claim(address indexed owner, uint256 value);
-    event UpdatedClaim(address indexed owner, uint256 value);
 
     constructor(ERC20 _endToken) {
         endToken = _endToken;
@@ -31,7 +31,7 @@ contract EndemicRewards is SignerRole {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    ) external whenNotPaused {
         if (!isSigner(recoverSigner(prepareMessage(balance), v, r, s))) {
             revert InvalidSigner();
         }
@@ -50,11 +50,12 @@ contract EndemicRewards is SignerRole {
         emit Claim(_msgSender(), valueToClaim);
     }
 
-    function updateClaimed(Balance[] memory balances) public onlyOwner {
-        for (uint256 i = 0; i < balances.length; i++) {
-            claimed[balances[i].recipient] = balances[i].value;
-            emit UpdatedClaim(balances[i].recipient, balances[i].value);
-        }
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function prepareMessage(Balance memory balance)

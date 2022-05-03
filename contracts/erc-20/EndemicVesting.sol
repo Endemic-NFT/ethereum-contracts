@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/utils/Context.sol";
 
 error VestingNotStarted();
 error NoAllocatedTokensForClaimer();
+error AllocationExists();
 
 contract EndemicVesting is Context, Ownable {
-    IERC20 private immutable END;
+    IERC20 public immutable END;
     uint256 private immutable vestingStartTime;
 
     mapping(address => mapping(AllocationType => AllocationData))
@@ -25,6 +26,7 @@ contract EndemicVesting is Context, Ownable {
     }
 
     struct AllocationData {
+        address claimer;
         //percentage of TGE that is available for claimer immediately after TGE
         uint32 initialAllocation;
         //total allocation that is available for claimer after vesting finishes
@@ -73,6 +75,11 @@ contract EndemicVesting is Context, Ownable {
                 allocReq.allocType
             ];
 
+            if (claimerAlloc.claimer != address(0)) {
+                revert AllocationExists();
+            }
+
+            claimerAlloc.claimer = allocReq.claimer;
             claimerAlloc.endCliff = allocReq.endCliff;
             claimerAlloc.endVesting = allocReq.endVesting;
             claimerAlloc.initialAllocation = allocReq.initialAllocation;
@@ -85,16 +92,6 @@ contract EndemicVesting is Context, Ownable {
             END.transferFrom(_msgSender(), address(this), amountToTransfer),
             "END Token transfer fail"
         );
-    }
-
-    function updateAllocation(
-        AllocationType allocType,
-        address claimer,
-        uint256 endCliff,
-        uint256 endVesting
-    ) external onlyOwner {
-        allocations[claimer][allocType].endCliff = endCliff;
-        allocations[claimer][allocType].endVesting = endVesting;
     }
 
     function claim(AllocationType allocType) external {
