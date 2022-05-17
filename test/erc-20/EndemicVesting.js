@@ -25,8 +25,8 @@ describe('EndemicVesting', function () {
   const generateAllocRequests = async (
     endCliff,
     endVesting,
-    initialAllocation = 50000,
-    totalAllocated = 100000
+    initialAllocation = 500,
+    totalAllocated = 1000
   ) => {
     return [...new Array(6)].map((_, i) => ({
       endCliff,
@@ -75,14 +75,14 @@ describe('EndemicVesting', function () {
     });
   });
 
-  describe('Allocate tokens', function () {
+  describe('Allocate additional tokens', function () {
     it('should successfully allocate tokens', async () => {
       const allocRequests = await generateAllocRequests(
         END_CLIFF_TIMESTAMP,
         END_VESTING_TIMESTAMP
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
     });
 
     it('should fail to update existing allocation', async () => {
@@ -91,10 +91,10 @@ describe('EndemicVesting', function () {
         END_VESTING_TIMESTAMP
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       await expect(
-        endemicVesting.allocateTokens(allocRequests)
+        endemicVesting.addAllocations(allocRequests)
       ).to.be.revertedWith(ALLOCATION_EXISTS);
     });
   });
@@ -129,7 +129,7 @@ describe('EndemicVesting', function () {
     });
 
     it('should fail to claim initial tokens when neither cliff or vesting passed', async () => {
-      await endemicVesting.allocateTokens([
+      await endemicVesting.addAllocations([
         {
           endCliff: END_VESTING_TIMESTAMP,
           endVesting: END_VESTING_TIMESTAMP,
@@ -156,7 +156,7 @@ describe('EndemicVesting', function () {
         totalAllocated
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       const initalLinearClaim = 526;
       const closeToDelta = totalAllocated - initalLinearClaim;
@@ -246,7 +246,7 @@ describe('EndemicVesting', function () {
         totalAllocated
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       const initalLinearClaim = 526;
       const closeToDelta = totalAllocated - initalLinearClaim;
@@ -268,7 +268,7 @@ describe('EndemicVesting', function () {
         END_CLIFF_TIMESTAMP
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       //verify claimer allocations before claim
       const ownerAllocsBeforeClaim =
@@ -287,14 +287,14 @@ describe('EndemicVesting', function () {
       const ownerAmountToClaimForSeedBefore = ownerAllocsBeforeClaim[1][0];
       const userAmountToClaimForTeamBefore = userAllocsBeforeClaim[1][5];
 
-      expect(ownerSeedAllocBeforeClaim.totalAllocated).to.equal(100000);
+      expect(ownerSeedAllocBeforeClaim.totalAllocated).to.equal(1000);
       expect(ownerSeedAllocBeforeClaim.totalClaimed).to.equal(0);
 
-      expect(userTeamAllocBeforeClaim.totalAllocated).to.equal(100000);
+      expect(userTeamAllocBeforeClaim.totalAllocated).to.equal(1000);
       expect(userTeamAllocBeforeClaim.totalClaimed).to.equal(0);
 
-      expect(ownerAmountToClaimForSeedBefore).to.equal('100000'); //amount of total allocated
-      expect(userAmountToClaimForTeamBefore).to.equal('100000'); //amount of total allocated
+      expect(ownerAmountToClaimForSeedBefore).to.equal('1000'); //amount of total allocated
+      expect(userAmountToClaimForTeamBefore).to.equal('1000'); //amount of total allocated
 
       //claim tokens for user and owner
       await expect(endemicVesting.claimFor(owner.address, 0)).to.emit(
@@ -323,11 +323,11 @@ describe('EndemicVesting', function () {
       const ownerAmountToClaimForSeedAfter = ownerAllocationsAfterClaim[1][0];
       const userAmountToClaimForTeamAfter = userAllocationsAfterClaim[1][5];
 
-      expect(ownerSeedAlocationAfterClaim.totalAllocated).to.equal(100000);
-      expect(ownerSeedAlocationAfterClaim.totalClaimed).to.equal(100000); //amount of total allocated
+      expect(ownerSeedAlocationAfterClaim.totalAllocated).to.equal(1000);
+      expect(ownerSeedAlocationAfterClaim.totalClaimed).to.equal(1000); //amount of total allocated
 
-      expect(userTeamAlocationAfterClaim.totalAllocated).to.equal(100000);
-      expect(userTeamAlocationAfterClaim.totalClaimed).to.equal(100000); //amount of total allocated
+      expect(userTeamAlocationAfterClaim.totalAllocated).to.equal(1000);
+      expect(userTeamAlocationAfterClaim.totalClaimed).to.equal(1000); //amount of total allocated
 
       expect(ownerAmountToClaimForSeedAfter).to.equal(0);
       expect(userAmountToClaimForTeamAfter).to.equal(0);
@@ -339,14 +339,14 @@ describe('EndemicVesting', function () {
         END_CLIFF_TIMESTAMP
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       await expect(endemicVesting.connect(user1).claim(5)).to.emit(
         endemicVesting,
         END_TOKEN_CLAIMED
       );
 
-      expect(await endemicToken.balanceOf(user1.address)).to.equal('100000'); //amount of total allocated
+      expect(await endemicToken.balanceOf(user1.address)).to.equal('1000'); //amount of total allocated
     });
 
     it('should claim initial tokens for address when neither cliff or vesting passed', async () => {
@@ -355,14 +355,14 @@ describe('EndemicVesting', function () {
         END_VESTING_TIMESTAMP
       );
 
-      await endemicVesting.allocateTokens(allocRequests);
+      await endemicVesting.addAllocations(allocRequests);
 
       await expect(endemicVesting.claimFor(user1.address, 5)).to.emit(
         endemicVesting,
         END_TOKEN_CLAIMED
       );
 
-      expect(await endemicToken.balanceOf(user1.address)).to.equal('50000'); //initial allocated
+      expect(await endemicToken.balanceOf(user1.address)).to.equal('500'); //initial allocated
     });
   });
 });

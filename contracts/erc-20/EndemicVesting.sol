@@ -8,10 +8,16 @@ import "@openzeppelin/contracts/utils/Context.sol";
 error VestingNotStarted();
 error NoAllocatedTokensForClaimer();
 error AllocationExists();
+error ENDTransferFailed();
+error MaximumAdditionalAllocationReached();
 
 contract EndemicVesting is Context, Ownable {
     IERC20 public immutable END;
     uint256 private immutable vestingStartTime;
+
+    uint256 private additionalTokensAllocated;
+
+    uint256 public constant ADDITIONAL_TOKENS_LIMIT = 100_000 * 10**18;
 
     mapping(address => mapping(AllocationType => AllocationData))
         public allocations;
@@ -62,36 +68,44 @@ contract EndemicVesting is Context, Ownable {
         vestingStartTime = startTime;
     }
 
-    function allocateTokens(AllocationRequest[] calldata allocRequests)
+    function addAllocations(AllocationRequest[] calldata allocRequests)
         external
         onlyOwner
     {
         uint32 amountToTransfer;
 
         for (uint256 i = 0; i < allocRequests.length; i++) {
-            AllocationRequest calldata allocReq = allocRequests[i];
+            AllocationRequest calldata allocRequest = allocRequests[i];
+            _allocateTokens(allocRequest);
 
-            AllocationData storage claimerAlloc = allocations[allocReq.claimer][
-                allocReq.allocType
-            ];
-
-            if (claimerAlloc.claimer != address(0)) {
-                revert AllocationExists();
-            }
-
-            claimerAlloc.claimer = allocReq.claimer;
-            claimerAlloc.endCliff = allocReq.endCliff;
-            claimerAlloc.endVesting = allocReq.endVesting;
-            claimerAlloc.initialAllocation = allocReq.initialAllocation;
-            claimerAlloc.totalAllocated = allocReq.totalAllocated;
-
-            amountToTransfer += allocReq.totalAllocated;
+            amountToTransfer += allocRequest.totalAllocated;
         }
 
-        require(
-            END.transferFrom(_msgSender(), address(this), amountToTransfer),
-            "END Token transfer fail"
-        );
+        additionalTokensAllocated += amountToTransfer;
+
+        if (additionalTokensAllocated > ADDITIONAL_TOKENS_LIMIT) {
+            revert MaximumAdditionalAllocationReached();
+        }
+
+        if (!END.transferFrom(_msgSender(), address(this), amountToTransfer)) {
+            revert ENDTransferFailed();
+        }
+    }
+
+    function _allocateTokens(AllocationRequest calldata allocRequest) internal {
+        AllocationData storage claimerAlloc = allocations[allocRequest.claimer][
+            allocRequest.allocType
+        ];
+
+        if (claimerAlloc.claimer != address(0)) {
+            revert AllocationExists();
+        }
+
+        claimerAlloc.claimer = allocRequest.claimer;
+        claimerAlloc.endCliff = allocRequest.endCliff;
+        claimerAlloc.endVesting = allocRequest.endVesting;
+        claimerAlloc.initialAllocation = allocRequest.initialAllocation;
+        claimerAlloc.totalAllocated = allocRequest.totalAllocated;
     }
 
     function claim(AllocationType allocType) external {
