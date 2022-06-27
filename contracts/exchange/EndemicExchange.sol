@@ -28,6 +28,13 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicPrivateSale {
         );
     }
 
+    function updateSupportedErc20Tokens(address _erc20TokenAddressToSupport)
+        external
+        onlyOwner
+    {
+        _updateSupportedErc20Tokens(_erc20TokenAddressToSupport);
+    }
+
     function updateConfiguration(
         address _royaltiesProvider,
         address _feeClaimAddress,
