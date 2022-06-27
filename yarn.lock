@@ -7919,10 +7919,6 @@ underscore@1.9.1:
   version "1.9.1"
   resolved "https://registry.npmjs.org/underscore/-/underscore-1.9.1.tgz"
 
-undici@^4.14.1:
-  version "4.14.1"
-  resolved "https://registry.npmjs.org/undici/-/undici-4.14.1.tgz"
-
 undici@^5.4.0:
   version "5.5.1"
   resolved "https://registry.yarnpkg.com/undici/-/undici-5.5.1.tgz#baaf25844a99eaa0b22e1ef8d205bffe587c8f43"
