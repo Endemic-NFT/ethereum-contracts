@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./EndemicExchangeCore.sol";
 
-error InvalidValueSent();
 error InvalidTokenOwner();
 error DurationTooShort();
 error OfferExists();
@@ -38,8 +37,9 @@ abstract contract EndemicOffer is
     struct Offer {
         uint256 id;
         address nftContract;
-        uint256 tokenId;
+        address paymentErc20TokenAddress;
         address bidder;
+        uint256 tokenId;
         uint256 price;
         uint256 priceWithTakerFee;
         uint256 expiresAt;
@@ -51,7 +51,8 @@ abstract contract EndemicOffer is
         uint256 indexed tokenId,
         address indexed bidder,
         uint256 price,
-        uint256 expiresAt
+        uint256 expiresAt,
+        address paymentErc20TokenAddress
     );
 
     event OfferAccepted(
@@ -80,39 +81,44 @@ abstract contract EndemicOffer is
         uint256 tokenId,
         uint256 duration
     ) external payable nonReentrant {
-        if (msg.value == 0) revert InvalidValueSent();
-
-        IERC721 nft = IERC721(nftContract);
-        address nftOwner = nft.ownerOf(tokenId);
-
-        if (nftOwner == _msgSender()) revert InvalidTokenOwner();
-        if (duration < MIN_OFFER_DURATION) revert DurationTooShort();
-        if (_bidderHasOffer(nftContract, tokenId, _msgSender()))
-            revert OfferExists();
-
-        uint256 offerId = nextOfferId++;
+        _requireCorrectEtherValueProvided(MIN_PRICE);
 
         uint256 price = (msg.value * MAX_FEE) / (takerFee + MAX_FEE);
-        uint256 expiresAt = block.timestamp + duration;
 
-        offerIdsByBidder[nftContract][tokenId][_msgSender()] = offerId;
-        offersById[offerId] = Offer({
-            id: offerId,
-            bidder: _msgSender(),
-            nftContract: nftContract,
-            tokenId: tokenId,
-            price: price,
-            priceWithTakerFee: msg.value,
-            expiresAt: expiresAt
-        });
-
-        emit OfferCreated(
-            offerId,
+        _placeOffer(
             nftContract,
+            address(0),
             tokenId,
-            _msgSender(),
+            duration,
             price,
-            expiresAt
+            msg.value
+        );
+    }
+
+    function placeOffer(
+        address nftContract,
+        address paymentErc20TokenAddress,
+        uint256 offerInErc20,
+        uint256 tokenId,
+        uint256 duration
+    ) external nonReentrant {
+        _requireSupportedErc20Token(paymentErc20TokenAddress);
+
+        _requireCorrectErc20ValueProvided(
+            offerInErc20,
+            paymentErc20TokenAddress,
+            _msgSender()
+        );
+
+        uint256 price = (offerInErc20 * MAX_FEE) / (takerFee + MAX_FEE);
+
+        _placeOffer(
+            nftContract,
+            paymentErc20TokenAddress,
+            tokenId,
+            duration,
+            price,
+            offerInErc20
         );
     }
 
@@ -156,7 +162,9 @@ abstract contract EndemicOffer is
             totalCut,
             royaltieFee,
             royaltiesRecipient,
-            _msgSender()
+            _msgSender(),
+            offer.bidder,
+            offer.paymentErc20TokenAddress
         );
 
         emit OfferAccepted(
@@ -192,6 +200,49 @@ abstract contract EndemicOffer is
         }
     }
 
+    function _placeOffer(
+        address nftContract,
+        address paymentErc20TokenAddress,
+        uint256 tokenId,
+        uint256 duration,
+        uint256 price,
+        uint256 priceWithTakerFee
+    ) internal {
+        IERC721 nft = IERC721(nftContract);
+        address nftOwner = nft.ownerOf(tokenId);
+
+        if (nftOwner == _msgSender()) revert InvalidTokenOwner();
+        if (duration < MIN_OFFER_DURATION) revert DurationTooShort();
+        if (_bidderHasOffer(nftContract, tokenId, _msgSender()))
+            revert OfferExists();
+
+        uint256 offerId = nextOfferId++;
+
+        uint256 expiresAt = block.timestamp + duration;
+
+        offerIdsByBidder[nftContract][tokenId][_msgSender()] = offerId;
+        offersById[offerId] = Offer({
+            id: offerId,
+            bidder: _msgSender(),
+            nftContract: nftContract,
+            tokenId: tokenId,
+            price: price,
+            priceWithTakerFee: priceWithTakerFee,
+            expiresAt: expiresAt,
+            paymentErc20TokenAddress: paymentErc20TokenAddress
+        });
+
+        emit OfferCreated(
+            offerId,
+            nftContract,
+            tokenId,
+            _msgSender(),
+            price,
+            expiresAt,
+            paymentErc20TokenAddress
+        );
+    }
+
     function _removeExpiredOffer(
         address nftContract,
         uint256 tokenId,
@@ -209,10 +260,11 @@ abstract contract EndemicOffer is
         delete offersById[offer.id];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
-        (bool success, ) = payable(offer.bidder).call{
-            value: offer.priceWithTakerFee
-        }("");
-        if (!success) revert RefundFailed();
+        _refundBidders(
+            offer.paymentErc20TokenAddress,
+            offer.bidder,
+            offer.priceWithTakerFee
+        );
 
         emit OfferCancelled(
             offer.id,
@@ -230,6 +282,24 @@ abstract contract EndemicOffer is
         uint256 offerId = offerIdsByBidder[nftContract][tokenId][bidder];
         Offer memory offer = offersById[offerId];
         return offer.bidder == bidder;
+    }
+
+    function _refundBidders(
+        address paymentErc20TokenAddress,
+        address bidder,
+        uint256 value
+    ) internal {
+        bool success;
+
+        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
+            (success, ) = payable(bidder).call{value: value}("");
+        } else {
+            IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
+            //we need to decrease allowance to zero
+            success = ERC20PaymentToken.transferFrom(bidder, bidder, value);
+        }
+
+        if (!success) revert RefundFailed();
     }
 
     uint256[1000] private __gap;
