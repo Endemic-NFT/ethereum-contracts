@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -36,7 +36,7 @@ contract EndemicPrivateSale is
 
     bytes32 public DOMAIN_SEPARATOR;
 
-    // Maps nftContract -> tokenId -> seller -> buyer -> price => deadline => invalidated.
+    // Maps nftContract -> tokenId -> seller -> buyer -> price -> deadline -> invalidated.
     // solhint-disable-next-line max-line-length
     mapping(address => mapping(uint256 => mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => bool))))))
         private privateSaleInvalidated;
@@ -116,17 +116,13 @@ contract EndemicPrivateSale is
             revert InvalidSignature();
         }
 
-        privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
-            deadline
-        ] = true;
-
         _finalizePrivateSale(
             nftContract,
             tokenId,
             paymentErc20TokenAddress,
-            buyer,
             seller,
-            price
+            price,
+            deadline
         );
     }
 
@@ -134,10 +130,14 @@ contract EndemicPrivateSale is
         address nftContract,
         uint256 tokenId,
         address paymentErc20TokenAddress,
-        address buyer,
         address payable seller,
-        uint256 price
+        uint256 price,
+        uint256 deadline
     ) internal {
+        privateSaleInvalidated[nftContract][tokenId][seller][_msgSender()][
+            price
+        ][deadline] = true;
+
         (
             uint256 makerCut,
             ,
@@ -146,7 +146,7 @@ contract EndemicPrivateSale is
             uint256 totalCut
         ) = _calculateFees(nftContract, tokenId, price);
 
-        IERC721(nftContract).transferFrom(seller, buyer, tokenId);
+        IERC721(nftContract).transferFrom(seller, _msgSender(), tokenId);
 
         _distributeFunds(
             price,
@@ -155,7 +155,7 @@ contract EndemicPrivateSale is
             royaltieFee,
             royaltiesRecipient,
             seller,
-            buyer,
+            _msgSender(),
             paymentErc20TokenAddress
         );
 
@@ -163,7 +163,7 @@ contract EndemicPrivateSale is
             nftContract,
             tokenId,
             seller,
-            buyer,
+            _msgSender(),
             price,
             totalCut,
             paymentErc20TokenAddress
