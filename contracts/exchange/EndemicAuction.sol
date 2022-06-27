@@ -10,7 +10,6 @@ import "./EndemicExchangeCore.sol";
 error InvalidAuction();
 error Unauthorized();
 error InvalidPrice();
-error InvalidValueProvided();
 error InvalidDuration();
 error InvalidPriceConfiguration();
 error InvalidAmount();
@@ -24,7 +23,6 @@ abstract contract EndemicAuction is
 
     uint256 private constant MAX_DURATION = 1000 days;
     uint256 private constant MIN_DURATION = 1 minutes;
-    uint256 private constant MIN_PRICE = 0.0001 ether;
 
     mapping(bytes32 => Auction) internal idToAuction;
 
@@ -38,6 +36,7 @@ abstract contract EndemicAuction is
         uint256 startedAt;
         address contractId;
         address seller;
+        address paymentErc20TokenAddress;
         bytes4 assetClass;
     }
 
@@ -50,6 +49,7 @@ abstract contract EndemicAuction is
         uint256 duration,
         address seller,
         uint256 amount,
+        address paymentErc20TokenAddress,
         bytes4 assetClass
     );
 
@@ -70,9 +70,13 @@ abstract contract EndemicAuction is
         uint256 endingPrice,
         uint256 duration,
         uint256 amount,
+        address paymentErc20TokenAddress,
         bytes4 assetClass
     ) external nonReentrant {
+        _requireSupportedErc20Token(paymentErc20TokenAddress);
+
         _requireCorrectNftInterface(assetClass, nftContract);
+
         _requireTokenOwnership(
             assetClass,
             nftContract,
@@ -93,6 +97,7 @@ abstract contract EndemicAuction is
             block.timestamp,
             nftContract,
             msg.sender,
+            paymentErc20TokenAddress,
             assetClass
         );
 
@@ -109,6 +114,7 @@ abstract contract EndemicAuction is
             auction.duration,
             auction.seller,
             amount,
+            paymentErc20TokenAddress,
             assetClass
         );
     }
@@ -143,8 +149,11 @@ abstract contract EndemicAuction is
             uint256 totalCut
         ) = _calculateFees(auction.contractId, auction.tokenId, currentPrice);
 
-        if (msg.value < (currentPrice + takerCut))
-            revert InvalidValueProvided();
+        _requireCorrectValueProvided(
+            currentPrice + takerCut,
+            auction.paymentErc20TokenAddress,
+            _msgSender()
+        );
 
         _transferNFT(
             auction.seller,
@@ -161,7 +170,9 @@ abstract contract EndemicAuction is
             totalCut,
             royaltieFee,
             royaltiesRecipient,
-            auction.seller
+            auction.seller,
+            _msgSender(),
+            auction.paymentErc20TokenAddress
         );
 
         emit AuctionSuccessful(
@@ -205,6 +216,7 @@ abstract contract EndemicAuction is
         view
         returns (
             address seller,
+            address paymentErc20TokenAddress,
             uint256 startingPrice,
             uint256 endingPrice,
             uint256 duration,
@@ -216,6 +228,7 @@ abstract contract EndemicAuction is
         if (!_isActiveAuction(auction)) revert InvalidAuction();
         return (
             auction.seller,
+            auction.paymentErc20TokenAddress,
             auction.startingPrice,
             auction.endingPrice,
             auction.duration,
