@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
+const { ZERO_ADDRESS } = require('./helpers/constants');
 const {
   deployEndemicExchangeWithDeps,
   deployEndemicCollectionWithFactory,
@@ -42,6 +43,7 @@ describe('NftTrade', function () {
       ethers.utils.parseUnits('1'),
       60,
       1,
+      ZERO_ADDRESS,
       ERC721_ASSET_CLASS
     );
     const auctionId = await endemicExchange.createAuctionId(
@@ -53,7 +55,7 @@ describe('NftTrade', function () {
     //user1 bids 0.9 ETH
     await endemicExchange
       .connect(user1)
-      .placeOffer(nftContract.address, 1, 10000, {
+      ['placeOffer(address,uint256,uint256)'](nftContract.address, 1, 10000, {
         value: ethers.utils.parseUnits('0.9'),
       });
 
