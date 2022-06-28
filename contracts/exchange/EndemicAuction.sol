@@ -73,7 +73,7 @@ abstract contract EndemicAuction is
         address paymentErc20TokenAddress,
         bytes4 assetClass
     ) external nonReentrant {
-        _requireSupportedErc20Token(paymentErc20TokenAddress);
+        _requireCorrectPaymentMethod(paymentErc20TokenAddress);
 
         _requireCorrectNftInterface(assetClass, nftContract);
 

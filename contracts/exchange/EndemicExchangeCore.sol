@@ -16,6 +16,7 @@ error InvalidInterface();
 error SellerNotAssetOwner();
 error InvalidAssetClass();
 error InvalidValueProvided();
+error InvalidPaymentMethod();
 
 abstract contract EndemicExchangeCore {
     bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);
@@ -242,16 +243,15 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _requireSupportedErc20Token(address paymentErc20TokenAddress)
+    function _requireCorrectPaymentMethod(address paymentErc20TokenAddress)
         internal
         view
     {
         if (paymentErc20TokenAddress == ZERO_ADDRESS) return;
 
-        require(
-            supportedErc20Addresses[paymentErc20TokenAddress],
-            "ERC20 Token is not supported for paying on Endemic!"
-        );
+        if (!supportedErc20Addresses[paymentErc20TokenAddress]) {
+            revert InvalidPaymentMethod();
+        }
     }
 
     function _requireCorrectValueProvided(
@@ -296,14 +296,15 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _updateSupportedErc20Tokens(address _erc20TokenAddressToSupport)
-        internal
-    {
-        if (_erc20TokenAddressToSupport == ZERO_ADDRESS) {
+    function _updateSupportedErc20Tokens(
+        address _erc20TokenAddress,
+        bool _isEnabled
+    ) internal {
+        if (_erc20TokenAddress == ZERO_ADDRESS) {
             revert InvalidAddress();
         }
 
-        supportedErc20Addresses[_erc20TokenAddressToSupport] = true;
+        supportedErc20Addresses[_erc20TokenAddress] = _isEnabled;
     }
 
     function _updateConfiguration(

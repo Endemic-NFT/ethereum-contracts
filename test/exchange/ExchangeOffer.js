@@ -11,6 +11,7 @@ const { FEE_RECIPIENT, ZERO_ADDRESS } = require('../helpers/constants');
 const INVALID_OFFER_ERROR = 'InvalidOffer';
 const INVALID_VALUE_PROVIDED = 'InvalidValueProvided';
 const INVALID_TOKEN_OWNER = 'InvalidTokenOwner';
+const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
 const OFFER_CREATED = 'OfferCreated';
 const OFFER_EXISTS = 'OfferExists';
@@ -18,8 +19,6 @@ const OFFER_CANCELED = 'OfferCancelled';
 const OFFER_ACCEPTED = 'OfferAccepted';
 
 const DURATION_TOO_SHORT = 'DurationTooShort';
-const ERC20_TOKEN_NOT_SUPPORTED =
-  'ERC20 Token is not supported for paying on Endemic!';
 
 describe('ExchangeOffer', function () {
   let endemicExchange, endemicToken, nftContract, royaltiesProviderContract;
@@ -61,11 +60,14 @@ describe('ExchangeOffer', function () {
     beforeEach(deploy);
 
     it('should successfully create a offer', async () => {
-      const placeOfferTx = await endemicExchange[
-        'placeOffer(address,uint256,uint256)'
-      ](nftContract.address, 1, 100000, {
-        value: ethers.utils.parseUnits('0.515'),
-      });
+      const placeOfferTx = await endemicExchange.placeOffer(
+        nftContract.address,
+        1,
+        100000,
+        {
+          value: ethers.utils.parseUnits('0.515'),
+        }
+      );
 
       const activeOffer = await endemicExchange.getOffer(1);
 
@@ -90,24 +92,14 @@ describe('ExchangeOffer', function () {
     });
 
     it('should fail to offer multiple times on same token', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.515'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.515'),
+      });
 
       await expect(
-        endemicExchange['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.616'),
-          }
-        )
+        endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.616'),
+        })
       ).to.be.revertedWith(OFFER_EXISTS);
 
       const activeOffer = await endemicExchange.getOffer(1);
@@ -120,14 +112,9 @@ describe('ExchangeOffer', function () {
 
     it('should fail to create offer with no eth sent', async () => {
       await expect(
-        endemicExchange['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: 0,
-          }
-        )
+        endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+          value: 0,
+        })
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED);
     });
 
@@ -135,61 +122,36 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          ['placeOffer(address,uint256,uint256)'](
-            nftContract.address,
-            1,
-            100000,
-            {
-              value: ethers.utils.parseUnits('0.5'),
-            }
-          )
+          .placeOffer(nftContract.address, 1, 100000, {
+            value: ethers.utils.parseUnits('0.5'),
+          })
       ).to.be.revertedWith(INVALID_TOKEN_OWNER);
     });
 
     it('should fail to offer with invalid duration', async () => {
       await expect(
-        endemicExchange['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          1,
-          {
-            value: ethers.utils.parseUnits('0.5'),
-          }
-        )
+        endemicExchange.placeOffer(nftContract.address, 1, 1, {
+          value: ethers.utils.parseUnits('0.5'),
+        })
       ).to.be.revertedWith(DURATION_TOO_SHORT);
     });
 
     it('should successfully create multiple offers on same token', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.515'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.515'),
+      });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.616'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.616'),
+        });
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.717'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.717'),
+        });
 
       const activeOffer1 = await endemicExchange.getOffer(1);
       expect(activeOffer1.bidder).to.equal(owner.address);
@@ -208,7 +170,10 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it('should successfully create a offer', async () => {
@@ -223,7 +188,7 @@ describe('ExchangeOffer', function () {
 
       const placeOfferTx = await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.515'),
@@ -265,7 +230,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.515'),
@@ -280,7 +245,7 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user3)
-          ['placeOffer(address,address,uint256,uint256,uint256)'](
+          .placeOfferInErc20(
             nftContract.address,
             endemicToken.address,
             ethers.utils.parseUnits('0.616'),
@@ -301,7 +266,7 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          ['placeOffer(address,address,uint256,uint256,uint256)'](
+          .placeOfferInErc20(
             nftContract.address,
             endemicToken.address,
             ethers.utils.parseUnits('0.515'),
@@ -315,14 +280,14 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          ['placeOffer(address,address,uint256,uint256,uint256)'](
+          .placeOfferInErc20(
             nftContract.address,
             '0x0000000000000000000000000000000000000001',
             ethers.utils.parseUnits('0.515'),
             1,
             100000
           )
-      ).to.be.revertedWith(ERC20_TOKEN_NOT_SUPPORTED);
+      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
     });
 
     it('should fail to offer on token owned by bidder', async () => {
@@ -338,7 +303,7 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          ['placeOffer(address,address,uint256,uint256,uint256)'](
+          .placeOfferInErc20(
             nftContract.address,
             endemicToken.address,
             ethers.utils.parseUnits('0.515'),
@@ -361,7 +326,7 @@ describe('ExchangeOffer', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          ['placeOffer(address,address,uint256,uint256,uint256)'](
+          .placeOfferInErc20(
             nftContract.address,
             endemicToken.address,
             ethers.utils.parseUnits('0.515'),
@@ -397,9 +362,7 @@ describe('ExchangeOffer', function () {
         .connect(user3)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.717'));
 
-      await endemicExchange[
-        'placeOffer(address,address,uint256,uint256,uint256)'
-      ](
+      await endemicExchange.placeOfferInErc20(
         nftContract.address,
         endemicToken.address,
         ethers.utils.parseUnits('0.515'),
@@ -409,7 +372,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.616'),
@@ -419,7 +382,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.717'),
@@ -442,14 +405,9 @@ describe('ExchangeOffer', function () {
     beforeEach(deploy);
 
     it('should be able to cancel offer', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.5'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.5'),
+      });
 
       const activeOffer = await endemicExchange.getOffer(1);
       const ownerBalance1 = await owner.getBalance();
@@ -471,25 +429,15 @@ describe('ExchangeOffer', function () {
     });
 
     it('should not be able to cancel other offers', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.5'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.5'),
+      });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.3'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.3'),
+        });
 
       await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
         INVALID_OFFER_ERROR
@@ -497,36 +445,21 @@ describe('ExchangeOffer', function () {
     });
 
     it('should be able to cancel offer where there are multiple offers on same token', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.515'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.515'),
+      });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.616'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.616'),
+        });
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.717'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.717'),
+        });
 
       const activeOffer1 = await endemicExchange.getOffer(1);
       expect(activeOffer1.bidder).to.equal(owner.address);
@@ -551,36 +484,21 @@ describe('ExchangeOffer', function () {
     });
 
     it('should cancel offers when contract owner', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.5'),
+      });
+
+      await endemicExchange
+        .connect(user2)
+        .placeOffer(nftContract.address, 2, 100000, {
           value: ethers.utils.parseUnits('0.5'),
-        }
-      );
+        });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          2,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.5'),
-          }
-        );
-
-      await endemicExchange
-        .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          300000,
-          {
-            value: ethers.utils.parseUnits('0.4'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 300000, {
+          value: ethers.utils.parseUnits('0.4'),
+        });
 
       await endemicExchange.adminCancelOffers([1, 2]);
 
@@ -597,36 +515,21 @@ describe('ExchangeOffer', function () {
     });
 
     it('should not cancel offers when not contract owner', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.5'),
+      });
+
+      await endemicExchange
+        .connect(user2)
+        .placeOffer(nftContract.address, 2, 100000, {
           value: ethers.utils.parseUnits('0.5'),
-        }
-      );
+        });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          2,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.5'),
-          }
-        );
-
-      await endemicExchange
-        .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          300000,
-          {
-            value: ethers.utils.parseUnits('0.4'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 300000, {
+          value: ethers.utils.parseUnits('0.4'),
+        });
 
       await expect(
         endemicExchange.connect(user1).adminCancelOffers([1, 2])
@@ -640,7 +543,10 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it('should be able to cancel offer', async () => {
@@ -655,7 +561,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.5'),
@@ -664,26 +570,11 @@ describe('ExchangeOffer', function () {
         );
 
       const activeOffer = await endemicExchange.getOffer(1);
-      const user2allowance1 = await endemicToken.allowance(
-        user2.address,
-        endemicExchange.address
-      );
 
       const cancelTx = await endemicExchange.connect(user2).cancelOffer(1);
       await expect(cancelTx)
         .to.emit(endemicExchange, OFFER_CANCELED)
         .withArgs(activeOffer.id, nftContract.address, 4, user2.address);
-
-      const user2allowance2 = await endemicToken.allowance(
-        user2.address,
-        endemicExchange.address
-      );
-      const user2balance = await endemicToken.balanceOf(user2.address);
-      expect(user2allowance1.sub(user2allowance2)).to.be.closeTo(
-        ethers.utils.parseUnits('0.5'),
-        ethers.utils.parseUnits('0.001') //gas fees
-      );
-      expect(user2balance).to.equal(ethers.utils.parseUnits('0.5'));
 
       await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
         INVALID_OFFER_ERROR
@@ -705,9 +596,7 @@ describe('ExchangeOffer', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.5'));
 
-      await endemicExchange[
-        'placeOffer(address,address,uint256,uint256,uint256)'
-      ](
+      await endemicExchange.placeOfferInErc20(
         nftContract.address,
         endemicToken.address,
         ethers.utils.parseUnits('0.5'),
@@ -717,7 +606,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.5'),
@@ -736,9 +625,7 @@ describe('ExchangeOffer', function () {
         ethers.utils.parseUnits('0.515')
       );
 
-      await endemicExchange[
-        'placeOffer(address,address,uint256,uint256,uint256)'
-      ](
+      await endemicExchange.placeOfferInErc20(
         nftContract.address,
         endemicToken.address,
         ethers.utils.parseUnits('0.515'),
@@ -757,7 +644,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.616'),
@@ -776,7 +663,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.717'),
@@ -812,9 +699,7 @@ describe('ExchangeOffer', function () {
         ethers.utils.parseUnits('0.5')
       );
 
-      await endemicExchange[
-        'placeOffer(address,address,uint256,uint256,uint256)'
-      ](
+      await endemicExchange.placeOfferInErc20(
         nftContract.address,
         endemicToken.address,
         ethers.utils.parseUnits('0.5'),
@@ -833,7 +718,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.5'),
@@ -843,7 +728,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.4'),
@@ -871,9 +756,7 @@ describe('ExchangeOffer', function () {
         ethers.utils.parseUnits('0.5')
       );
 
-      await endemicExchange[
-        'placeOffer(address,address,uint256,uint256,uint256)'
-      ](
+      await endemicExchange.placeOfferInErc20(
         nftContract.address,
         endemicToken.address,
         ethers.utils.parseUnits('0.5'),
@@ -892,7 +775,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.5'),
@@ -902,7 +785,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.4'),
@@ -938,14 +821,9 @@ describe('ExchangeOffer', function () {
       const royaltiesRecipientBalance1 = await royaltiesRecipient.getBalance();
       const feeBalance1 = await nftContract.provider.getBalance(FEE_RECIPIENT);
 
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000000,
-        {
-          value: ethers.utils.parseUnits('0.515'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000000, {
+        value: ethers.utils.parseUnits('0.515'),
+      });
 
       const user1Balance1 = await user1.getBalance();
 
@@ -989,25 +867,15 @@ describe('ExchangeOffer', function () {
     });
 
     it('should be able to accept offer after purchase', async () => {
-      await endemicExchange['placeOffer(address,uint256,uint256)'](
-        nftContract.address,
-        1,
-        100000,
-        {
-          value: ethers.utils.parseUnits('0.515'),
-        }
-      );
+      await endemicExchange.placeOffer(nftContract.address, 1, 100000, {
+        value: ethers.utils.parseUnits('0.515'),
+      });
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,uint256,uint256)'](
-          nftContract.address,
-          1,
-          100000,
-          {
-            value: ethers.utils.parseUnits('0.616'),
-          }
-        );
+        .placeOffer(nftContract.address, 1, 100000, {
+          value: ethers.utils.parseUnits('0.616'),
+        });
 
       const offer1 = await endemicExchange.getOffer(1);
       const offer2 = await endemicExchange.getOffer(2);
@@ -1024,7 +892,10 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
 
       await royaltiesProviderContract.setRoyaltiesForCollection(
         nftContract.address,
@@ -1058,7 +929,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.515'),
@@ -1119,7 +990,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user3)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.515'),
@@ -1138,7 +1009,7 @@ describe('ExchangeOffer', function () {
 
       await endemicExchange
         .connect(user2)
-        ['placeOffer(address,address,uint256,uint256,uint256)'](
+        .placeOfferInErc20(
           nftContract.address,
           endemicToken.address,
           ethers.utils.parseUnits('0.616'),

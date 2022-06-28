@@ -15,14 +15,13 @@ const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_VALUE_PROVIDED_ERROR = 'InvalidValueProvided';
 const INVALID_DURATION_ERROR = 'InvalidDuration';
 const INVALID_AMOUNT_ERROR = 'InvalidAmount';
+const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
 const AUCTION_SUCCESFUL = 'AuctionSuccessful';
 const AUCTION_CANCELED = 'AuctionCancelled';
 
 const UNAUTHORIZED_ERROR = 'Unauthorized';
 const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
-const ERC20_TOKEN_NOT_SUPPORTED =
-  'ERC20 Token is not supported for paying on Endemic!';
 
 describe('ExchangeAuction', function () {
   let endemicExchange,
@@ -439,7 +438,10 @@ describe('ExchangeAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it("should fail to create auction for NFT you don't own", async function () {
@@ -557,7 +559,7 @@ describe('ExchangeAuction', function () {
             '0x0000000000000000000000000000000000000001',
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith(ERC20_TOKEN_NOT_SUPPORTED);
+      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
 
       await expect(
         endemicExchange
@@ -572,7 +574,7 @@ describe('ExchangeAuction', function () {
             '0x0000000000000000000000000000000000000001',
             ERC1155_ASSET_CLASS
           )
-      ).to.be.revertedWith(ERC20_TOKEN_NOT_SUPPORTED);
+      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
     });
 
     it('should be able to recreate ERC721 auction', async function () {
@@ -1072,7 +1074,10 @@ describe('ExchangeAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
 
       const startingPrice = ethers.utils.parseUnits('0.1');
       const endingPrice = ethers.utils.parseUnits('0.1');
@@ -1602,7 +1607,10 @@ describe('ExchangeAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it('should take cut on primary sale', async function () {
@@ -1866,7 +1874,10 @@ describe('ExchangeAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it('should distribute royalties', async () => {

@@ -14,12 +14,10 @@ const { ZERO_ADDRESS } = require('../helpers/constants');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
 const INVALID_VALUE_PROVIDED = 'InvalidValueProvided';
+const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
 const PRIVATE_SALE_EXPIRED = 'PrivateSaleExpired';
 const PRIVATE_SALE_SUCCESS = 'PrivateSaleSuccess';
-
-const ERC20_TOKEN_NOT_SUPPORTED =
-  'ERC20 Token is not supported for paying on Endemic!';
 
 describe('EndemicPrivateSale', () => {
   let endemicExchange, endemicToken, nftContract;
@@ -215,7 +213,10 @@ describe('EndemicPrivateSale', () => {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(endemicToken.address);
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
     });
 
     it('should fail with private sale expired', async function () {
@@ -245,7 +246,7 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(ERC20_TOKEN_NOT_SUPPORTED);
+      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
     });
 
     it('should fail with price not correct (too low approved)', async function () {

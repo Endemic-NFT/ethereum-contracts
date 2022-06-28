@@ -95,14 +95,16 @@ abstract contract EndemicOffer is
         );
     }
 
-    function placeOffer(
+    function placeOfferInErc20(
         address nftContract,
         address paymentErc20TokenAddress,
         uint256 offerInErc20,
         uint256 tokenId,
         uint256 duration
     ) external nonReentrant {
-        _requireSupportedErc20Token(paymentErc20TokenAddress);
+        if (!supportedErc20Addresses[paymentErc20TokenAddress]) {
+            revert InvalidPaymentMethod();
+        }
 
         _requireCorrectErc20ValueProvided(
             offerInErc20,
@@ -260,11 +262,13 @@ abstract contract EndemicOffer is
         delete offersById[offer.id];
         delete offerIdsByBidder[offer.nftContract][offer.tokenId][offer.bidder];
 
-        _refundBidders(
-            offer.paymentErc20TokenAddress,
-            offer.bidder,
-            offer.priceWithTakerFee
-        );
+        if (offer.paymentErc20TokenAddress == ZERO_ADDRESS) {
+            (bool success, ) = payable(offer.bidder).call{
+                value: offer.priceWithTakerFee
+            }("");
+
+            if (!success) revert RefundFailed();
+        }
 
         emit OfferCancelled(
             offer.id,
@@ -282,24 +286,6 @@ abstract contract EndemicOffer is
         uint256 offerId = offerIdsByBidder[nftContract][tokenId][bidder];
         Offer memory offer = offersById[offerId];
         return offer.bidder == bidder;
-    }
-
-    function _refundBidders(
-        address paymentErc20TokenAddress,
-        address bidder,
-        uint256 value
-    ) internal {
-        bool success;
-
-        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
-            (success, ) = payable(bidder).call{value: value}("");
-        } else {
-            IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
-            //we need to decrease allowance to zero
-            success = ERC20PaymentToken.transferFrom(bidder, bidder, value);
-        }
-
-        if (!success) revert RefundFailed();
     }
 
     uint256[1000] private __gap;

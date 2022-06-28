@@ -80,7 +80,7 @@ contract EndemicPrivateSale is
 
         address buyer = _msgSender();
 
-        _requireSupportedErc20Token(paymentErc20TokenAddress);
+        _requireCorrectPaymentMethod(paymentErc20TokenAddress);
         _requireCorrectValueProvided(price, paymentErc20TokenAddress, buyer);
 
         address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
