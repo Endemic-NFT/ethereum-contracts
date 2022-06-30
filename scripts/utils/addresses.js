@@ -12,6 +12,20 @@ const rinkeby = {
   endemicENDToken: '',
 };
 
+const goerli = {
+  royaltiesProviderProxy: '0xD0E7364473F0843461F2631306AE248539Dab487',
+  endemicErc721Factory: '0xB4550D625035B1D563B6c883B34AE83E0fa71411',
+  endemicErc721: '0xeDC2db1f6ffcd57CB7e860d230EAc353E2290c78',
+  endemicExchangeProxy: '0x139Dd34D6305f1f150De99f51aF7F025863bE829',
+  contractImporter: '0x846Ea711c6809cA9Dbf232d95075bd9222C6bdE6',
+
+  endemicERC1155Proxy: '',
+  endemicERC1155Beacon: '',
+  endemicERC1155Factory: '',
+
+  endemicENDToken: '',
+};
+
 const aurora_test = {
   royaltiesProviderProxy: '',
   endemicErc721Factory: '0x21aAB5F1458BC5BDaeC902683fd518A647eF52d4',
@@ -32,6 +46,7 @@ const networks = {
   rinkeby,
   aurora_test,
   mainnet,
+  goerli,
 };
 
 const getForNetwork = (network) => networks[network];

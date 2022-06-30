@@ -18,10 +18,6 @@ deployEndemicErc721:
 deployEndemicExchange:
 	npx hardhat run scripts/exchange/deploy-endemic-exchange.js --network ${network}
 
-.PHONY: deployBid
-deployBid:
-	npx hardhat run scripts/bid/deploy-bid.js --network ${network}
-
 .PHONY: deployEndemicToken
 deployEndemicToken:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20.js --network ${network}
