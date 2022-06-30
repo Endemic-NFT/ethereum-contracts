@@ -5,6 +5,7 @@ const keccak256 = (value) =>
 
 const getTypedMessage = ({
   chainId,
+  paymentErc20TokenAddress,
   verifierContract,
   nftContract,
   seller,
@@ -22,6 +23,7 @@ const getTypedMessage = ({
       PrivateSale: [
         { name: 'nftContract', type: 'address' },
         { name: 'tokenId', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
         { name: 'seller', type: 'address' },
         { name: 'buyer', type: 'address' },
         { name: 'price', type: 'uint256' },
@@ -39,6 +41,7 @@ const getTypedMessage = ({
     message: {
       nftContract: nftContract,
       tokenId: 2,
+      paymentErc20TokenAddress: paymentErc20TokenAddress,
       seller: seller,
       buyer: buyer,
       price: 1,

@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
+const { ZERO_ADDRESS } = require('./helpers/constants');
 const {
   deployEndemicExchangeWithDeps,
   deployEndemicCollectionWithFactory,
@@ -42,6 +43,7 @@ describe('NftTrade', function () {
       ethers.utils.parseUnits('1'),
       60,
       1,
+      ZERO_ADDRESS,
       ERC721_ASSET_CLASS
     );
     const auctionId = await endemicExchange.createAuctionId(

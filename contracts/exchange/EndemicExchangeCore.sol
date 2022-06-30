@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
@@ -14,6 +15,8 @@ error InvalidFees();
 error InvalidInterface();
 error SellerNotAssetOwner();
 error InvalidAssetClass();
+error InvalidValueProvided();
+error InvalidPaymentMethod();
 
 abstract contract EndemicExchangeCore {
     bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);
@@ -24,11 +27,14 @@ abstract contract EndemicExchangeCore {
 
     IRoyaltiesProvider public royaltiesProvider;
 
+    mapping(address => bool) internal supportedErc20Addresses;
+
     address public feeClaimAddress;
     uint256 public makerFee;
     uint256 public takerFee;
 
     uint256 internal constant MAX_FEE = 10000;
+    uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
 
     function _calculateFees(
@@ -55,27 +61,6 @@ abstract contract EndemicExchangeCore {
         totalCut = takerCut + makerCut;
     }
 
-    function _distributeFunds(
-        uint256 price,
-        uint256 makerCut,
-        uint256 totalCut,
-        uint256 royaltieFee,
-        address royaltiesRecipient,
-        address seller
-    ) internal {
-        uint256 sellerProceeds = price - makerCut - royaltieFee;
-
-        if (royaltieFee > 0) {
-            _transferRoyalties(royaltiesRecipient, royaltieFee);
-        }
-
-        if (totalCut > 0) {
-            _transferFees(totalCut);
-        }
-
-        _transferFunds(seller, sellerProceeds);
-    }
-
     function _calculateCut(uint256 fee, uint256 amount)
         internal
         pure
@@ -84,23 +69,144 @@ abstract contract EndemicExchangeCore {
         return (amount * fee) / MAX_FEE;
     }
 
-    function _transferFees(uint256 value) internal {
+    function _distributeFunds(
+        uint256 price,
+        uint256 makerCut,
+        uint256 totalCut,
+        uint256 royaltieFee,
+        address royaltiesRecipient,
+        address seller,
+        address buyer,
+        address paymentErc20TokenAddress
+    ) internal {
+        uint256 sellerProceeds = price - makerCut - royaltieFee;
+
+        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
+            _distributeEtherFunds(
+                royaltieFee,
+                totalCut,
+                sellerProceeds,
+                royaltiesRecipient,
+                seller
+            );
+        } else {
+            _distributeErc20Funds(
+                royaltieFee,
+                totalCut,
+                sellerProceeds,
+                royaltiesRecipient,
+                seller,
+                buyer,
+                paymentErc20TokenAddress
+            );
+        }
+    }
+
+    function _distributeEtherFunds(
+        uint256 royaltieFee,
+        uint256 totalCut,
+        uint256 sellerProceeds,
+        address royaltiesRecipient,
+        address seller
+    ) internal {
+        if (royaltieFee > 0) {
+            _transferEtherRoyalties(royaltiesRecipient, royaltieFee);
+        }
+
+        if (totalCut > 0) {
+            _transferEtherFees(totalCut);
+        }
+
+        _transferEtherFunds(seller, sellerProceeds);
+    }
+
+    function _distributeErc20Funds(
+        uint256 royaltieFee,
+        uint256 totalCut,
+        uint256 sellerProceeds,
+        address royaltiesRecipient,
+        address seller,
+        address buyer,
+        address paymentErc20TokenAddress
+    ) internal {
+        IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
+
+        if (royaltieFee > 0) {
+            _transferErc20Royalties(
+                ERC20PaymentToken,
+                buyer,
+                royaltiesRecipient,
+                royaltieFee
+            );
+        }
+
+        if (totalCut > 0) {
+            _transferErc20Fees(ERC20PaymentToken, buyer, totalCut);
+        }
+
+        _transferErc20Funds(ERC20PaymentToken, buyer, seller, sellerProceeds);
+    }
+
+    function _transferEtherFees(uint256 value) internal {
         (bool success, ) = payable(feeClaimAddress).call{value: value}("");
+
         if (!success) revert FeeTransferFailed();
     }
 
-    function _transferRoyalties(
+    function _transferErc20Fees(
+        IERC20 ERC20PaymentToken,
+        address sender,
+        uint256 value
+    ) internal {
+        bool success = ERC20PaymentToken.transferFrom(
+            sender,
+            feeClaimAddress,
+            value
+        );
+
+        if (!success) revert FeeTransferFailed();
+    }
+
+    function _transferEtherRoyalties(
         address royaltiesRecipient,
         uint256 royaltiesCut
     ) internal {
         (bool success, ) = payable(royaltiesRecipient).call{
             value: royaltiesCut
         }("");
+
         if (!success) revert RoyaltiesTransferFailed();
     }
 
-    function _transferFunds(address recipient, uint256 value) internal {
+    function _transferErc20Royalties(
+        IERC20 ERC20PaymentToken,
+        address royaltiesSender,
+        address royaltiesRecipient,
+        uint256 royaltiesCut
+    ) internal {
+        bool success = ERC20PaymentToken.transferFrom(
+            royaltiesSender,
+            royaltiesRecipient,
+            royaltiesCut
+        );
+
+        if (!success) revert RoyaltiesTransferFailed();
+    }
+
+    function _transferEtherFunds(address recipient, uint256 value) internal {
         (bool success, ) = payable(recipient).call{value: value}("");
+
+        if (!success) revert FundsTransferFailed();
+    }
+
+    function _transferErc20Funds(
+        IERC20 ERC20PaymentToken,
+        address sender,
+        address recipient,
+        uint256 value
+    ) internal {
+        bool success = ERC20PaymentToken.transferFrom(sender, recipient, value);
+
         if (!success) revert FundsTransferFailed();
     }
 
@@ -135,6 +241,70 @@ abstract contract EndemicExchangeCore {
         } else {
             revert InvalidAssetClass();
         }
+    }
+
+    function _requireCorrectPaymentMethod(address paymentErc20TokenAddress)
+        internal
+        view
+    {
+        if (paymentErc20TokenAddress == ZERO_ADDRESS) return;
+
+        if (!supportedErc20Addresses[paymentErc20TokenAddress]) {
+            revert InvalidPaymentMethod();
+        }
+    }
+
+    function _requireCorrectValueProvided(
+        uint256 requiredValue,
+        address paymentErc20TokenAddress,
+        address buyer
+    ) internal view {
+        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
+            _requireCorrectEtherValueProvided(requiredValue);
+        } else {
+            _requireCorrectErc20ValueProvided(
+                requiredValue,
+                paymentErc20TokenAddress,
+                buyer
+            );
+        }
+    }
+
+    function _requireCorrectEtherValueProvided(uint256 requiredValue)
+        internal
+        view
+    {
+        if (msg.value < requiredValue) {
+            revert InvalidValueProvided();
+        }
+    }
+
+    function _requireCorrectErc20ValueProvided(
+        uint256 requiredValue,
+        address paymentErc20TokenAddress,
+        address buyer
+    ) internal view {
+        IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
+
+        uint256 contractAllowance = ERC20PaymentToken.allowance(
+            buyer,
+            address(this)
+        );
+
+        if (contractAllowance < requiredValue) {
+            revert InvalidValueProvided();
+        }
+    }
+
+    function _updateSupportedErc20Tokens(
+        address _erc20TokenAddress,
+        bool _isEnabled
+    ) internal {
+        if (_erc20TokenAddress == ZERO_ADDRESS) {
+            revert InvalidAddress();
+        }
+
+        supportedErc20Addresses[_erc20TokenAddress] = _isEnabled;
     }
 
     function _updateConfiguration(

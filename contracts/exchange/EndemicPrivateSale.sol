@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -11,7 +11,6 @@ import "./EndemicExchangeCore.sol";
 error PrivateSaleExpired();
 error InvalidSignature();
 error InvalidPrivateSale();
-error PriceNotMatchWithProvidedEther();
 
 contract EndemicPrivateSale is
     OwnableUpgradeable,
@@ -23,7 +22,7 @@ contract EndemicPrivateSale is
     bytes32 private constant PRIVATE_SALE_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "PrivateSale(address nftContract,uint256 tokenId,address seller,address buyer,uint256 price,uint256 deadline)"
+            "PrivateSale(address nftContract,uint256 tokenId,address paymentErc20TokenAddress,address seller,address buyer,uint256 price,uint256 deadline)"
         );
 
     bytes32 private constant EIP712_DOMAIN_TYPEHASH =
@@ -37,7 +36,7 @@ contract EndemicPrivateSale is
 
     bytes32 public DOMAIN_SEPARATOR;
 
-    // Maps nftContract -> tokenId -> seller -> buyer -> price => deadline => invalidated.
+    // Maps nftContract -> tokenId -> seller -> buyer -> price -> deadline -> invalidated.
     // solhint-disable-next-line max-line-length
     mapping(address => mapping(uint256 => mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => bool))))))
         private privateSaleInvalidated;
@@ -48,7 +47,8 @@ contract EndemicPrivateSale is
         address indexed seller,
         address buyer,
         uint256 price,
-        uint256 totalFees
+        uint256 totalFees,
+        address paymentErc20TokenAddress
     );
 
     function __EndemicPrivateSale___init_unchained() internal {
@@ -65,6 +65,7 @@ contract EndemicPrivateSale is
     }
 
     function buyFromPrivateSale(
+        address paymentErc20TokenAddress,
         address nftContract,
         uint256 tokenId,
         uint256 price,
@@ -77,12 +78,12 @@ contract EndemicPrivateSale is
             revert PrivateSaleExpired();
         }
 
-        if (msg.value < price) {
-            revert PriceNotMatchWithProvidedEther();
-        }
+        address buyer = _msgSender();
+
+        _requireCorrectPaymentMethod(paymentErc20TokenAddress);
+        _requireCorrectValueProvided(price, paymentErc20TokenAddress, buyer);
 
         address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
-        address buyer = _msgSender();
 
         if (
             privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
@@ -101,6 +102,7 @@ contract EndemicPrivateSale is
                         PRIVATE_SALE_TYPEHASH,
                         nftContract,
                         tokenId,
+                        paymentErc20TokenAddress,
                         seller,
                         buyer,
                         price,
@@ -117,7 +119,7 @@ contract EndemicPrivateSale is
         _finalizePrivateSale(
             nftContract,
             tokenId,
-            buyer,
+            paymentErc20TokenAddress,
             seller,
             price,
             deadline
@@ -127,14 +129,14 @@ contract EndemicPrivateSale is
     function _finalizePrivateSale(
         address nftContract,
         uint256 tokenId,
-        address buyer,
+        address paymentErc20TokenAddress,
         address payable seller,
         uint256 price,
         uint256 deadline
     ) internal {
-        privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
-            deadline
-        ] = true;
+        privateSaleInvalidated[nftContract][tokenId][seller][_msgSender()][
+            price
+        ][deadline] = true;
 
         (
             uint256 makerCut,
@@ -144,7 +146,7 @@ contract EndemicPrivateSale is
             uint256 totalCut
         ) = _calculateFees(nftContract, tokenId, price);
 
-        IERC721(nftContract).transferFrom(seller, buyer, tokenId);
+        IERC721(nftContract).transferFrom(seller, _msgSender(), tokenId);
 
         _distributeFunds(
             price,
@@ -152,16 +154,19 @@ contract EndemicPrivateSale is
             totalCut,
             royaltieFee,
             royaltiesRecipient,
-            seller
+            seller,
+            _msgSender(),
+            paymentErc20TokenAddress
         );
 
         emit PrivateSaleSuccess(
             nftContract,
             tokenId,
             seller,
-            buyer,
+            _msgSender(),
             price,
-            totalCut
+            totalCut,
+            paymentErc20TokenAddress
         );
     }
 
