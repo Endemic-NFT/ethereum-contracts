@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Creator: Chiru Labs
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.15;
 
 import "./EndemicAuction.sol";
 import "./EndemicOffer.sol";
@@ -26,6 +26,13 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicPrivateSale {
             _makerFee,
             _takerFee
         );
+    }
+
+    function updateSupportedErc20Tokens(
+        address _erc20TokenAddress,
+        bool _isEnabled
+    ) external onlyOwner {
+        _updateSupportedErc20Tokens(_erc20TokenAddress, _isEnabled);
     }
 
     function updateConfiguration(
