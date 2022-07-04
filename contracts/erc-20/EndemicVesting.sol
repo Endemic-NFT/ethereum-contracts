@@ -17,7 +17,7 @@ contract EndemicVesting is Context, Ownable {
 
     uint256 private additionalTokensAllocated;
 
-    uint256 public constant ADDITIONAL_TOKENS_LIMIT = 100_000 * 10**18;
+    uint256 public constant ADDITIONAL_TOKENS_LIMIT = 3_050_000 * 10**18;
 
     mapping(address => mapping(AllocationType => AllocationData))
         public allocations;
@@ -60,22 +60,27 @@ contract EndemicVesting is Context, Ownable {
     constructor(
         uint256 tgeStartTime,
         uint256 startTime,
-        address tokenAddress
+        address tokenAddress,
+        AllocationRequest[] memory allocRequests
     ) {
         require(startTime >= tgeStartTime, "Vesting not available before TGE");
 
         END = IERC20(tokenAddress);
         vestingStartTime = startTime;
+
+        for (uint256 i = 0; i < allocRequests.length; i++) {
+            _allocateTokens(allocRequests[i]);
+        }
     }
 
-    function addAllocations(AllocationRequest[] calldata allocRequests)
+    function addAllocations(AllocationRequest[] memory allocRequests)
         external
         onlyOwner
     {
         uint32 amountToTransfer;
 
         for (uint256 i = 0; i < allocRequests.length; i++) {
-            AllocationRequest calldata allocRequest = allocRequests[i];
+            AllocationRequest memory allocRequest = allocRequests[i];
             _allocateTokens(allocRequest);
 
             amountToTransfer += allocRequest.totalAllocated;
@@ -92,7 +97,7 @@ contract EndemicVesting is Context, Ownable {
         }
     }
 
-    function _allocateTokens(AllocationRequest calldata allocRequest) internal {
+    function _allocateTokens(AllocationRequest memory allocRequest) internal {
         AllocationData storage claimerAlloc = allocations[allocRequest.claimer][
             allocRequest.allocType
         ];
