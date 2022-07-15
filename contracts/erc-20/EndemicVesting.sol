@@ -17,7 +17,7 @@ contract EndemicVesting is Context, Ownable {
 
     uint256 private additionalTokensAllocated;
 
-    uint256 public constant ADDITIONAL_TOKENS_LIMIT = 3_050_000 * 10**18;
+    uint256 public constant ADDITIONAL_TOKENS_LIMIT = 3_883_333 * 10**18;
 
     mapping(address => mapping(AllocationType => AllocationData))
         public allocations;
