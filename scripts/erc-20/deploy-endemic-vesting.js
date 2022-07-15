@@ -1,11 +1,11 @@
 const { ethers, network } = require('hardhat');
 const { getForNetwork } = require('../utils/addresses');
 
-const FIVE_MINUTES = 5 * 60000;
-const SIX_MONTHS = 6 * 30 * 24 * 60 * 60000;
-const ONE_YEAR = 12 * 30 * 24 * 60 * 60000;
+const FIVE_MINUTES = 5 * 60;
+const SIX_MONTHS = 6 * 30 * 24 * 60 * 60;
+const ONE_YEAR = 12 * 30 * 24 * 60 * 60;
 
-const TGE_TIMESTAMP = new Date().getMilliseconds();
+const TGE_TIMESTAMP = Math.floor(new Date().getTime() / 1000);
 const VESTING_START_TIMESTAMP = TGE_TIMESTAMP + FIVE_MINUTES;
 
 const SEED_ALLOC_TYPE = 0;
