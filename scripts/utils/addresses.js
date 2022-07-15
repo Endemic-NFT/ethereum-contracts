@@ -38,6 +38,10 @@ const aurora_test = {
   endemicERC1155Factory: '',
 };
 
+const aurora = {
+  endemicENDToken: '0x7916afb40e8d776e9002477d4bad56767711b8e7',
+};
+
 const mainnet = {
   endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
 };
@@ -45,6 +49,7 @@ const mainnet = {
 const networks = {
   rinkeby,
   aurora_test,
+  aurora,
   mainnet,
   goerli,
 };
