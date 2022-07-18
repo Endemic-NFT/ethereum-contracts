@@ -34,10 +34,10 @@ contract EndemicVesting is Context, Ownable {
     struct AllocationData {
         address claimer;
         //percentage of TGE that is available for claimer immediately after TGE
-        uint32 initialAllocation;
+        uint256 initialAllocation;
         //total allocation that is available for claimer after vesting finishes
-        uint32 totalAllocated;
-        uint32 totalClaimed;
+        uint256 totalAllocated;
+        uint256 totalClaimed;
         uint256 endCliff;
         uint256 endVesting;
     }
@@ -45,8 +45,8 @@ contract EndemicVesting is Context, Ownable {
     struct AllocationRequest {
         AllocationType allocType;
         address claimer;
-        uint32 initialAllocation;
-        uint32 totalAllocated;
+        uint256 initialAllocation;
+        uint256 totalAllocated;
         uint256 endCliff;
         uint256 endVesting;
     }
@@ -77,7 +77,7 @@ contract EndemicVesting is Context, Ownable {
         external
         onlyOwner
     {
-        uint32 amountToTransfer;
+        uint256 amountToTransfer;
 
         for (uint256 i = 0; i < allocRequests.length; i++) {
             AllocationRequest memory allocRequest = allocRequests[i];
@@ -160,7 +160,7 @@ contract EndemicVesting is Context, Ownable {
             revert NoAllocatedTokensForClaimer();
         }
 
-        uint32 amountToClaim = _getAmountToClaim(claimer, allocType);
+        uint256 amountToClaim = _getAmountToClaim(claimer, allocType);
 
         if (amountToClaim == 0) {
             revert NoAllocatedTokensForClaimer();
@@ -179,7 +179,7 @@ contract EndemicVesting is Context, Ownable {
     function _getAmountToClaim(address claimer, AllocationType allocType)
         internal
         view
-        returns (uint32 amountToClaim)
+        returns (uint256 amountToClaim)
     {
         AllocationData storage claimerAlloc = allocations[claimer][allocType];
 
@@ -192,7 +192,7 @@ contract EndemicVesting is Context, Ownable {
 
             //if cliff passed initial allocation is summed with tokens that are lineary released by block
             if (block.timestamp >= claimerAlloc.endCliff) {
-                amountToClaim += uint32(
+                amountToClaim += uint256(
                     ((claimerAlloc.totalAllocated -
                         claimerAlloc.initialAllocation) *
                         (block.timestamp - claimerAlloc.endCliff)) /

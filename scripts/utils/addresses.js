@@ -23,7 +23,7 @@ const goerli = {
   endemicERC1155Beacon: '',
   endemicERC1155Factory: '',
 
-  endemicENDToken: '',
+  endemicENDToken: '0x27f31c8B3D6024C44155De1198dB86F23124b1A4',
 };
 
 const aurora_test = {
