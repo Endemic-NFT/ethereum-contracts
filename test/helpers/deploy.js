@@ -139,7 +139,8 @@ const deployEndemicVesting = async (deployer, tgeStartTime, startTime) => {
   const endemicVesting = await EndemicVesting.deploy(
     tgeStartTime,
     startTime,
-    endemicToken.address
+    endemicToken.address,
+    []
   );
 
   await endemicVesting.deployed();

@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const { deployEndemicVesting } = require('../helpers/deploy');
 const { BigNumber } = ethers;
 
@@ -13,10 +13,10 @@ describe('EndemicVesting', function () {
 
   let endemicVesting, endemicToken;
 
-  const FIVE_MINUTES = 5 * 60000;
-  const ONE_YEAR = 12 * 30 * 24 * 60 * 60000;
+  const FIVE_MINUTES = 5 * 60;
+  const ONE_YEAR = 12 * 30 * 24 * 60 * 60;
 
-  const TGE_START_TIMESTAMP = new Date().getMilliseconds();
+  const TGE_START_TIMESTAMP = Math.floor(new Date().getTime() / 1000);
   const VESTING_START_TIMESTAMP = TGE_START_TIMESTAMP + FIVE_MINUTES;
 
   const END_CLIFF_TIMESTAMP = TGE_START_TIMESTAMP + FIVE_MINUTES;
@@ -100,6 +100,11 @@ describe('EndemicVesting', function () {
   });
 
   describe('Claim tokens', function () {
+    beforeEach(async () => {
+      await network.provider.send('evm_increaseTime', [FIVE_MINUTES]);
+      await network.provider.send('evm_mine');
+    });
+
     it('should fail with vesting not started yet', async () => {
       const START_TIME_IN_FUTURE = 1680209518;
 
