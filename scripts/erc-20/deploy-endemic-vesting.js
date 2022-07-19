@@ -2,8 +2,6 @@ const { ethers, network } = require('hardhat');
 const { getForNetwork } = require('../utils/addresses');
 
 const FIVE_MINUTES = 5 * 60;
-const SIX_MONTHS = 6 * 30 * 24 * 60 * 60;
-const ONE_YEAR = 12 * 30 * 24 * 60 * 60;
 
 const TGE_TIMESTAMP = Math.floor(new Date().getTime() / 1000);
 const VESTING_START_TIMESTAMP = TGE_TIMESTAMP + FIVE_MINUTES;
@@ -11,8 +9,16 @@ const VESTING_START_TIMESTAMP = TGE_TIMESTAMP + FIVE_MINUTES;
 const SEED_ALLOC_TYPE = 0;
 const PRIVATE_ALLOC_TYPE = 1;
 
-const END_CLIFF = TGE_TIMESTAMP + SIX_MONTHS;
-const END_VESTING = END_CLIFF + ONE_YEAR;
+//GMT: Thursday, 21 July 2022 14:00:00
+//const DEPLOYMENT_DATE = 1658412000;
+
+//Six months from DEPLOYMENT_DATE
+//GMT: Saturday, 21 January 2023 14:00:00
+const END_CLIFF = 1674309600;
+
+//One year from END_CLIFF
+//GMT: Sunday, 21 January 2024 14:00:00
+const END_VESTING = 1705845600;
 
 const allocations = [
   {
