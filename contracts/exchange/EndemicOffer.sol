@@ -13,7 +13,6 @@ error DurationTooShort();
 error OfferExists();
 error InvalidOffer();
 error NotExpiredOffer();
-error RefundFailed();
 error AcceptFromSelf();
 error ParametersDiffInSize();
 

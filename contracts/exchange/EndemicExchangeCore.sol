@@ -17,6 +17,7 @@ error SellerNotAssetOwner();
 error InvalidAssetClass();
 error InvalidValueProvided();
 error InvalidPaymentMethod();
+error RefundFailed();
 
 abstract contract EndemicExchangeCore {
     bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);

@@ -24,7 +24,7 @@ const AUCTION_CANCELED = 'AuctionCancelled';
 const UNAUTHORIZED_ERROR = 'Unauthorized';
 const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
-describe('ExchangeAuction', function () {
+describe('ExchangeDutchAuction', function () {
   let endemicExchange,
     endemicToken,
     nftContract,
@@ -73,7 +73,7 @@ describe('ExchangeAuction', function () {
     await mintERC1155(user1.address, 3);
   }
 
-  describe('Create auction with Ether', function () {
+  describe('Create dutch auction with Ether', function () {
     beforeEach(async function () {
       await deploy();
 
@@ -89,7 +89,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -104,7 +104,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -123,7 +123,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -138,7 +138,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -158,7 +158,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -173,7 +173,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -191,7 +191,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -205,7 +205,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -241,7 +241,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -255,7 +255,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -288,7 +288,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -302,7 +302,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -349,7 +349,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -364,7 +364,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -414,7 +414,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -427,7 +427,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           2,
           ethers.utils.parseUnits('0.1'),
@@ -440,7 +440,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -515,7 +515,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -528,7 +528,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           2,
           ethers.utils.parseUnits('1.0'),
@@ -541,7 +541,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -638,7 +638,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.3'),
@@ -653,7 +653,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             1,
             ethers.utils.parseUnits('0.3'),
@@ -673,7 +673,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -687,7 +687,7 @@ describe('ExchangeAuction', function () {
     });
   });
 
-  describe('Create auction with ERC20', function () {
+  describe('Create dutch auction with ERC20', function () {
     beforeEach(async function () {
       await deploy();
 
@@ -703,7 +703,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -718,7 +718,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user2)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -737,7 +737,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -752,7 +752,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -772,7 +772,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -787,7 +787,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -804,7 +804,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -819,7 +819,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             1,
             ethers.utils.parseUnits('0.1'),
@@ -837,7 +837,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -851,7 +851,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -888,7 +888,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -902,7 +902,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -935,7 +935,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -949,7 +949,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -997,7 +997,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.5'),
@@ -1011,7 +1011,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -1064,7 +1064,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -1077,7 +1077,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           2,
           ethers.utils.parseUnits('0.1'),
@@ -1090,7 +1090,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -1165,7 +1165,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.2'),
@@ -1178,7 +1178,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           2,
           ethers.utils.parseUnits('2.0'),
@@ -1191,7 +1191,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -1280,6 +1280,120 @@ describe('ExchangeAuction', function () {
       expect(auction3CurrentPrice).to.equal(ethers.utils.parseUnits('1.05'));
     });
 
+    it('should fail to recreate ERC721 dutch auction because reserve auction is in progress', async function () {
+      // Create the reserve auction
+      await nftContract.connect(user1).approve(endemicExchange.address, 1);
+
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
+
+      await endemicExchange
+        .connect(user1)
+        .createReserveAuction(
+          nftContract.address,
+          1,
+          ethers.utils.parseUnits('0.1'),
+          endemicToken.address
+        );
+
+      const erc721AuctionId = await endemicExchange.createAuctionId(
+        nftContract.address,
+        1,
+        user1.address
+      );
+
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.103')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
+
+      await endemicExchange
+        .connect(user2)
+        .bidForReserveAuctionInErc20(
+          erc721AuctionId,
+          ethers.utils.parseUnits('0.103')
+        );
+
+      //Try to recreate reserve auction to become dutch
+      await expect(
+        endemicExchange
+          .connect(user1)
+          .createDutchAuction(
+            nftContract.address,
+            1,
+            ethers.utils.parseUnits('1.0'),
+            ethers.utils.parseUnits('0.1'),
+            1000,
+            1,
+            ZERO_ADDRESS,
+            ERC721_ASSET_CLASS
+          )
+      ).to.be.revertedWith('AuctionInProgress');
+    });
+
+    it('should be able to recreate ERC721 dutch auction because reserve auction did not start yet', async function () {
+      // Create the reserve auction
+      await nftContract.connect(user1).approve(endemicExchange.address, 1);
+
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
+
+      await endemicExchange
+        .connect(user1)
+        .createReserveAuction(
+          nftContract.address,
+          1,
+          ethers.utils.parseUnits('0.1'),
+          endemicToken.address
+        );
+
+      const auction1Id = await endemicExchange.createAuctionId(
+        nftContract.address,
+        1,
+        user1.address
+      );
+
+      const auctionBefore = await endemicExchange.getAuction(auction1Id);
+
+      expect(auctionBefore.reservePrice.toString()).to.equal(
+        ethers.utils.parseUnits('0.1')
+      );
+      expect(auctionBefore.startingPrice.toString()).to.equal('0');
+      expect(auctionBefore.endingPrice.toString()).to.equal('0');
+
+      //Try to recreate reserve auction to become dutch
+      await endemicExchange
+        .connect(user1)
+        .createDutchAuction(
+          nftContract.address,
+          1,
+          ethers.utils.parseUnits('1.0'),
+          ethers.utils.parseUnits('0.1'),
+          1000,
+          1,
+          ZERO_ADDRESS,
+          ERC721_ASSET_CLASS
+        );
+
+      const auctionAfter = await endemicExchange.getAuction(auction1Id);
+
+      expect(auctionAfter.reservePrice.toString()).to.equal('0');
+      expect(auctionAfter.startingPrice.toString()).to.equal(
+        ethers.utils.parseUnits('1.0')
+      );
+      expect(auctionAfter.endingPrice.toString()).to.equal(
+        ethers.utils.parseUnits('0.1')
+      );
+    });
+
     it('should fail to create auction for incorrect amount', async function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await erc1155Contract
@@ -1289,7 +1403,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.3'),
@@ -1304,7 +1418,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             erc1155Contract.address,
             1,
             ethers.utils.parseUnits('0.3'),
@@ -1324,7 +1438,7 @@ describe('ExchangeAuction', function () {
       await expect(
         endemicExchange
           .connect(user1)
-          .createAuction(
+          .createDutchAuction(
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.3'),
@@ -1354,7 +1468,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           startingPrice,
@@ -1367,7 +1481,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           startingPrice,
@@ -1393,19 +1507,19 @@ describe('ExchangeAuction', function () {
 
     it('should fail to bid with insufficient value', async function () {
       await expect(
-        endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
+        endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.01'),
         })
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 2, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
@@ -1416,13 +1530,13 @@ describe('ExchangeAuction', function () {
       await endemicExchange.connect(user1).cancelAuction(erc1155AuctionId);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
+        endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
@@ -1431,9 +1545,11 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on fixed ERC721 auction', async function () {
       const user1Bal1 = await user1.getBalance();
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
       // User1 should receive 100 wei, fee is zero
 
@@ -1453,9 +1569,11 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on fixed ERC1155 auction', async function () {
       const user1Bal1 = await user1.getBalance();
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
       // Bidder should own NFT
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -1465,9 +1583,11 @@ describe('ExchangeAuction', function () {
       expect(erc1155Auction.amount).to.equal('2');
 
       // Buy two more
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(3);
 
@@ -1484,7 +1604,7 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on dutch ERC721 auction', async function () {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -1510,9 +1630,11 @@ describe('ExchangeAuction', function () {
       const fee = ethers.utils.parseUnits('0.0132');
       const totalPrice = +weiToEther(auctionCurrentPrice) + +weiToEther(fee);
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits(totalPrice.toString()),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits(totalPrice.toString()),
+        });
 
       // User1 should receive 0.39492 ether, 80% of auction has passed
 
@@ -1532,7 +1654,7 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on dutch ERC1155 auction', async function () {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -1560,9 +1682,11 @@ describe('ExchangeAuction', function () {
 
       let totalPrice = +weiToEther(auctionCurrentPrice) + +weiToEther(fee);
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
-        value: ethers.utils.parseUnits(totalPrice.toString()),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1, {
+          value: ethers.utils.parseUnits(totalPrice.toString()),
+        });
 
       // Bidder should own NFT
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -1588,9 +1712,11 @@ describe('ExchangeAuction', function () {
       totalPrice = 2 * +weiToEther(auctionCurrentPrice) + +weiToEther(fee);
 
       // Buy two more
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits(totalPrice.toString()),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits(totalPrice.toString()),
+        });
 
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(3);
 
@@ -1610,13 +1736,17 @@ describe('ExchangeAuction', function () {
       const user1Bal1 = await user1.getBalance();
       await network.provider.send('evm_increaseTime', [200]);
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -1627,20 +1757,24 @@ describe('ExchangeAuction', function () {
     });
 
     it('should fail to bid after someone else has bid', async function () {
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
       await expect(
-        endemicExchange.connect(user3).bid(erc721AuctionId, 1, {
+        endemicExchange.connect(user3).bidForDutchAuction(erc721AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 3, {
-        value: ethers.utils.parseUnits('0.309'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 3, {
+          value: ethers.utils.parseUnits('0.309'),
+        });
       await expect(
-        endemicExchange.connect(user3).bid(erc1155AuctionId, 1, {
+        endemicExchange.connect(user3).bidForDutchAuction(erc1155AuctionId, 1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
@@ -1648,21 +1782,27 @@ describe('ExchangeAuction', function () {
 
     it('should be able to bid in middle of auction', async function () {
       await network.provider.send('evm_increaseTime', [60]);
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(2);
     });
 
     it('should trigger an event after successful bid', async function () {
-      const bid1 = endemicExchange.connect(user2).bid(erc721AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      const bid1 = endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
       await expect(bid1)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -1678,9 +1818,11 @@ describe('ExchangeAuction', function () {
         .to.emit(nftContract, 'Transfer')
         .withArgs(user1.address, user2.address, 1);
 
-      const bid2 = endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      const bid2 = endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       await expect(bid2)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -1717,7 +1859,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           startingPrice,
@@ -1730,7 +1872,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           startingPrice,
@@ -1756,15 +1898,15 @@ describe('ExchangeAuction', function () {
 
     it('should fail to bid with insufficient value', async function () {
       await expect(
-        endemicExchange.connect(user2).bid(erc721AuctionId, 1)
+        endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, 1)
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 1)
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 1)
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 2)
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 2)
       ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
     });
 
@@ -1773,11 +1915,11 @@ describe('ExchangeAuction', function () {
       await endemicExchange.connect(user1).cancelAuction(erc1155AuctionId);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc721AuctionId, 1)
+        endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, 1)
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
       await expect(
-        endemicExchange.connect(user2).bid(erc1155AuctionId, 1)
+        endemicExchange.connect(user2).bidForDutchAuction(erc1155AuctionId, 1)
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
@@ -1793,7 +1935,9 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
 
       // User1 should receive 100 wei, fee is zero
 
@@ -1822,9 +1966,11 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1, {
-        value: ethers.utils.parseUnits('0.103'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        });
 
       // Bidder should own NFT
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -1838,9 +1984,11 @@ describe('ExchangeAuction', function () {
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
 
       // Buy two more
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(3);
 
@@ -1857,7 +2005,7 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on dutch ERC721 auction', async function () {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -1896,7 +2044,9 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits(totalPrice.toString())
         );
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
 
       // User1 should receive 0.39492 ether, 80% of auction has passed
 
@@ -1916,7 +2066,7 @@ describe('ExchangeAuction', function () {
     it('should be able to bid on dutch ERC1155 auction', async function () {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -1956,7 +2106,9 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits(totalPrice.toString())
         );
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1);
 
       // Bidder should own NFT
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -1994,7 +2146,9 @@ describe('ExchangeAuction', function () {
         );
 
       // Buy two more
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2);
 
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(3);
 
@@ -2023,9 +2177,13 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 1);
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(1);
@@ -2045,14 +2203,18 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
       await expect(
-        endemicExchange.connect(user3).bid(erc721AuctionId, 1)
+        endemicExchange.connect(user3).bidForDutchAuction(erc721AuctionId, 1)
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
 
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 3);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 3);
       await expect(
-        endemicExchange.connect(user3).bid(erc1155AuctionId, 1)
+        endemicExchange.connect(user3).bidForDutchAuction(erc1155AuctionId, 1)
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
@@ -2067,8 +2229,12 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.309'));
 
-      await endemicExchange.connect(user2).bid(erc721AuctionId, 1);
-      await endemicExchange.connect(user2).bid(erc1155AuctionId, 2);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2);
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
       expect(await erc1155Contract.balanceOf(user2.address, 1)).to.equal(2);
@@ -2084,7 +2250,9 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
 
-      const bid1 = endemicExchange.connect(user2).bid(erc721AuctionId, 1);
+      const bid1 = endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc721AuctionId, 1);
 
       await expect(bid1)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2104,9 +2272,11 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
 
-      const bid2 = endemicExchange.connect(user2).bid(erc1155AuctionId, 2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      const bid2 = endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(erc1155AuctionId, 2, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       await expect(bid2)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2120,7 +2290,7 @@ describe('ExchangeAuction', function () {
     });
   });
 
-  describe('Conclude auction', function () {
+  describe('Conclude dutch auction', function () {
     let erc721AuctionId, erc1155AuctionId;
 
     beforeEach(async function () {
@@ -2132,7 +2302,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -2145,7 +2315,7 @@ describe('ExchangeAuction', function () {
 
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.1'),
@@ -2238,7 +2408,7 @@ describe('ExchangeAuction', function () {
       );
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -2264,9 +2434,11 @@ describe('ExchangeAuction', function () {
       const user1Bal1 = await user1.getBalance();
 
       // buys NFT and calculates price diff on contract and user1 wallet
-      const bidTx = await endemicExchange.connect(user2).bid(auctionid, 1, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
+      const bidTx = await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(auctionid, 1, {
+          value: ethers.utils.parseUnits('0.206'),
+        });
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2302,7 +2474,7 @@ describe('ExchangeAuction', function () {
       );
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -2335,9 +2507,11 @@ describe('ExchangeAuction', function () {
       const totalPrice = +weiToEther(auctionCurrentPrice) + +weiToEther(fee);
 
       // buys NFT and calculates price diff on contract and user1 wallet
-      const bidTx = await endemicExchange.connect(user2).bid(auctionid, 1, {
-        value: ethers.utils.parseUnits(totalPrice.toString()),
-      });
+      const bidTx = await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(auctionid, 1, {
+          value: ethers.utils.parseUnits(totalPrice.toString()),
+        });
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2371,7 +2545,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1'),
@@ -2389,7 +2563,7 @@ describe('ExchangeAuction', function () {
       );
 
       // Buy with user 2
-      await endemicExchange.connect(user2).bid(auctionid, 1, {
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1, {
         value: ethers.utils.parseUnits('1.03'),
       });
 
@@ -2397,7 +2571,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user2).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user2)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.5'),
@@ -2421,9 +2595,11 @@ describe('ExchangeAuction', function () {
       );
 
       // Buy with user 3
-      const bidTx = await endemicExchange.connect(user3).bid(auctionid2, 1, {
-        value: ethers.utils.parseUnits('0.515'),
-      });
+      const bidTx = await endemicExchange
+        .connect(user3)
+        .bidForDutchAuction(auctionid2, 1, {
+          value: ethers.utils.parseUnits('0.515'),
+        });
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2459,7 +2635,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -2492,7 +2668,7 @@ describe('ExchangeAuction', function () {
         +weiToEther(auction1CurrentPrice) + +weiToEther(auction1Fee);
 
       // Buy with user 2
-      await endemicExchange.connect(user2).bid(auctionid, 1, {
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1, {
         value: ethers.utils.parseUnits(auction1TotalPrice.toString()),
       });
 
@@ -2500,7 +2676,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user2).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user2)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -2539,9 +2715,11 @@ describe('ExchangeAuction', function () {
         +weiToEther(auction2CurrentPrice) + +weiToEther(auction2Fee);
 
       // Buy with user 3
-      const bidTx = await endemicExchange.connect(user3).bid(auctionid2, 1, {
-        value: ethers.utils.parseUnits(auction2TotalPrice.toString()),
-      });
+      const bidTx = await endemicExchange
+        .connect(user3)
+        .bidForDutchAuction(auctionid2, 1, {
+          value: ethers.utils.parseUnits(auction2TotalPrice.toString()),
+        });
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2597,7 +2775,7 @@ describe('ExchangeAuction', function () {
       const claimEthBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -2632,7 +2810,9 @@ describe('ExchangeAuction', function () {
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
 
       // buys NFT and calculates price diff on contract and user1 wallet
-      const bidTx = await endemicExchange.connect(user2).bid(auctionid, 1);
+      const bidTx = await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(auctionid, 1);
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2664,7 +2844,7 @@ describe('ExchangeAuction', function () {
       const claimEthBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -2709,7 +2889,9 @@ describe('ExchangeAuction', function () {
         );
 
       // buys NFT and calculates price diff on contract and user1 wallet
-      const bidTx = await endemicExchange.connect(user2).bid(auctionid, 1);
+      const bidTx = await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(auctionid, 1);
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2741,7 +2923,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1'),
@@ -2768,13 +2950,13 @@ describe('ExchangeAuction', function () {
         .approve(endemicExchange.address, ethers.utils.parseUnits('1.03'));
 
       // Buy with user 2
-      await endemicExchange.connect(user2).bid(auctionid, 1);
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1);
 
       // Auction again with user 2
       await nftContract.connect(user2).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user2)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.5'),
@@ -2805,7 +2987,9 @@ describe('ExchangeAuction', function () {
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
       // Buy with user 3
-      const bidTx = await endemicExchange.connect(user3).bid(auctionid2, 1);
+      const bidTx = await endemicExchange
+        .connect(user3)
+        .bidForDutchAuction(auctionid2, 1);
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2839,7 +3023,7 @@ describe('ExchangeAuction', function () {
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -2884,13 +3068,13 @@ describe('ExchangeAuction', function () {
         );
 
       // Buy with user 2
-      await endemicExchange.connect(user2).bid(auctionid, 1);
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1);
 
       // Auction again with user 2
       await nftContract.connect(user2).approve(endemicExchange.address, 1);
       await endemicExchange
         .connect(user2)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.0'),
@@ -2939,7 +3123,9 @@ describe('ExchangeAuction', function () {
         );
 
       // Buy with user 3
-      const bidTx = await endemicExchange.connect(user3).bid(auctionid2, 1);
+      const bidTx = await endemicExchange
+        .connect(user3)
+        .bidForDutchAuction(auctionid2, 1);
 
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
@@ -2986,7 +3172,7 @@ describe('ExchangeAuction', function () {
     it('should distribute royalties on fixed auction', async () => {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -3019,7 +3205,7 @@ describe('ExchangeAuction', function () {
       const feeRecipientBalance1 = await feeRecipient.getBalance();
       const user1Bal1 = await user1.getBalance();
 
-      await endemicExchange.connect(user2).bid(auctionid, 1, {
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1, {
         value: ethers.utils.parseUnits('0.206'),
       });
 
@@ -3049,7 +3235,7 @@ describe('ExchangeAuction', function () {
     it('should distribute royalties on dutch auction', async () => {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -3088,7 +3274,7 @@ describe('ExchangeAuction', function () {
       const feeRecipientBalance1 = await feeRecipient.getBalance();
       const user1Bal1 = await user1.getBalance();
 
-      await endemicExchange.connect(user2).bid(auctionid, 1, {
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1, {
         value: ethers.utils.parseUnits(totalPrice.toString()),
       });
 
@@ -3140,7 +3326,7 @@ describe('ExchangeAuction', function () {
     it('should distribute royalties on fixed auction', async () => {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
@@ -3182,7 +3368,7 @@ describe('ExchangeAuction', function () {
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
 
-      await endemicExchange.connect(user2).bid(auctionid, 1);
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1);
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const feeRecipientBalance2 = await endemicToken.balanceOf(
@@ -3210,7 +3396,7 @@ describe('ExchangeAuction', function () {
     it('should distribute royalties on dutch auction', async () => {
       await endemicExchange
         .connect(user1)
-        .createAuction(
+        .createDutchAuction(
           nftContract.address,
           1,
           ethers.utils.parseUnits('1.4'),
@@ -3261,7 +3447,7 @@ describe('ExchangeAuction', function () {
           ethers.utils.parseUnits(totalPrice.toString())
         );
 
-      await endemicExchange.connect(user2).bid(auctionid, 1);
+      await endemicExchange.connect(user2).bidForDutchAuction(auctionid, 1);
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const feeRecipientBalance2 = await endemicToken.balanceOf(

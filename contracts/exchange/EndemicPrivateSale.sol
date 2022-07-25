@@ -12,7 +12,7 @@ error PrivateSaleExpired();
 error InvalidSignature();
 error InvalidPrivateSale();
 
-contract EndemicPrivateSale is
+abstract contract EndemicPrivateSale is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     EndemicExchangeCore
