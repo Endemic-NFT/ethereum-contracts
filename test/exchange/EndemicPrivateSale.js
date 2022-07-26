@@ -29,8 +29,16 @@ describe('EndemicPrivateSale', () => {
   const RANDOM_S_VALUE =
     '0x07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b91562';
   const RANDOM_V_VALUE = '0x1c';
-  const RANDOM_TIMESTAMP = 1678834236;
+
+  const now = new Date();
+  const twoDaysFromNow = new Date();
+  twoDaysFromNow.setDate(now.getDate() + 2);
+
+  const TWO_DAYS_FROM_NOW_TIMESTAMP = Math.floor(
+    twoDaysFromNow.getTime() / 1000
+  );
   const LAST_YEAR_TIMESTAMP = 1615762236;
+
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
@@ -133,7 +141,7 @@ describe('EndemicPrivateSale', () => {
           nftContract.address,
           1,
           ONE_ETHER,
-          RANDOM_TIMESTAMP,
+          TWO_DAYS_FROM_NOW_TIMESTAMP,
           RANDOM_V_VALUE,
           RANDOM_R_VALUE,
           RANDOM_S_VALUE,
@@ -151,7 +159,7 @@ describe('EndemicPrivateSale', () => {
           nftContract.address,
           1,
           ONE_ETHER,
-          RANDOM_TIMESTAMP,
+          TWO_DAYS_FROM_NOW_TIMESTAMP,
           RANDOM_V_VALUE,
           RANDOM_R_VALUE,
           RANDOM_S_VALUE,
@@ -241,7 +249,7 @@ describe('EndemicPrivateSale', () => {
           nftContract.address,
           1,
           ONE_ETHER,
-          RANDOM_TIMESTAMP,
+          TWO_DAYS_FROM_NOW_TIMESTAMP,
           RANDOM_V_VALUE,
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
@@ -256,7 +264,7 @@ describe('EndemicPrivateSale', () => {
           nftContract.address,
           1,
           ONE_ETHER,
-          RANDOM_TIMESTAMP,
+          TWO_DAYS_FROM_NOW_TIMESTAMP,
           RANDOM_V_VALUE,
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
@@ -279,7 +287,7 @@ describe('EndemicPrivateSale', () => {
             nftContract.address,
             1,
             ONE_ETHER,
-            RANDOM_TIMESTAMP,
+            TWO_DAYS_FROM_NOW_TIMESTAMP,
             RANDOM_V_VALUE,
             RANDOM_R_VALUE,
             RANDOM_S_VALUE
