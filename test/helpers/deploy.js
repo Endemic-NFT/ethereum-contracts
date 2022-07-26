@@ -131,17 +131,12 @@ const deployRoyaltiesProvider = async () => {
   return royaltiesProviderProxy;
 };
 
-const deployEndemicVesting = async (deployer, tgeStartTime, startTime) => {
+const deployEndemicVesting = async (deployer) => {
   const EndemicVesting = await ethers.getContractFactory('EndemicVesting');
 
   const endemicToken = await deployEndemicToken(deployer);
 
-  const endemicVesting = await EndemicVesting.deploy(
-    tgeStartTime,
-    startTime,
-    endemicToken.address,
-    []
-  );
+  const endemicVesting = await EndemicVesting.deploy(endemicToken.address, []);
 
   await endemicVesting.deployed();
 

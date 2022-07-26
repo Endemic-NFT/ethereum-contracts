@@ -22,6 +22,10 @@ deployEndemicExchange:
 deployEndemicToken:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20.js --network ${network}
 
+.PHONY: deployEndemicTokenPausable
+deployEndemicTokenPausable:
+	npx hardhat run scripts/erc-20/deploy-endemic-erc20-pausable.js --network ${network}
+
 .PHONY: deployEndemicVesting
 deployEndemicVesting:
 	npx hardhat run scripts/erc-20/deploy-endemic-vesting.js --network ${network}

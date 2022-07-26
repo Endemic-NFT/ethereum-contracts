@@ -4,7 +4,9 @@ pragma solidity ^0.8.15;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
+error VestingFreezed();
 error VestingNotStarted();
 error NoAllocatedTokensForClaimer();
 error AllocationExists();
@@ -13,7 +15,10 @@ error MaximumAdditionalAllocationReached();
 
 contract EndemicVesting is Context, Ownable {
     IERC20 public immutable END;
-    uint256 private immutable vestingStartTime;
+
+    uint256 public vestingStartTime;
+
+    bool private isVestingFreezed;
 
     uint256 private additionalTokensAllocated;
 
@@ -38,8 +43,8 @@ contract EndemicVesting is Context, Ownable {
         //total allocation that is available for claimer after vesting finishes
         uint256 totalAllocated;
         uint256 totalClaimed;
-        uint256 endCliff;
-        uint256 endVesting;
+        uint256 cliffDuration;
+        uint256 vestingDuration;
     }
 
     struct AllocationRequest {
@@ -47,8 +52,8 @@ contract EndemicVesting is Context, Ownable {
         address claimer;
         uint256 initialAllocation;
         uint256 totalAllocated;
-        uint256 endCliff;
-        uint256 endVesting;
+        uint256 cliffDuration;
+        uint256 vestingDuration;
     }
 
     event ENDTokenClaimed(
@@ -57,16 +62,9 @@ contract EndemicVesting is Context, Ownable {
         uint256 indexed totalClaimed
     );
 
-    constructor(
-        uint256 tgeStartTime,
-        uint256 startTime,
-        address tokenAddress,
-        AllocationRequest[] memory allocRequests
-    ) {
-        require(startTime >= tgeStartTime, "Vesting not available before TGE");
-
+    constructor(address tokenAddress, AllocationRequest[] memory allocRequests)
+    {
         END = IERC20(tokenAddress);
-        vestingStartTime = startTime;
 
         for (uint256 i = 0; i < allocRequests.length; i++) {
             _allocateTokens(allocRequests[i]);
@@ -107,16 +105,14 @@ contract EndemicVesting is Context, Ownable {
         }
 
         claimerAlloc.claimer = allocRequest.claimer;
-        claimerAlloc.endCliff = allocRequest.endCliff;
-        claimerAlloc.endVesting = allocRequest.endVesting;
         claimerAlloc.initialAllocation = allocRequest.initialAllocation;
         claimerAlloc.totalAllocated = allocRequest.totalAllocated;
+        claimerAlloc.cliffDuration = allocRequest.cliffDuration;
+        claimerAlloc.vestingDuration = allocRequest.vestingDuration;
     }
 
     function claim(AllocationType allocType) external {
-        if (vestingStartTime > block.timestamp) {
-            revert VestingNotStarted();
-        }
+        _requireVestingStart();
 
         _transferTokens(_msgSender(), allocType);
     }
@@ -125,11 +121,19 @@ contract EndemicVesting is Context, Ownable {
         external
         onlyOwner
     {
-        if (vestingStartTime > block.timestamp) {
-            revert VestingNotStarted();
-        }
+        _requireVestingStart();
 
         _transferTokens(claimer, allocType);
+    }
+
+    function setVestingDates(uint256 _vestingStartTime) external onlyOwner {
+        if (isVestingFreezed) revert VestingFreezed();
+
+        vestingStartTime = _vestingStartTime;
+    }
+
+    function freezeVesting() external onlyOwner {
+        isVestingFreezed = true;
     }
 
     function getAllocationsForClaimer(address claimer)
@@ -181,27 +185,42 @@ contract EndemicVesting is Context, Ownable {
         view
         returns (uint256 amountToClaim)
     {
+        //vesting didn't start yet
+        if (vestingStartTime > block.timestamp) {
+            return 0;
+        }
+
         AllocationData storage claimerAlloc = allocations[claimer][allocType];
 
+        uint256 cliffEndTime = vestingStartTime + claimerAlloc.cliffDuration;
+        uint256 vestingEndTime = vestingStartTime +
+            claimerAlloc.vestingDuration;
+
         //if vesting finished total allocation is available for claimer
-        if (block.timestamp >= claimerAlloc.endVesting) {
+        if (block.timestamp >= vestingEndTime) {
             amountToClaim = claimerAlloc.totalAllocated;
         } else {
             //initial allocation is available for claimer immediately after TGE
             amountToClaim = claimerAlloc.initialAllocation;
 
             //if cliff passed initial allocation is summed with tokens that are lineary released by block
-            if (block.timestamp >= claimerAlloc.endCliff) {
+            if (block.timestamp >= cliffEndTime) {
                 amountToClaim += uint256(
                     ((claimerAlloc.totalAllocated -
                         claimerAlloc.initialAllocation) *
-                        (block.timestamp - claimerAlloc.endCliff)) /
-                        (claimerAlloc.endVesting - claimerAlloc.endCliff)
+                        (block.timestamp - cliffEndTime)) /
+                        (vestingEndTime - cliffEndTime)
                 );
             }
         }
 
         //calculated allocation is subtracted by amount claimer already claimed
         amountToClaim -= claimerAlloc.totalClaimed;
+    }
+
+    function _requireVestingStart() internal view {
+        if (vestingStartTime == 0 || vestingStartTime > block.timestamp) {
+            revert VestingNotStarted();
+        }
     }
 }
