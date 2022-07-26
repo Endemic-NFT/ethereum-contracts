@@ -252,6 +252,8 @@ describe('EndemicVesting', function () {
       const totalAllocated = 1000;
 
       const allocRequests = await generateAllocRequests(
+        SIX_MONTHS,
+        ONE_AND_A_HALF_YEAR,
         initialAllocation,
         totalAllocated
       );
@@ -282,6 +284,8 @@ describe('EndemicVesting', function () {
       const totalAllocated = 1000;
 
       const allocRequests = await generateAllocRequests(
+        SIX_MONTHS,
+        ONE_AND_A_HALF_YEAR,
         initialAllocation,
         totalAllocated
       );
@@ -290,7 +294,7 @@ describe('EndemicVesting', function () {
 
       await endemicVesting.setVestingDates(VESTING_START_TIMESTAMP);
 
-      await network.provider.send('evm_increaseTime', [SIX_MONTHS]);
+      await network.provider.send('evm_increaseTime', [2 * SIX_MONTHS]);
       await network.provider.send('evm_mine');
 
       const initalLinearClaim = 526;
@@ -456,6 +460,11 @@ describe('EndemicVesting', function () {
         ONE_AND_A_HALF_YEAR + SIX_MONTHS
       );
 
+      await network.provider.send('evm_increaseTime', [
+        2 * ONE_AND_A_HALF_YEAR,
+      ]);
+      await network.provider.send('evm_mine');
+
       await endemicVesting.addAllocations(allocRequests);
 
       await expect(endemicVesting.connect(user1).claim(5)).to.emit(
@@ -473,6 +482,11 @@ describe('EndemicVesting', function () {
 
       await endemicVesting.setVestingDates(VESTING_START_TIMESTAMP);
 
+      await network.provider.send('evm_increaseTime', [
+        2 * ONE_AND_A_HALF_YEAR,
+      ]);
+      await network.provider.send('evm_mine');
+
       await expect(endemicVesting.connect(user1).claim(5)).to.emit(
         endemicVesting,
         END_TOKEN_CLAIMED
@@ -481,7 +495,7 @@ describe('EndemicVesting', function () {
       expect(await endemicToken.balanceOf(user1.address)).to.equal('1000'); //amount of total allocated
     });
   });
-  after(async function () {
+  this.afterAll(async function () {
     await network.provider.send('hardhat_reset');
   });
 });
