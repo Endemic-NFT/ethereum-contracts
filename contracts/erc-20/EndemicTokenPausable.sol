@@ -9,7 +9,7 @@ contract EndemicTokenPausable is ERC20PresetFixedSupply, Pausable, Ownable {
     constructor(address owner)
         ERC20PresetFixedSupply(
             "Endemic",
-            "EMIC",
+            "END",
             50000000 * 10**decimals(),
             owner
         )
