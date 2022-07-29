@@ -49,6 +49,14 @@ deployContractImporter:
 .PHONY: deployEndemicTokenPausable
 deployEndemicTokenPausable:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20-pausable.js --network ${network}
+
+.PHONY: migrateCollectionFactoryRoles
+migrateCollectionFactoryRoles:
+	npx hardhat run scripts/utils/migrate-roles.js --network ${network}
+
+.PHONY: migrateCollectionRoyalties
+migrateCollectionRoyalties:
+	npx hardhat run scripts/utils/migrate-royalties.js --network ${network}
 	
 .PHONY: verify
 verify:
