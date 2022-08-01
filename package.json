@@ -14,7 +14,7 @@
     "@nomiclabs/hardhat-etherscan": "3.1.0",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.7.0",
-    "@openzeppelin/hardhat-upgrades": "1.19.0",
+    "@openzeppelin/hardhat-upgrades": "1.19.1",
     "dotenv": "10.0.0",
     "ethers": "^5.6.9",
     "web3": "1.7.4"
