@@ -12,30 +12,6 @@ const queryGraph = async (query) => {
   return data.data;
 };
 
-const getAllAuctionIds = async () => {
-  const { auctions } = await queryGraph(`
-  query GetAllAuctions {
-    auctions {
-      id
-    }
-  }
-`);
-
-  return auctions.map((auction) => auction.id);
-};
-
-const getAllOfferIds = async () => {
-  const { offers } = await queryGraph(`
-  query GetAllOffers {
-    offers {
-      id
-    }
-  }
-`);
-
-  return offers.map((offer) => +offer.id);
-};
-
 const getCollectionsWithRoyalites = async () => {
   const { nftContracts } = await queryGraph(`
   query GetAllRoyalites {
@@ -61,8 +37,6 @@ const getVerifiedUsers = async () => {
 };
 
 module.exports = {
-  getAllAuctionIds,
-  getAllOfferIds,
   getCollectionsWithRoyalites,
   getVerifiedUsers,
 };

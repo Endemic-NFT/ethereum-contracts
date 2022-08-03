@@ -1,9 +1,9 @@
 const { ethers, network } = require('hardhat');
 const { getCollectionsWithRoyalites } = require('./get-entities');
-const { getForNetwork } = require('../utils/addresses');
+const { getForNetwork } = require('./addresses');
 
 async function main() {
-  const { endemicExchangeProxy } = getForNetwork(network.name);
+  const { royaltiesProviderProxy } = getForNetwork(network.name);
 
   const collections = await getCollectionsWithRoyalites();
 
@@ -11,7 +11,7 @@ async function main() {
     'RoyaltiesProvider'
   );
   const royaltiesProvider = await RoyaltiesProvider.attach(
-    endemicExchangeProxy
+    royaltiesProviderProxy
   );
 
   await Promise.all(
