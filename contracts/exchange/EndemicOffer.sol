@@ -30,7 +30,7 @@ abstract contract EndemicOffer is
 
     mapping(uint256 => Offer) private offersById;
 
-    // Offer by token address => token id => offerder => offerId
+    // Offer by token address => token id => offerer => offerId
     mapping(address => mapping(uint256 => mapping(address => uint256)))
         private offerIdsByBidder;
 
