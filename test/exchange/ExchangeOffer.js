@@ -923,6 +923,22 @@ describe('ExchangeOffer', function () {
         await nftContract.approve(endemicExchange.address, 1);
         await endemicExchange.acceptNftOffer(offer2.id);
       });
+
+      it('should fail to accept offer that is for collection', async () => {
+        await endemicExchange.placeCollectionOffer(
+          nftContract.address,
+          100000,
+          {
+            value: ethers.utils.parseUnits('0.515'),
+          }
+        );
+
+        const offer1 = await endemicExchange.getOffer(1);
+
+        await expect(
+          endemicExchange.connect(user1).acceptNftOffer(offer1.id)
+        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+      });
     });
 
     describe('Accept offer with ERC20', () => {
@@ -1062,6 +1078,32 @@ describe('ExchangeOffer', function () {
         await endemicExchange.connect(user1).acceptNftOffer(offer1.id);
         await nftContract.connect(user3).approve(endemicExchange.address, 4);
         await endemicExchange.connect(user3).acceptNftOffer(offer2.id);
+      });
+
+      it('should fail to accept offer that is for collection', async () => {
+        await endemicToken.transfer(
+          user3.address,
+          ethers.utils.parseUnits('0.515')
+        );
+
+        await endemicToken
+          .connect(user3)
+          .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
+
+        await endemicExchange
+          .connect(user3)
+          .placeCollectionOfferInErc20(
+            nftContract.address,
+            endemicToken.address,
+            ethers.utils.parseUnits('0.515'),
+            100000
+          );
+
+        const offer1 = await endemicExchange.getOffer(1);
+
+        await expect(
+          endemicExchange.connect(user1).acceptNftOffer(offer1.id)
+        ).to.be.revertedWith(INVALID_OFFER_ERROR);
       });
     });
   });
@@ -1991,6 +2033,18 @@ describe('ExchangeOffer', function () {
         await nftContract.approve(endemicExchange.address, 4);
         await endemicExchange.acceptCollectionOffer(offer2.id, 4);
       });
+
+      it('should fail to accept offer that is for nft', async () => {
+        await endemicExchange.placeNftOffer(nftContract.address, 100000, 4, {
+          value: ethers.utils.parseUnits('0.515'),
+        });
+
+        const offer1 = await endemicExchange.getOffer(1);
+
+        await expect(
+          endemicExchange.connect(user1).acceptCollectionOffer(offer1.id)
+        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+      });
     });
 
     describe('Accept offer with ERC20', () => {
@@ -2131,6 +2185,33 @@ describe('ExchangeOffer', function () {
         await endemicExchange
           .connect(user3)
           .acceptCollectionOffer(offer2.id, 4);
+      });
+
+      it('should fail to accept offer that is for nft', async () => {
+        await endemicToken.transfer(
+          user3.address,
+          ethers.utils.parseUnits('0.515')
+        );
+
+        await endemicToken
+          .connect(user3)
+          .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
+
+        await endemicExchange
+          .connect(user3)
+          .placeNftOfferInErc20(
+            nftContract.address,
+            endemicToken.address,
+            ethers.utils.parseUnits('0.515'),
+            1,
+            100000
+          );
+
+        const offer1 = await endemicExchange.getOffer(1);
+
+        await expect(
+          endemicExchange.connect(user1).acceptCollectionOffer(offer1.id, 1)
+        ).to.be.revertedWith(INVALID_OFFER_ERROR);
       });
     });
   });

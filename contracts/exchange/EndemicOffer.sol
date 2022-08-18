@@ -203,6 +203,8 @@ abstract contract EndemicOffer is
     function acceptNftOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
 
+        if (offer.isForCollection) revert InvalidOffer();
+
         _acceptOffer(offer, offerId, offer.tokenId);
     }
 
@@ -211,6 +213,8 @@ abstract contract EndemicOffer is
         nonReentrant
     {
         Offer memory offer = offersById[offerId];
+
+        if (!offer.isForCollection) revert InvalidOffer();
 
         _acceptOffer(offer, offerId, tokenId);
     }
