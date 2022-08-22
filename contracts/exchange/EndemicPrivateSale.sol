@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 
 error PrivateSaleExpired();
@@ -15,6 +16,7 @@ error InvalidPrivateSale();
 abstract contract EndemicPrivateSale is
     ContextUpgradeable,
     ReentrancyGuardUpgradeable,
+    EndemicFundsDistributor,
     EndemicExchangeCore
 {
     using AddressUpgradeable for address;
@@ -80,8 +82,12 @@ abstract contract EndemicPrivateSale is
 
         address buyer = _msgSender();
 
-        _requireCorrectPaymentMethod(paymentErc20TokenAddress);
-        _requireCorrectValueProvided(price, paymentErc20TokenAddress, buyer);
+        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
+        _requireSufficientCurrencySupplied(
+            price,
+            paymentErc20TokenAddress,
+            buyer
+        );
 
         address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
 
@@ -144,7 +150,12 @@ abstract contract EndemicPrivateSale is
             address royaltiesRecipient,
             uint256 royaltieFee,
             uint256 totalCut
-        ) = _calculateFees(nftContract, tokenId, price);
+        ) = _calculateFees(
+                paymentErc20TokenAddress,
+                nftContract,
+                tokenId,
+                price
+            );
 
         IERC721(nftContract).transferFrom(seller, _msgSender(), tokenId);
 

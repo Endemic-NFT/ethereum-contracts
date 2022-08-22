@@ -98,9 +98,14 @@ abstract contract EndemicDutchAuction is
             address royaltiesRecipient,
             uint256 royaltieFee,
             uint256 totalCut
-        ) = _calculateFees(auction.nftContract, auction.tokenId, currentPrice);
+        ) = _calculateFees(
+                auction.paymentErc20TokenAddress,
+                auction.nftContract,
+                auction.tokenId,
+                currentPrice
+            );
 
-        _requireCorrectValueProvided(
+        _requireSufficientCurrencySupplied(
             currentPrice + takerCut,
             auction.paymentErc20TokenAddress,
             _msgSender()

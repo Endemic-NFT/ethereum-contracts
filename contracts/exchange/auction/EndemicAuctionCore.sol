@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import "../EndemicExchangeCore.sol";
+import "../EndemicFundsDistributor.sol";
 
 error Unauthorized();
 
@@ -18,7 +19,10 @@ error AuctionNotStarted();
 error AuctionInProgress();
 error AuctionEnded();
 
-abstract contract EndemicAuctionCore is EndemicExchangeCore {
+abstract contract EndemicAuctionCore is
+    EndemicFundsDistributor,
+    EndemicExchangeCore
+{
     using AddressUpgradeable for address;
 
     uint256 internal constant MAX_DURATION = 1000 days;
@@ -148,7 +152,7 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
         uint256 amount,
         bytes4 assetClass
     ) internal view {
-        _requireCorrectPaymentMethod(paymentErc20TokenAddress);
+        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
 
         _requireCorrectNftInterface(assetClass, nftContract);
 

@@ -26,6 +26,10 @@ deployEndemicToken:
 deployEndemicVesting:
 	npx hardhat run scripts/erc-20/deploy-endemic-vesting.js --network ${network}
 
+.PHONY: deployPaymentManager
+deployPaymentManager:
+	npx hardhat run scripts/payment-manager/deploy-payment-manager.js --network ${network}
+
 .PHONY: upgradeEndemicExchange
 upgradeEndemicExchange:
 	npx hardhat run scripts/exchange/upgrade-endemic-exchange-proxy.js --network ${network}

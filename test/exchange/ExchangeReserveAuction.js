@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers, network, waffle } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
@@ -11,10 +11,8 @@ const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
 const { ERC721_ASSET_CLASS } = require('../helpers/ids');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
-const INVALID_VALUE_PROVIDED_ERROR = 'InvalidValueProvided';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const INVALID_PRICE_CONFIGURATION = 'InvalidPriceConfiguration';
-const INVALID_PAYMENT_CONFIGURATION = 'InvalidErc20PaymentConfiguration';
 
 const AUCTION_CANCELED = 'AuctionCancelled';
 const RESERVE_BID_PLACED = 'ReserveBidPlaced';
@@ -23,6 +21,7 @@ const UNAUTHORIZED_ERROR = 'Unauthorized';
 const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
 const INSUFFICIENT_BID = 'InsufficientBid';
+const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
 const ONE_DAY = 86400;
 
@@ -31,7 +30,8 @@ describe('ExchangeReserveAuction', function () {
     endemicToken,
     nftContract,
     erc1155Contract,
-    royaltiesProviderContract;
+    royaltiesProviderContract,
+    paymentManagerContract;
 
   let owner, user1, user2, user3, feeRecipient;
 
@@ -65,6 +65,7 @@ describe('ExchangeReserveAuction', function () {
 
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
+    paymentManagerContract = result.paymentManagerContract;
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
     erc1155Contract = await deployEndemicERC1155();
@@ -81,7 +82,7 @@ describe('ExchangeReserveAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -255,7 +256,7 @@ describe('ExchangeReserveAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -287,7 +288,7 @@ describe('ExchangeReserveAuction', function () {
         endemicExchange
           .connect(user2)
           .bidForReserveAuctionInErc20(erc721AuctionId, 100)
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -667,7 +668,7 @@ describe('ExchangeReserveAuction', function () {
             erc721AuctionId,
             ethers.utils.parseUnits('0.203')
           )
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED_ERROR);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail to outbid himself', async function () {
@@ -785,7 +786,7 @@ describe('ExchangeReserveAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -855,7 +856,7 @@ describe('ExchangeReserveAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -1108,7 +1109,7 @@ describe('ExchangeReserveAuction', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );

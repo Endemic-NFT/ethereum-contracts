@@ -98,13 +98,22 @@ abstract contract EndemicReserveAuction is
 
         _requireValidBidRequest(auction, AuctionType.RESERVE, 1);
 
+        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
+            auction.paymentErc20TokenAddress
+        );
+
         uint256 bidPrice = (bidPriceWithFees * MAX_FEE) / (takerFee + MAX_FEE);
 
         if (auction.endingAt != 0) {
             _outBidPreviousBidder(auction, bidPriceWithFees, bidPrice);
         } else {
             // Auction hasn't started yet
-            _placeBidAndStartTimer(auction, bidPriceWithFees, bidPrice);
+            _placeBidAndStartTimer(
+                auction,
+                bidPriceWithFees,
+                bidPrice,
+                takerFee
+            );
         }
 
         emit ReserveBidPlaced(auction.id, _msgSender(), bidPrice);
@@ -130,6 +139,7 @@ abstract contract EndemicReserveAuction is
             uint256 royaltieFee,
             uint256 totalCut
         ) = _calculateFees(
+                auction.paymentErc20TokenAddress,
                 auction.nftContract,
                 auction.tokenId,
                 auction.endingPrice
@@ -173,14 +183,15 @@ abstract contract EndemicReserveAuction is
     function _placeBidAndStartTimer(
         Auction memory auction,
         uint256 bidPriceWithFees,
-        uint256 bidPrice
+        uint256 bidPrice,
+        uint256 takerFee
     ) internal {
         uint256 takerCut = _calculateCut(takerFee, auction.startingPrice);
 
         if (auction.startingPrice + takerCut > bidPriceWithFees)
-            revert InvalidValueProvided();
+            revert UnsufficientCurrencySupplied();
 
-        _requireCorrectErc20ValueProvided(
+        _requireSufficientErc20Supplied(
             auction.startingPrice + takerCut,
             auction.paymentErc20TokenAddress,
             _msgSender()
@@ -234,7 +245,7 @@ abstract contract EndemicReserveAuction is
 
         if (minRequiredBid > bidPriceWithFees) revert InsufficientBid();
 
-        _requireCorrectErc20ValueProvided(
+        _requireSufficientErc20Supplied(
             minRequiredBid,
             paymentErc20TokenAddress,
             _msgSender()
