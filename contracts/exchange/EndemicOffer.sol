@@ -100,11 +100,11 @@ abstract contract EndemicOffer is
         uint256 offerInErc20,
         uint256 tokenId,
         uint256 duration
-    ) external nonReentrant {
-        if (!supportedErc20Addresses[paymentErc20TokenAddress]) {
-            revert InvalidPaymentMethod();
-        }
-
+    )
+        external
+        nonReentrant
+        onlySupportedERC20Payments(paymentErc20TokenAddress)
+    {
         _requireCorrectErc20ValueProvided(
             offerInErc20,
             paymentErc20TokenAddress,

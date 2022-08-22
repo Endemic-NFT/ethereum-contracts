@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
-import "../EndemicExchangeCore.sol";
 import "./EndemicAuctionCore.sol";
 
 abstract contract EndemicDutchAuction is
-    OwnableUpgradeable,
+    ContextUpgradeable,
     ReentrancyGuardUpgradeable,
     EndemicAuctionCore
 {
@@ -41,20 +40,20 @@ abstract contract EndemicDutchAuction is
 
         // seller cannot recreate auction
         // if it is already listed as reserve auction that is in progress or ended
-        _requireAuctionNotStartedYet(auctionId);
+        _requireIdleAuction(auctionId);
 
         Auction memory auction = Auction({
+            state: AuctionState.DUTCH,
             id: auctionId,
             nftContract: nftContract,
             seller: _msgSender(),
+            highestBidder: address(0),
             paymentErc20TokenAddress: paymentErc20TokenAddress,
             tokenId: tokenId,
             duration: duration,
             amount: amount,
             startingPrice: startingPrice,
             endingPrice: endingPrice,
-            reservePrice: 0, // 0 in case of dutch auction
-            reservePriceWithFees: 0, // 0 in case of dutch auction
             startedAt: block.timestamp,
             endingAt: 0, // 0 because availability to bid doesn't relay on time in dutch auction
             assetClass: assetClass
@@ -70,7 +69,6 @@ abstract contract EndemicDutchAuction is
             auctionId,
             startingPrice,
             endingPrice,
-            0,
             duration,
             _msgSender(),
             amount,
@@ -86,11 +84,12 @@ abstract contract EndemicDutchAuction is
     {
         Auction memory auction = idToAuction[id];
 
-        _requireValidBidRequest(auction, tokenAmount);
+        _requireValidBidRequest(auction, AuctionState.DUTCH, tokenAmount);
 
         _detractByAssetClass(auction, tokenAmount);
 
         uint256 currentPrice = _calculateCurrentPrice(auction) * tokenAmount;
+
         if (currentPrice == 0) revert InvalidPrice();
 
         (
@@ -139,8 +138,10 @@ abstract contract EndemicDutchAuction is
     function getCurrentPrice(bytes32 id) external view returns (uint256) {
         Auction memory auction = idToAuction[id];
 
-        if (!_isActiveAuction(auction)) revert InvalidAuction();
-        if (auction.reservePrice != 0) revert InvalidAuction();
+        if (
+            !_isActiveAuction(auction) ||
+            !_isAuctionInState(auction, AuctionState.DUTCH)
+        ) revert InvalidAuction();
 
         return _calculateCurrentPrice(auction);
     }

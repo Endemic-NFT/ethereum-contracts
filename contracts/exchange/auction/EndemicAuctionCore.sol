@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
@@ -15,6 +14,7 @@ error InvalidDuration();
 error InvalidPriceConfiguration();
 error InvalidAmount();
 
+error AuctionNotStarted();
 error AuctionInProgress();
 error AuctionEnded();
 
@@ -26,18 +26,24 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
 
     mapping(bytes32 => Auction) internal idToAuction;
 
+    enum AuctionState {
+        INACTIVE,
+        DUTCH,
+        RESERVE
+    }
+
     struct Auction {
+        AuctionState state;
         bytes32 id;
         address nftContract;
         address seller;
+        address highestBidder;
         address paymentErc20TokenAddress;
         uint256 tokenId;
         uint256 duration;
         uint256 amount;
         uint256 startingPrice;
         uint256 endingPrice;
-        uint256 reservePrice;
-        uint256 reservePriceWithFees;
         uint256 startedAt;
         uint256 endingAt;
         bytes4 assetClass;
@@ -49,7 +55,6 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
         bytes32 indexed id,
         uint256 startingPrice,
         uint256 endingPrice,
-        uint256 reservePrice,
         uint256 duration,
         address seller,
         uint256 amount,
@@ -121,7 +126,15 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
         return auction.startedAt > 0;
     }
 
-    function _requireAuctionNotStartedYet(bytes32 id) internal view {
+    function _isAuctionInState(Auction memory auction, AuctionState state)
+        internal
+        pure
+        returns (bool)
+    {
+        return auction.state == state;
+    }
+
+    function _requireIdleAuction(bytes32 id) internal view {
         Auction memory auction = idToAuction[id];
 
         if (auction.endingAt >= block.timestamp) revert AuctionInProgress();
@@ -151,9 +164,11 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
 
     function _requireValidBidRequest(
         Auction memory auction,
+        AuctionState state,
         uint256 tokenAmount
     ) internal view {
-        if (!_isActiveAuction(auction)) revert InvalidAuction();
+        if (!_isActiveAuction(auction) || !_isAuctionInState(auction, state))
+            revert InvalidAuction();
         if (auction.seller == msg.sender) revert Unauthorized();
         if (auction.amount < tokenAmount) revert InvalidAmount();
     }

@@ -38,6 +38,15 @@ abstract contract EndemicExchangeCore {
     uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
 
+    modifier onlySupportedERC20Payments(address paymentErc20TokenAddress) {
+        if (
+            paymentErc20TokenAddress == ZERO_ADDRESS ||
+            !supportedErc20Addresses[paymentErc20TokenAddress]
+        ) revert InvalidPaymentMethod();
+
+        _;
+    }
+
     function _calculateFees(
         address nftContract,
         uint256 tokenId,

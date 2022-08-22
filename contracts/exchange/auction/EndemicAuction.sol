@@ -9,7 +9,11 @@ import "../EndemicExchangeCore.sol";
 import "./EndemicDutchAuction.sol";
 import "./EndemicReserveAuction.sol";
 
-abstract contract EndemicAuction is EndemicDutchAuction, EndemicReserveAuction {
+abstract contract EndemicAuction is
+    OwnableUpgradeable,
+    EndemicDutchAuction,
+    EndemicReserveAuction
+{
     using AddressUpgradeable for address;
 
     function getAuction(bytes32 id)
@@ -20,8 +24,6 @@ abstract contract EndemicAuction is EndemicDutchAuction, EndemicReserveAuction {
             address paymentErc20TokenAddress,
             uint256 startingPrice,
             uint256 endingPrice,
-            uint256 reservePrice,
-            uint256 reservePriceWithFees,
             uint256 duration,
             uint256 startedAt,
             uint256 endingAt,
@@ -35,8 +37,6 @@ abstract contract EndemicAuction is EndemicDutchAuction, EndemicReserveAuction {
             auction.paymentErc20TokenAddress,
             auction.startingPrice,
             auction.endingPrice,
-            auction.reservePrice,
-            auction.reservePriceWithFees,
             auction.duration,
             auction.startedAt,
             auction.endingAt,

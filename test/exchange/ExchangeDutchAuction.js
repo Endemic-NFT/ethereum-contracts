@@ -1363,10 +1363,9 @@ describe('ExchangeDutchAuction', function () {
 
       const auctionBefore = await endemicExchange.getAuction(auction1Id);
 
-      expect(auctionBefore.reservePrice.toString()).to.equal(
+      expect(auctionBefore.startingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auctionBefore.startingPrice.toString()).to.equal('0');
       expect(auctionBefore.endingPrice.toString()).to.equal('0');
 
       //Try to recreate reserve auction to become dutch
@@ -1385,7 +1384,6 @@ describe('ExchangeDutchAuction', function () {
 
       const auctionAfter = await endemicExchange.getAuction(auction1Id);
 
-      expect(auctionAfter.reservePrice.toString()).to.equal('0');
       expect(auctionAfter.startingPrice.toString()).to.equal(
         ethers.utils.parseUnits('1.0')
       );
@@ -1563,6 +1561,34 @@ describe('ExchangeDutchAuction', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
+      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+    });
+
+    it('should fail to bid on dutch auction because auction is listed as reserved', async function () {
+      await endemicExchange.updateSupportedErc20Tokens(
+        endemicToken.address,
+        true
+      );
+
+      await endemicExchange
+        .connect(user1)
+        .createReserveAuction(
+          nftContract.address,
+          1,
+          ethers.utils.parseUnits('0.1'),
+          endemicToken.address
+        );
+
+      const auctionId = await endemicExchange.createAuctionId(
+        nftContract.address,
+        1,
+        user1.address
+      );
+
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(auctionId, 1, {
+          value: ethers.utils.parseUnits('0.103'),
+        })
       ).to.be.revertedWith(INVALID_AUCTION_ERROR);
     });
 
