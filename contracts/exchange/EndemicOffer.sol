@@ -381,19 +381,6 @@ abstract contract EndemicOffer is
         );
     }
 
-    function _removeExpiredOffer(
-        address nftContract,
-        uint256 tokenId,
-        address bidder
-    ) internal {
-        uint256 offerId = nftOfferIdsByBidder[nftContract][tokenId][bidder];
-        Offer memory offer = offersById[offerId];
-
-        if (offer.expiresAt >= block.timestamp) revert NotExpiredOffer();
-
-        _cancelOffer(offer);
-    }
-
     function _cancelOffer(Offer memory offer) internal {
         _deleteOffer(offer);
 
