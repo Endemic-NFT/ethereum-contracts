@@ -43,7 +43,7 @@ abstract contract EndemicDutchAuction is
         _requireIdleAuction(auctionId);
 
         Auction memory auction = Auction({
-            state: AuctionState.DUTCH,
+            auctionType: AuctionType.DUTCH,
             id: auctionId,
             nftContract: nftContract,
             seller: _msgSender(),
@@ -84,7 +84,7 @@ abstract contract EndemicDutchAuction is
     {
         Auction memory auction = idToAuction[id];
 
-        _requireValidBidRequest(auction, AuctionState.DUTCH, tokenAmount);
+        _requireValidBidRequest(auction, AuctionType.DUTCH, tokenAmount);
 
         _detractByAssetClass(auction, tokenAmount);
 
@@ -140,7 +140,7 @@ abstract contract EndemicDutchAuction is
 
         if (
             !_isActiveAuction(auction) ||
-            !_isAuctionInState(auction, AuctionState.DUTCH)
+            !_isAuctionType(auction, AuctionType.DUTCH)
         ) revert InvalidAuction();
 
         return _calculateCurrentPrice(auction);

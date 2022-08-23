@@ -26,14 +26,13 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
 
     mapping(bytes32 => Auction) internal idToAuction;
 
-    enum AuctionState {
-        INACTIVE,
+    enum AuctionType {
         DUTCH,
         RESERVE
     }
 
     struct Auction {
-        AuctionState state;
+        AuctionType auctionType;
         bytes32 id;
         address nftContract;
         address seller;
@@ -126,12 +125,12 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
         return auction.startedAt > 0;
     }
 
-    function _isAuctionInState(Auction memory auction, AuctionState state)
+    function _isAuctionType(Auction memory auction, AuctionType auctionType)
         internal
         pure
         returns (bool)
     {
-        return auction.state == state;
+        return auction.auctionType == auctionType;
     }
 
     function _requireIdleAuction(bytes32 id) internal view {
@@ -164,10 +163,10 @@ abstract contract EndemicAuctionCore is EndemicExchangeCore {
 
     function _requireValidBidRequest(
         Auction memory auction,
-        AuctionState state,
+        AuctionType auctionType,
         uint256 tokenAmount
     ) internal view {
-        if (!_isActiveAuction(auction) || !_isAuctionInState(auction, state))
+        if (!_isActiveAuction(auction) || !_isAuctionType(auction, auctionType))
             revert InvalidAuction();
         if (auction.seller == msg.sender) revert Unauthorized();
         if (auction.amount < tokenAmount) revert InvalidAmount();

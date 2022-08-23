@@ -58,7 +58,7 @@ abstract contract EndemicReserveAuction is
         _requireIdleAuction(auctionId);
 
         Auction memory auction = Auction({
-            state: AuctionState.RESERVE,
+            auctionType: AuctionType.RESERVE,
             id: auctionId,
             nftContract: nftContract,
             highestBidder: address(0),
@@ -96,7 +96,7 @@ abstract contract EndemicReserveAuction is
     {
         Auction memory auction = idToAuction[id];
 
-        _requireValidBidRequest(auction, AuctionState.RESERVE, 1);
+        _requireValidBidRequest(auction, AuctionType.RESERVE, 1);
 
         uint256 bidPrice = (bidPriceWithFees * MAX_FEE) / (takerFee + MAX_FEE);
 
