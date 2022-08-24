@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -12,8 +12,8 @@ error PrivateSaleExpired();
 error InvalidSignature();
 error InvalidPrivateSale();
 
-contract EndemicPrivateSale is
-    OwnableUpgradeable,
+abstract contract EndemicPrivateSale is
+    ContextUpgradeable,
     ReentrancyGuardUpgradeable,
     EndemicExchangeCore
 {
