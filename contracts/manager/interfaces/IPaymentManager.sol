@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-interface IEndemicPaymentManager {
+interface IPaymentManager {
     function getPaymentMethodFees(address paymentMethodAddress)
         external
         view

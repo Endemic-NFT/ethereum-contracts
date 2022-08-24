@@ -1,18 +1,18 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { ZERO_ADDRESS } = require('./helpers/constants');
-const { deployEndemicPaymentManager } = require('./helpers/deploy');
+const { deployPaymentManager } = require('./helpers/deploy');
 
 const UNSUPPORTED_PAYMENT_METHOD = 'UnsupportedPaymentMethod';
 const INVALID_FEES = 'InvalidFees';
 
-describe('EndemicPaymentManager', function () {
+describe('PaymentManager', function () {
   let owner, contractAccount, paymentManager;
 
   async function deploy() {
     [owner, contractAccount] = await ethers.getSigners();
 
-    paymentManager = await deployEndemicPaymentManager(200, 300);
+    paymentManager = await deployPaymentManager(200, 300);
   }
 
   describe('Intial state', async () => {

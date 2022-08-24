@@ -3,28 +3,20 @@ const { ethers, upgrades } = require('hardhat');
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  console.log(
-    'Deploying EndemicPaymentManager with the account:',
-    deployer.address
-  );
+  console.log('Deploying PaymentManager with the account:', deployer.address);
 
-  const EndemicPaymentManager = await ethers.getContractFactory(
-    'EndemicPaymentManager'
-  );
+  const PaymentManager = await ethers.getContractFactory('PaymentManager');
   const paymentManagerProxy = await upgrades.deployProxy(
-    EndemicPaymentManager,
+    PaymentManager,
     [250, 250],
     {
       deployer,
-      initializer: '__EndemicPaymentManager_init',
+      initializer: '__PaymentManager_init',
     }
   );
   await paymentManagerProxy.deployed();
 
-  console.log(
-    'EndemicPaymentManager deployed to:',
-    paymentManagerProxy.address
-  );
+  console.log('PaymentManager deployed to:', paymentManagerProxy.address);
 }
 
 main()

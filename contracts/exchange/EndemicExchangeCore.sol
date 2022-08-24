@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
-import "../manager/interfaces/IEndemicPaymentManager.sol";
+import "../manager/interfaces/IPaymentManager.sol";
 
 error InvalidAddress();
 error InvalidInterface();
@@ -24,7 +24,7 @@ abstract contract EndemicExchangeCore {
     bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
 
     IRoyaltiesProvider public royaltiesProvider;
-    IEndemicPaymentManager public paymentManager;
+    IPaymentManager public paymentManager;
 
     uint256 internal constant MAX_FEE = 10000;
     uint256 internal constant MIN_PRICE = 0.0001 ether;
@@ -171,7 +171,7 @@ abstract contract EndemicExchangeCore {
         ) revert InvalidAddress();
 
         royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
-        paymentManager = IEndemicPaymentManager(_paymentManager);
+        paymentManager = IPaymentManager(_paymentManager);
     }
 
     uint256[1000] private __gap;

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 error UnsupportedPaymentMethod();
 error InvalidFees();
 
-contract EndemicPaymentManager is OwnableUpgradeable {
+contract PaymentManager is OwnableUpgradeable {
     address internal constant ZERO_ADDRESS = address(0);
     uint256 internal constant MAX_FEE = 10000;
 
@@ -19,7 +19,7 @@ contract EndemicPaymentManager is OwnableUpgradeable {
         uint256 takerFee;
     }
 
-    function __EndemicPaymentManager_init(uint256 makerFee, uint256 takerFee)
+    function __PaymentManager_init(uint256 makerFee, uint256 takerFee)
         external
         initializer
     {
