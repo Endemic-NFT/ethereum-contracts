@@ -36,7 +36,7 @@ describe('NftTrade', function () {
 
   it('should be able to accept bid after buying NFT', async () => {
     await nftContract.approve(endemicExchange.address, 1);
-    await endemicExchange.createAuction(
+    await endemicExchange.createDutchAuction(
       nftContract.address,
       1,
       ethers.utils.parseUnits('1'),
@@ -60,7 +60,7 @@ describe('NftTrade', function () {
       });
 
     //user2 buys NFT
-    await endemicExchange.connect(user2).bid(auctionId, 1, {
+    await endemicExchange.connect(user2).bidForDutchAuction(auctionId, 1, {
       value: ethers.utils.parseUnits('1.03'),
     });
     expect(await nftContract.ownerOf(1)).to.equal(user2.address);
