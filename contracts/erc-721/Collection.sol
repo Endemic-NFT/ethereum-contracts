@@ -67,6 +67,8 @@ contract Collection is
 
         royaltiesRecipient = creator;
         royaltiesAmount = royalties;
+
+        _currentIndex = _startTokenId();
     }
 
     function mint(address recipient, string calldata tokenCID)
