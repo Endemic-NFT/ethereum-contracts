@@ -3,7 +3,7 @@ const { ethers } = require('hardhat');
 const { deployEndemicCollectionWithFactory } = require('../helpers/deploy');
 
 describe('Collection', function () {
-  let nftContract;
+  let nftContract, nftFactory;
   let owner, user, royaltiesRecipient, operator;
 
   beforeEach(async function () {
@@ -12,6 +12,7 @@ describe('Collection', function () {
     const deployResult = await deployEndemicCollectionWithFactory(owner);
 
     nftContract = deployResult.nftContract;
+    nftFactory = deployResult.nftFactory;
   });
 
   it('should have correct initial data', async function () {
@@ -26,6 +27,45 @@ describe('Collection', function () {
 
     const baseUri = await nftContract.baseURI();
     expect(baseUri).to.equal('ipfs://');
+  });
+
+  describe('Initializer', function () {
+    it('should successfuly initialize collection after deployment', async function () {
+      await nftFactory.grantRole(nftFactory.MINTER_ROLE(), owner.address);
+
+      const deployContractTx = await nftFactory.createToken({
+        name: 'Endemic Collection',
+        symbol: 'EC',
+        category: 'Art',
+        royalties: 0,
+      });
+
+      const deployContractReceipt = await deployContractTx.wait();
+
+      const newCollectionAddress =
+        deployContractReceipt.events[1].args['nftContract'];
+
+      const Collection = await ethers.getContractFactory('Collection');
+      const newCollection = await Collection.attach(newCollectionAddress);
+
+      const tokenId = 1;
+      const mintTx = await newCollection.mint(
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+
+      await expect(mintTx)
+        .to.emit(newCollection, 'Mint')
+        .withArgs('1', owner.address);
+
+      const nftOwnerAddress = await newCollection.ownerOf(tokenId);
+      expect(nftOwnerAddress).to.equal(user.address);
+
+      const tokenUri = await newCollection.tokenURI(tokenId);
+      expect(tokenUri).to.equal(
+        'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+    });
   });
 
   describe('Mint', function () {
