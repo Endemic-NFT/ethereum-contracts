@@ -35,7 +35,7 @@ contract Collection is
     mapping(uint256 => string) private _tokenCIDs;
 
     event RoyaltiesUpdated(address indexed recipient, uint256 indexed value);
-    event Mint(uint256 indexed tokenId, address indexed artistId);
+    event Mint(uint256 indexed tokenId, address artistId);
 
     modifier onlyOwner() {
         if (owner != _msgSender()) revert CallerNotOwner();
