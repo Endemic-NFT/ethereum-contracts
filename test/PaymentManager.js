@@ -57,5 +57,67 @@ describe('PaymentManager', function () {
       expect(defaultFees.makerFee).to.eq('200');
       expect(defaultFees.takerFee).to.eq('300');
     });
+
+    it('should update ether (default) fees', async () => {
+      const defaultFeesBefore = await paymentManager.getPaymentMethodFees(
+        ZERO_ADDRESS
+      );
+      expect(defaultFeesBefore.makerFee).to.eq('200');
+      expect(defaultFeesBefore.takerFee).to.eq('300');
+
+      await paymentManager.updatePaymentMethodFees(ZERO_ADDRESS, 400, 500);
+
+      const defaultFees = await paymentManager.getPaymentMethodFees(
+        ZERO_ADDRESS
+      );
+      expect(defaultFees.makerFee).to.eq('400');
+      expect(defaultFees.takerFee).to.eq('500');
+    });
+
+    it('should update supported erc20 payment fees', async () => {
+      await paymentManager.updateSupportedPaymentMethod(
+        contractAccount.address,
+        true
+      );
+
+      await paymentManager.updatePaymentMethodFees(
+        contractAccount.address,
+        550,
+        500
+      );
+
+      const erc20PaymentFeesBefore = await paymentManager.getPaymentMethodFees(
+        contractAccount.address
+      );
+      expect(erc20PaymentFeesBefore.makerFee).to.eq('550');
+      expect(erc20PaymentFeesBefore.takerFee).to.eq('500');
+
+      await paymentManager.updatePaymentMethodFees(
+        contractAccount.address,
+        400,
+        500
+      );
+
+      const defaultFees = await paymentManager.getPaymentMethodFees(
+        contractAccount.address
+      );
+      expect(defaultFees.makerFee).to.eq('400');
+      expect(defaultFees.takerFee).to.eq('500');
+    });
+
+    it('should have updated default fees for supported non configured method', async () => {
+      await paymentManager.updateSupportedPaymentMethod(
+        contractAccount.address,
+        true
+      );
+
+      await paymentManager.updatePaymentMethodFees(ZERO_ADDRESS, 400, 500);
+
+      const defaultFees = await paymentManager.getPaymentMethodFees(
+        contractAccount.address
+      );
+      expect(defaultFees.makerFee).to.eq('400');
+      expect(defaultFees.takerFee).to.eq('500');
+    });
   });
 });
