@@ -15,6 +15,7 @@ contract PaymentManager is OwnableUpgradeable {
     mapping(address => PaymentMethodFees) public feesByPaymentMethod;
 
     struct PaymentMethodFees {
+        address paymentMethodAddress;
         uint256 makerFee;
         uint256 takerFee;
     }
@@ -29,6 +30,7 @@ contract PaymentManager is OwnableUpgradeable {
         supportedPaymentMethods[ZERO_ADDRESS] = true;
 
         feesByPaymentMethod[ZERO_ADDRESS] = PaymentMethodFees(
+            ZERO_ADDRESS,
             makerFee,
             takerFee
         );
@@ -43,7 +45,7 @@ contract PaymentManager is OwnableUpgradeable {
             paymentMethodAddress
         ];
 
-        if (paymentFees.takerFee == 0 || paymentFees.makerFee == 0) {
+        if (paymentFees.paymentMethodAddress != paymentMethodAddress) {
             //payment method is supported but fees are not configured => use default ether fees
             paymentFees = feesByPaymentMethod[ZERO_ADDRESS];
         }
@@ -81,6 +83,7 @@ contract PaymentManager is OwnableUpgradeable {
         }
 
         feesByPaymentMethod[paymentMethodAddress] = PaymentMethodFees(
+            paymentMethodAddress,
             makerFee,
             takerFee
         );
