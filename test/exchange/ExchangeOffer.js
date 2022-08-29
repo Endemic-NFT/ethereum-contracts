@@ -9,7 +9,6 @@ const {
 const { FEE_RECIPIENT, ZERO_ADDRESS } = require('../helpers/constants');
 
 const INVALID_OFFER_ERROR = 'InvalidOffer';
-const INVALID_VALUE_PROVIDED = 'InvalidValueProvided';
 const INVALID_TOKEN_OWNER = 'InvalidTokenOwner';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
@@ -18,10 +17,16 @@ const OFFER_EXISTS = 'OfferExists';
 const OFFER_CANCELED = 'OfferCancelled';
 const OFFER_ACCEPTED = 'OfferAccepted';
 
+const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
+
 const DURATION_TOO_SHORT = 'DurationTooShort';
 
 describe('ExchangeOffer', function () {
-  let endemicExchange, endemicToken, nftContract, royaltiesProviderContract;
+  let endemicExchange,
+    endemicToken,
+    nftContract,
+    royaltiesProviderContract,
+    paymentManagerContract;
 
   let owner, user1, user2, user3, royaltiesRecipient;
 
@@ -42,6 +47,7 @@ describe('ExchangeOffer', function () {
 
     royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
+    paymentManagerContract = result.paymentManagerContract;
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
 
@@ -115,7 +121,7 @@ describe('ExchangeOffer', function () {
         endemicExchange.placeOffer(nftContract.address, 1, 100000, {
           value: 0,
         })
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail to offer on token owned by bidder', async () => {
@@ -170,7 +176,7 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -273,7 +279,7 @@ describe('ExchangeOffer', function () {
             1,
             100000
           )
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail to create offer with no supported erc20 tokens', async () => {
@@ -543,7 +549,7 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -892,7 +898,7 @@ describe('ExchangeOffer', function () {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -968,6 +974,86 @@ describe('ExchangeOffer', function () {
       const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
       expect(feeBalance2.sub(feeBalance1).toString()).to.equal(
         ethers.utils.parseUnits('0.030')
+      );
+
+      const royaltiesRecipientBalance2 = await endemicToken.balanceOf(
+        royaltiesRecipient.address
+      );
+      expect(
+        royaltiesRecipientBalance2.sub(royaltiesRecipientBalance1)
+      ).to.equal(ethers.utils.parseUnits('0.05'));
+    });
+
+    it('should be able to accept offer with different fees for specific ERC20', async () => {
+      await paymentManagerContract.updatePaymentMethodFees(
+        endemicToken.address,
+        500,
+        500
+      );
+
+      // sending wants to offer 0.5 eth
+      // taker fee is 5% = 0.025 eth
+      // user sends 0.525 eth
+      // owner of nft sees offer with 0.5 eth
+      // maker sale fee is 5% = 0.025 eth
+      // royalties are 10% 0.05
+      // owner will get 0.425 ETH
+      // total fee is 0.05
+      const royaltiesRecipientBalance1 = await endemicToken.balanceOf(
+        royaltiesRecipient.address
+      );
+      const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
+
+      await endemicToken.transfer(
+        user3.address,
+        ethers.utils.parseUnits('0.525')
+      );
+
+      await endemicToken
+        .connect(user3)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.525'));
+
+      await endemicExchange
+        .connect(user3)
+        .placeOfferInErc20(
+          nftContract.address,
+          endemicToken.address,
+          ethers.utils.parseUnits('0.525'),
+          4,
+          100000000
+        );
+
+      const user1Balance1 = await endemicToken.balanceOf(user1.address);
+
+      const offer = await endemicExchange.getOffer(1);
+
+      const acceptOfferTx = await endemicExchange
+        .connect(user1)
+        .acceptOffer(offer.id);
+
+      await expect(acceptOfferTx)
+        .to.emit(endemicExchange, OFFER_ACCEPTED)
+        .withArgs(
+          offer.id,
+          nftContract.address,
+          4,
+          user3.address,
+          user1.address,
+          ethers.utils.parseUnits('0.5'),
+          ethers.utils.parseUnits('0.05')
+        );
+
+      expect(await nftContract.ownerOf(4)).to.equal(user3.address);
+
+      const user1Balance2 = await endemicToken.balanceOf(user1.address);
+      expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
+        ethers.utils.parseUnits('0.425'),
+        ethers.utils.parseUnits('0.001') //gas
+      );
+
+      const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
+      expect(feeBalance2.sub(feeBalance1).toString()).to.equal(
+        ethers.utils.parseUnits('0.05')
       );
 
       const royaltiesRecipientBalance2 = await endemicToken.balanceOf(

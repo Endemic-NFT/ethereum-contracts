@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 
 error InvalidTokenOwner();
@@ -15,10 +16,12 @@ error InvalidOffer();
 error NotExpiredOffer();
 error AcceptFromSelf();
 error ParametersDiffInSize();
+error RefundFailed();
 
 abstract contract EndemicOffer is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
+    EndemicFundsDistributor,
     EndemicExchangeCore
 {
     using AddressUpgradeable for address;
@@ -80,7 +83,11 @@ abstract contract EndemicOffer is
         uint256 tokenId,
         uint256 duration
     ) external payable nonReentrant {
-        _requireCorrectEtherValueProvided(MIN_PRICE);
+        _requireSufficientEtherSupplied(MIN_PRICE);
+
+        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
+            ZERO_ADDRESS
+        );
 
         uint256 price = (msg.value * MAX_FEE) / (takerFee + MAX_FEE);
 
@@ -105,10 +112,14 @@ abstract contract EndemicOffer is
         nonReentrant
         onlySupportedERC20Payments(paymentErc20TokenAddress)
     {
-        _requireCorrectErc20ValueProvided(
+        _requireSufficientErc20Supplied(
             offerInErc20,
             paymentErc20TokenAddress,
             _msgSender()
+        );
+
+        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
+            paymentErc20TokenAddress
         );
 
         uint256 price = (offerInErc20 * MAX_FEE) / (takerFee + MAX_FEE);
@@ -147,7 +158,12 @@ abstract contract EndemicOffer is
             address royaltiesRecipient,
             uint256 royaltieFee,
             uint256 totalCut
-        ) = _calculateFees(offer.nftContract, offer.tokenId, offer.price);
+        ) = _calculateFees(
+                offer.paymentErc20TokenAddress,
+                offer.nftContract,
+                offer.tokenId,
+                offer.price
+            );
         // sale happened
 
         // Transfer token to bidder

@@ -7,17 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../royalties/interfaces/IRoyaltiesProvider.sol";
 
-error FeeTransferFailed();
-error RoyaltiesTransferFailed();
-error FundsTransferFailed();
+import "../manager/interfaces/IPaymentManager.sol";
+
 error InvalidAddress();
-error InvalidFees();
 error InvalidInterface();
 error SellerNotAssetOwner();
 error InvalidAssetClass();
-error InvalidValueProvided();
+error UnsufficientCurrencySupplied();
 error InvalidPaymentMethod();
-error RefundFailed();
 
 abstract contract EndemicExchangeCore {
     bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);
@@ -27,12 +24,7 @@ abstract contract EndemicExchangeCore {
     bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
 
     IRoyaltiesProvider public royaltiesProvider;
-
-    mapping(address => bool) internal supportedErc20Addresses;
-
-    address public feeClaimAddress;
-    uint256 public makerFee;
-    uint256 public takerFee;
+    IPaymentManager public paymentManager;
 
     uint256 internal constant MAX_FEE = 10000;
     uint256 internal constant MIN_PRICE = 0.0001 ether;
@@ -41,13 +33,14 @@ abstract contract EndemicExchangeCore {
     modifier onlySupportedERC20Payments(address paymentErc20TokenAddress) {
         if (
             paymentErc20TokenAddress == ZERO_ADDRESS ||
-            !supportedErc20Addresses[paymentErc20TokenAddress]
+            !paymentManager.isPaymentMethodSupported(paymentErc20TokenAddress)
         ) revert InvalidPaymentMethod();
 
         _;
     }
 
     function _calculateFees(
+        address paymentMethodAddress,
         address nftContract,
         uint256 tokenId,
         uint256 price
@@ -62,6 +55,9 @@ abstract contract EndemicExchangeCore {
             uint256 totalCut
         )
     {
+        (uint256 takerFee, uint256 makerFee) = paymentManager
+            .getPaymentMethodFees(paymentMethodAddress);
+
         takerCut = _calculateCut(takerFee, price);
         makerCut = _calculateCut(makerFee, price);
 
@@ -77,147 +73,6 @@ abstract contract EndemicExchangeCore {
         returns (uint256)
     {
         return (amount * fee) / MAX_FEE;
-    }
-
-    function _distributeFunds(
-        uint256 price,
-        uint256 makerCut,
-        uint256 totalCut,
-        uint256 royaltieFee,
-        address royaltiesRecipient,
-        address seller,
-        address buyer,
-        address paymentErc20TokenAddress
-    ) internal {
-        uint256 sellerProceeds = price - makerCut - royaltieFee;
-
-        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
-            _distributeEtherFunds(
-                royaltieFee,
-                totalCut,
-                sellerProceeds,
-                royaltiesRecipient,
-                seller
-            );
-        } else {
-            _distributeErc20Funds(
-                royaltieFee,
-                totalCut,
-                sellerProceeds,
-                royaltiesRecipient,
-                seller,
-                buyer,
-                paymentErc20TokenAddress
-            );
-        }
-    }
-
-    function _distributeEtherFunds(
-        uint256 royaltieFee,
-        uint256 totalCut,
-        uint256 sellerProceeds,
-        address royaltiesRecipient,
-        address seller
-    ) internal {
-        if (royaltieFee > 0) {
-            _transferEtherRoyalties(royaltiesRecipient, royaltieFee);
-        }
-
-        if (totalCut > 0) {
-            _transferEtherFees(totalCut);
-        }
-
-        _transferEtherFunds(seller, sellerProceeds);
-    }
-
-    function _distributeErc20Funds(
-        uint256 royaltieFee,
-        uint256 totalCut,
-        uint256 sellerProceeds,
-        address royaltiesRecipient,
-        address seller,
-        address buyer,
-        address paymentErc20TokenAddress
-    ) internal {
-        IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
-
-        if (royaltieFee > 0) {
-            _transferErc20Royalties(
-                ERC20PaymentToken,
-                buyer,
-                royaltiesRecipient,
-                royaltieFee
-            );
-        }
-
-        if (totalCut > 0) {
-            _transferErc20Fees(ERC20PaymentToken, buyer, totalCut);
-        }
-
-        _transferErc20Funds(ERC20PaymentToken, buyer, seller, sellerProceeds);
-    }
-
-    function _transferEtherFees(uint256 value) internal {
-        (bool success, ) = payable(feeClaimAddress).call{value: value}("");
-
-        if (!success) revert FeeTransferFailed();
-    }
-
-    function _transferErc20Fees(
-        IERC20 ERC20PaymentToken,
-        address sender,
-        uint256 value
-    ) internal {
-        bool success = ERC20PaymentToken.transferFrom(
-            sender,
-            feeClaimAddress,
-            value
-        );
-
-        if (!success) revert FeeTransferFailed();
-    }
-
-    function _transferEtherRoyalties(
-        address royaltiesRecipient,
-        uint256 royaltiesCut
-    ) internal {
-        (bool success, ) = payable(royaltiesRecipient).call{
-            value: royaltiesCut
-        }("");
-
-        if (!success) revert RoyaltiesTransferFailed();
-    }
-
-    function _transferErc20Royalties(
-        IERC20 ERC20PaymentToken,
-        address royaltiesSender,
-        address royaltiesRecipient,
-        uint256 royaltiesCut
-    ) internal {
-        bool success = ERC20PaymentToken.transferFrom(
-            royaltiesSender,
-            royaltiesRecipient,
-            royaltiesCut
-        );
-
-        if (!success) revert RoyaltiesTransferFailed();
-    }
-
-    function _transferEtherFunds(address recipient, uint256 value) internal {
-        (bool success, ) = payable(recipient).call{value: value}("");
-
-        if (!success) revert FundsTransferFailed();
-    }
-
-    function _transferErc20Funds(
-        IERC20 ERC20PaymentToken,
-        address sender,
-        address recipient,
-        uint256 value
-    ) internal {
-        bool success = ERC20PaymentToken.transferFrom(sender, recipient, value);
-
-        if (!success) revert FundsTransferFailed();
     }
 
     function _requireCorrectNftInterface(
@@ -253,90 +108,70 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _requireCorrectPaymentMethod(address paymentErc20TokenAddress)
+    function _requireSupportedPaymentMethod(address paymentMethodAddress)
         internal
         view
     {
-        if (paymentErc20TokenAddress == ZERO_ADDRESS) return;
+        if (paymentMethodAddress == ZERO_ADDRESS) return;
 
-        if (!supportedErc20Addresses[paymentErc20TokenAddress]) {
+        if (!paymentManager.isPaymentMethodSupported(paymentMethodAddress)) {
             revert InvalidPaymentMethod();
         }
     }
 
-    function _requireCorrectValueProvided(
-        uint256 requiredValue,
-        address paymentErc20TokenAddress,
+    function _requireSufficientCurrencySupplied(
+        uint256 sufficientAmount,
+        address paymentMethodAddress,
         address buyer
     ) internal view {
-        if (paymentErc20TokenAddress == ZERO_ADDRESS) {
-            _requireCorrectEtherValueProvided(requiredValue);
+        if (paymentMethodAddress == ZERO_ADDRESS) {
+            _requireSufficientEtherSupplied(sufficientAmount);
         } else {
-            _requireCorrectErc20ValueProvided(
-                requiredValue,
-                paymentErc20TokenAddress,
+            _requireSufficientErc20Supplied(
+                sufficientAmount,
+                paymentMethodAddress,
                 buyer
             );
         }
     }
 
-    function _requireCorrectEtherValueProvided(uint256 requiredValue)
+    function _requireSufficientEtherSupplied(uint256 sufficientAmount)
         internal
         view
     {
-        if (msg.value < requiredValue) {
-            revert InvalidValueProvided();
+        if (msg.value < sufficientAmount) {
+            revert UnsufficientCurrencySupplied();
         }
     }
 
-    function _requireCorrectErc20ValueProvided(
-        uint256 requiredValue,
-        address paymentErc20TokenAddress,
+    function _requireSufficientErc20Supplied(
+        uint256 sufficientAmount,
+        address paymentMethodAddress,
         address buyer
     ) internal view {
-        IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
+        IERC20 ERC20PaymentToken = IERC20(paymentMethodAddress);
 
         uint256 contractAllowance = ERC20PaymentToken.allowance(
             buyer,
             address(this)
         );
 
-        if (contractAllowance < requiredValue) {
-            revert InvalidValueProvided();
+        if (contractAllowance < sufficientAmount) {
+            revert UnsufficientCurrencySupplied();
         }
     }
 
-    function _updateSupportedErc20Tokens(
-        address _erc20TokenAddress,
-        bool _isEnabled
-    ) internal {
-        if (_erc20TokenAddress == ZERO_ADDRESS) {
-            revert InvalidAddress();
-        }
-
-        supportedErc20Addresses[_erc20TokenAddress] = _isEnabled;
-    }
-
-    function _updateConfiguration(
+    function _updateExchangeConfiguration(
         address _royaltiesProvider,
-        address _feeClaimAddress,
-        uint256 _makerFee,
-        uint256 _takerFee
+        address _paymentManager
     ) internal {
         if (
             _royaltiesProvider == ZERO_ADDRESS ||
-            _feeClaimAddress == ZERO_ADDRESS
+            _paymentManager == ZERO_ADDRESS
         ) revert InvalidAddress();
 
-        if (_makerFee >= MAX_FEE || _takerFee >= MAX_FEE) {
-            revert InvalidFees();
-        }
-
         royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
-        feeClaimAddress = _feeClaimAddress;
-
-        makerFee = _makerFee;
-        takerFee = _takerFee;
+        paymentManager = IPaymentManager(_paymentManager);
     }
 
     uint256[1000] private __gap;

@@ -83,13 +83,12 @@ const deployEndemicERC1155 = async () => {
 
 const deployEndemicExchange = async (
   royaltiesProviderAddress,
-  secondarySaleFee,
-  takerFee
+  paymentManagerAddress
 ) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [royaltiesProviderAddress, FEE_RECIPIENT, secondarySaleFee, takerFee],
+    [royaltiesProviderAddress, paymentManagerAddress, FEE_RECIPIENT],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -104,15 +103,17 @@ const deployEndemicExchangeWithDeps = async (
 ) => {
   const royaltiesProviderContract = await deployRoyaltiesProvider();
 
+  const paymentManagerContract = await deployPaymentManager(makerFee, takerFee);
+
   const endemicExchangeContract = await deployEndemicExchange(
     royaltiesProviderContract.address,
-    makerFee,
-    takerFee
+    paymentManagerContract.address
   );
 
   return {
     royaltiesProviderContract,
     endemicExchangeContract,
+    paymentManagerContract,
   };
 };
 
@@ -129,6 +130,21 @@ const deployRoyaltiesProvider = async () => {
   );
   await royaltiesProviderProxy.deployed();
   return royaltiesProviderProxy;
+};
+
+const deployPaymentManager = async (makerFee, takerFee) => {
+  const PaymentManager = await ethers.getContractFactory('PaymentManager');
+  const paymentManagerProxy = await upgrades.deployProxy(
+    PaymentManager,
+    [makerFee, takerFee],
+    {
+      initializer: '__PaymentManager_init',
+    }
+  );
+
+  await paymentManagerProxy.deployed();
+
+  return paymentManagerProxy;
 };
 
 const deployEndemicVesting = async (deployer, tgeStartTime, startTime) => {
@@ -163,4 +179,5 @@ module.exports = {
   deployEndemicERC1155,
   deployRoyaltiesProvider,
   deployEndemicVesting,
+  deployPaymentManager,
 };

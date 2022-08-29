@@ -13,14 +13,15 @@ const {
 const { ZERO_ADDRESS } = require('../helpers/constants');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
-const INVALID_VALUE_PROVIDED = 'InvalidValueProvided';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
 const PRIVATE_SALE_EXPIRED = 'PrivateSaleExpired';
 const PRIVATE_SALE_SUCCESS = 'PrivateSaleSuccess';
 
+const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
+
 describe('EndemicPrivateSale', () => {
-  let endemicExchange, endemicToken, nftContract;
+  let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
   let owner, user2;
 
@@ -49,6 +50,7 @@ describe('EndemicPrivateSale', () => {
     const result = await deployEndemicExchangeWithDeps();
 
     endemicExchange = result.endemicExchangeContract;
+    paymentManagerContract = result.paymentManagerContract;
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
 
@@ -141,7 +143,7 @@ describe('EndemicPrivateSale', () => {
             value: ZERO_ONE_ETHER,
           }
         )
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail with invalid signature', async function () {
@@ -213,7 +215,7 @@ describe('EndemicPrivateSale', () => {
 
       endemicToken = await deployEndemicToken(owner);
 
-      await endemicExchange.updateSupportedErc20Tokens(
+      await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
@@ -261,7 +263,7 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(INVALID_VALUE_PROVIDED);
+      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
     });
 
     it('should fail with invalid signature', async function () {

@@ -10,9 +10,8 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicPrivateSale {
     /// @param _royaltiesProvider - royalyies provider contract
     function __EndemicExchange_init(
         address _royaltiesProvider,
-        address _feeClaimAddress,
-        uint256 _makerFee,
-        uint256 _takerFee
+        address _paymentManager,
+        address _feeClaimAddress
     ) external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
@@ -20,32 +19,16 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicPrivateSale {
         __EndemicOffer___init_unchained();
         __EndemicPrivateSale___init_unchained();
 
-        _updateConfiguration(
-            _royaltiesProvider,
-            _feeClaimAddress,
-            _makerFee,
-            _takerFee
-        );
-    }
-
-    function updateSupportedErc20Tokens(
-        address _erc20TokenAddress,
-        bool _isEnabled
-    ) external onlyOwner {
-        _updateSupportedErc20Tokens(_erc20TokenAddress, _isEnabled);
+        _updateDistributorConfiguration(_feeClaimAddress);
+        _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
     }
 
     function updateConfiguration(
         address _royaltiesProvider,
-        address _feeClaimAddress,
-        uint256 _makerFee,
-        uint256 _takerFee
+        address _paymentManager,
+        address _feeClaimAddress
     ) external onlyOwner {
-        _updateConfiguration(
-            _royaltiesProvider,
-            _feeClaimAddress,
-            _makerFee,
-            _takerFee
-        );
+        _updateDistributorConfiguration(_feeClaimAddress);
+        _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
     }
 }
