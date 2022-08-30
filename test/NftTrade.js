@@ -55,7 +55,7 @@ describe('NftTrade', function () {
     //user1 bids 0.9 ETH
     await endemicExchange
       .connect(user1)
-      .placeOffer(nftContract.address, 1, 10000, {
+      .placeNftOffer(nftContract.address, 1, 10000, {
         value: ethers.utils.parseUnits('0.9'),
       });
 
@@ -67,7 +67,7 @@ describe('NftTrade', function () {
 
     //user2 accepts bid from user1
     await nftContract.connect(user2).approve(endemicExchange.address, 1);
-    await endemicExchange.connect(user2).acceptOffer(1);
+    await endemicExchange.connect(user2).acceptNftOffer(1);
     expect(await nftContract.ownerOf(1)).to.equal(user1.address);
   });
 });
