@@ -3,7 +3,9 @@ const { getForNetwork } = require('../utils/addresses');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { royaltiesProviderProxy } = getForNetwork(network.name);
+  const { royaltiesProviderProxy, paymentManagerProxy } = getForNetwork(
+    network.name
+  );
 
   console.log('Deploying EndemicExchange with the account:', deployer.address);
 
@@ -12,9 +14,8 @@ async function main() {
     EndemicExchange,
     [
       royaltiesProviderProxy,
+      paymentManagerProxy,
       '0x813201fe76De0622223492D2467fF5Fd38cF2320',
-      250,
-      250,
     ],
     {
       deployer,

@@ -16,8 +16,9 @@ const goerli = {
   royaltiesProviderProxy: '0xD0E7364473F0843461F2631306AE248539Dab487',
   endemicErc721Factory: '0xB4550D625035B1D563B6c883B34AE83E0fa71411',
   endemicErc721: '0x9a7BFbE33e116189C487538DE1538FD413109134',
-  endemicExchangeProxy: '0x2B01B64f11353F55A0500DeEeA9524ab633687E9',
+  endemicExchangeProxy: '0x0F7C35b5ebE2A3EF7a88fdA2f7B7Adf81Dc05a4F',
   contractImporter: '0x846Ea711c6809cA9Dbf232d95075bd9222C6bdE6',
+  paymentManagerProxy: '0xb5Dd2930Eb6c2106C55126050829D7390d714FEe',
 
   endemicERC1155Proxy: '',
   endemicERC1155Beacon: '',
