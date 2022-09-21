@@ -67,6 +67,18 @@ abstract contract EndemicExchangeCore {
         totalCut = takerCut + makerCut;
     }
 
+    function _calculateTakerCut(address paymentErc20TokenAddress, uint256 price)
+        internal
+        view
+        returns (uint256)
+    {
+        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
+            paymentErc20TokenAddress
+        );
+
+        return _calculateCut(takerFee, price);
+    }
+
     function _calculateCut(uint256 fee, uint256 amount)
         internal
         pure

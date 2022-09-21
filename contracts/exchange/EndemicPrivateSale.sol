@@ -80,11 +80,13 @@ abstract contract EndemicPrivateSale is
             revert PrivateSaleExpired();
         }
 
+        uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
+
         address buyer = _msgSender();
 
         _requireSupportedPaymentMethod(paymentErc20TokenAddress);
         _requireSufficientCurrencySupplied(
-            price,
+            price + takerCut,
             paymentErc20TokenAddress,
             buyer
         );

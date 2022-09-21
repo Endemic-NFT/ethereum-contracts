@@ -8,6 +8,7 @@ const getTypedMessage = ({
   paymentErc20TokenAddress,
   verifierContract,
   nftContract,
+  price,
   seller,
   buyer,
 }) => {
@@ -44,7 +45,7 @@ const getTypedMessage = ({
       paymentErc20TokenAddress: paymentErc20TokenAddress,
       seller: seller,
       buyer: buyer,
-      price: 1,
+      price: price.toString(),
       deadline: 1678968943,
     },
   };
