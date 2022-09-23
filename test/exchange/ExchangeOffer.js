@@ -492,6 +492,75 @@ describe('ExchangeOffer', function () {
           .withArgs(activeOffer2.id, nftContract.address, 1, user2.address);
       });
 
+      it('should bulk cancel offers', async () => {
+        await endemicExchange
+          .connect(user2)
+          .placeNftOffer(nftContract.address, 1, 100000, {
+            value: ethers.utils.parseUnits('0.5'),
+          });
+
+        await endemicExchange
+          .connect(user2)
+          .placeNftOffer(nftContract.address, 2, 100000, {
+            value: ethers.utils.parseUnits('0.5'),
+          });
+
+        await endemicExchange
+          .connect(user2)
+          .placeNftOffer(nftContract.address, 3, 300000, {
+            value: ethers.utils.parseUnits('0.4'),
+          });
+
+        await endemicExchange
+          .connect(user2)
+          .placeNftOffer(nftContract.address, 4, 300000, {
+            value: ethers.utils.parseUnits('0.4'),
+          });
+
+        await endemicExchange.connect(user2).cancelOffers([1, 2, 3]);
+
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+          INVALID_OFFER_ERROR
+        );
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+          INVALID_OFFER_ERROR
+        );
+
+        await expect(endemicExchange.getOffer(3)).to.be.revertedWith(
+          INVALID_OFFER_ERROR
+        );
+
+        const offer = await endemicExchange.getOffer(4);
+        expect(offer.bidder).to.equal(user2.address);
+        expect(offer.priceWithTakerFee).to.equal(
+          ethers.utils.parseUnits('0.4')
+        );
+      });
+
+      it('should fail bulk cancel offers from other users', async () => {
+        await endemicExchange
+          .connect(user2)
+          .placeNftOffer(nftContract.address, 1, 100000, {
+            value: ethers.utils.parseUnits('0.5'),
+          });
+
+        await endemicExchange
+          .connect(user3)
+          .placeNftOffer(nftContract.address, 2, 100000, {
+            value: ethers.utils.parseUnits('0.5'),
+          });
+
+        await endemicExchange
+          .connect(user3)
+          .placeNftOffer(nftContract.address, 3, 300000, {
+            value: ethers.utils.parseUnits('0.4'),
+          });
+
+        await expect(
+          endemicExchange.connect(user3).cancelOffers([1, 2])
+        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+      });
+
       it('should cancel offers when contract owner', async () => {
         await endemicExchange.placeNftOffer(nftContract.address, 1, 100000, {
           value: ethers.utils.parseUnits('0.5'),

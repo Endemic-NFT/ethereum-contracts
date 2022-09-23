@@ -42,8 +42,11 @@ describe('Collection', function () {
 
       const deployContractReceipt = await deployContractTx.wait();
 
-      const newCollectionAddress =
-        deployContractReceipt.events[1].args['nftContract'];
+      const eventData = deployContractReceipt.events.find(
+        ({ event }) => event === 'NFTContractCreated'
+      );
+
+      const newCollectionAddress = eventData.args['nftContract'];
 
       const Collection = await ethers.getContractFactory('Collection');
       const newCollection = await Collection.attach(newCollectionAddress);
