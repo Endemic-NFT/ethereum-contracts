@@ -501,8 +501,8 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange
           .connect(user2)
-          .placeNftOffer(nftContract.address, 2, 100000, {
-            value: ethers.utils.parseUnits('0.5'),
+          .placeCollectionOffer(nftContract.address, 100000, {
+            value: ethers.utils.parseUnits('0.515'),
           });
 
         await endemicExchange
