@@ -92,6 +92,7 @@ contract Collection is
         _safeMint(recipient, 1);
         setApprovalForAll(operator, true);
         _tokenCIDs[tokenId] = tokenCID;
+        emit Mint(tokenId, owner);
         return tokenId;
     }
 
