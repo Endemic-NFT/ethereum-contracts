@@ -200,6 +200,14 @@ abstract contract EndemicOffer is
         _cancelOffer(offer);
     }
 
+    function cancelOffers(uint256[] calldata offerIds) external nonReentrant {
+        for (uint256 i = 0; i < offerIds.length; i++) {
+            Offer memory offer = offersById[offerIds[i]];
+            if (offer.bidder != _msgSender()) revert InvalidOffer();
+            _cancelOffer(offer);
+        }
+    }
+
     function acceptNftOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
 
