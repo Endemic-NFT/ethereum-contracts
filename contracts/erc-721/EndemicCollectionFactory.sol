@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interfaces/ICollectionInitializer.sol";
 
-import "../NoDelegateCall.sol";
 import "./Collection.sol";
 
-contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
-    using Address for address;
-    using Clones for address;
+contract EndemicCollectionFactory is AccessControlUpgradeable {
+    using AddressUpgradeable for address;
+    using ClonesUpgradeable for address;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     address public implementation;
@@ -25,6 +25,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string category,
         uint256 royalties
     );
+
     event ImplementationUpdated(address indexed implementation);
 
     struct DeployParams {
@@ -42,13 +43,20 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         uint256 royalties;
     }
 
+    modifier onlyContract(address _implementation) {
+        require(
+            _implementation.isContract(),
+            "EndemicCollectionFactory: Implementation is not a contract"
+        );
+        _;
+    }
+
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function createToken(DeployParams calldata params)
         external
-        noDelegateCall
         onlyRole(MINTER_ROLE)
     {
         _deployContract(
@@ -62,7 +70,6 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
 
     function createTokenForOwner(OwnedDeployParams calldata params)
         external
-        noDelegateCall
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         _deployContract(
@@ -76,12 +83,9 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
 
     function updateImplementation(address newImplementation)
         external
+        onlyContract(newImplementation)
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        require(
-            newImplementation.isContract(),
-            "EndemicCollectionFactory: Implementation is not a contract"
-        );
         implementation = newImplementation;
 
         ICollectionInitializer(implementation).initialize(
@@ -101,9 +105,7 @@ contract EndemicCollectionFactory is AccessControl, NoDelegateCall {
         string memory category,
         uint256 royalties
     ) internal {
-        address proxy = implementation.cloneDeterministic(
-            keccak256(abi.encodePacked(owner, block.timestamp))
-        );
+        address proxy = implementation.clone();
 
         ICollectionInitializer(proxy).initialize(
             owner,

@@ -27,16 +27,6 @@ const deployCollectionFactory = async () => {
   return nftContractFactory;
 };
 
-const deployOpenspaceCollectionFactory = async () => {
-  const OpenspaceCollectionFactory = await ethers.getContractFactory(
-    'OpenspaceCollectionFactory'
-  );
-  const openspaceCollectionFactory = await OpenspaceCollectionFactory.deploy();
-  await openspaceCollectionFactory.deployed();
-
-  return openspaceCollectionFactory;
-};
-
 const deployCollection = async (erc721FactoryAddress) => {
   const Collection = await ethers.getContractFactory('Collection');
   const nftContract = await Collection.deploy(erc721FactoryAddress);
@@ -171,7 +161,6 @@ module.exports = {
   deployEndemicRewards,
   deployEndemicToken,
   deployCollectionFactory,
-  deployOpenspaceCollectionFactory,
   deployCollection,
   deployEndemicCollectionWithFactory,
   deployEndemicCollectionWithOpenspaceFactory,

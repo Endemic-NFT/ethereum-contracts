@@ -3,72 +3,73 @@ pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./base/ERC721A.sol";
+import "./mixins/ERC721A.sol";
+import "./mixins/CollectionRoyalties.sol";
+import "./mixins/CollectionFactory.sol";
 
 import "./interfaces/IERC2981Royalties.sol";
 import "./interfaces/ICollectionInitializer.sol";
 
 error CallerNotOwner();
-error AddressNotContract();
-error CallerNotContractFactory();
-error RoyaltiesTooHigh();
 error CallerNotTokenOwner();
 
 contract Collection is
     ERC721A,
     Initializable,
-    IERC2981Royalties,
-    ICollectionInitializer
+    CollectionRoyalties,
+    CollectionFactory
 {
-    using AddressUpgradeable for address;
-
-    address public immutable collectionFactory;
-
+    /**
+     * @notice Base URI of the collection
+     * @dev We always default to ipfs
+     */
     string public constant baseURI = "ipfs://";
-    uint256 public constant MAX_ROYALTIES = 10000;
 
-    address public royaltiesRecipient;
-    uint256 public royaltiesAmount;
+    /**
+     * @notice Owner of the contract
+     */
     address public owner;
 
-    // Mapping from token ID to token URI
+    /**
+     * @dev Stores a CID for each NFT.
+     */
     mapping(uint256 => string) private _tokenCIDs;
 
-    event RoyaltiesUpdated(address indexed recipient, uint256 indexed value);
+    /**
+     * @notice Emitted when NFT is minted
+     * @param tokenId The tokenId of the newly minted NFT.
+     * @param artistId The address of the creator
+     */
     event Mint(uint256 indexed tokenId, address artistId);
 
     modifier onlyOwner() {
-        if (owner != _msgSender()) revert CallerNotOwner();
+        if (owner != msg.sender) revert CallerNotOwner();
         _;
     }
 
+    /**
+     * @notice Initialize imutable variables
+     * @param _collectionFactory The factory which is used to create new collections
+     */
     constructor(address _collectionFactory)
         ERC721A("Collection Template", "CT")
-    {
-        if (!_collectionFactory.isContract()) revert AddressNotContract();
-        collectionFactory = _collectionFactory;
-    }
+        CollectionFactory(_collectionFactory)
+    {}
 
     function initialize(
         address creator,
         string memory name,
         string memory symbol,
         uint256 royalties
-    ) external override initializer {
-        if (_msgSender() != address(collectionFactory))
-            revert CallerNotContractFactory();
-
-        if (royalties > MAX_ROYALTIES) revert RoyaltiesTooHigh();
-
+    ) external onlyCollectionFactory initializer {
         owner = creator;
 
         _name = name;
         _symbol = symbol;
 
-        royaltiesRecipient = creator;
-        royaltiesAmount = royalties;
-
         _currentIndex = _startTokenId();
+
+        initializeCollectionRoyalties(creator, royalties);
     }
 
     function mint(address recipient, string calldata tokenCID)
@@ -96,28 +97,10 @@ contract Collection is
         return tokenId;
     }
 
-    function setRoyalties(address recipient, uint256 value) public onlyOwner {
-        if (value > MAX_ROYALTIES) revert RoyaltiesTooHigh();
-        royaltiesRecipient = recipient;
-        royaltiesAmount = value;
-
-        emit RoyaltiesUpdated(recipient, value);
-    }
-
-    function royaltyInfo(uint256, uint256 value)
-        external
-        view
-        override
-        returns (address receiver, uint256 royaltyAmount)
-    {
-        return (royaltiesRecipient, (value * royaltiesAmount) / 10000);
-    }
-
     function burn(uint256 tokenId) external {
         TokenOwnership memory prevOwnership = _ownershipOf(tokenId);
 
-        bool isOwner = _msgSender() == prevOwnership.addr;
-
+        bool isOwner = msg.sender == prevOwnership.addr;
         if (!isOwner) revert CallerNotTokenOwner();
 
         _burn(tokenId);
@@ -133,6 +116,10 @@ contract Collection is
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
         return string(abi.encodePacked(_baseURI(), _tokenCIDs[tokenId]));
+    }
+
+    function setRoyalties(address recipient, uint256 value) external onlyOwner {
+        _setRoyalties(recipient, value);
     }
 
     function _startTokenId() internal view virtual override returns (uint256) {
