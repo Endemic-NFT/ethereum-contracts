@@ -440,5 +440,8 @@ abstract contract EndemicOffer is
         return offer.bidder == bidder;
     }
 
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
     uint256[1000] private __gap;
 }

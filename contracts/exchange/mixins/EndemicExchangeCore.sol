@@ -5,9 +5,8 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../royalties/interfaces/IRoyaltiesProvider.sol";
-
-import "../manager/interfaces/IPaymentManager.sol";
+import "../../royalties/interfaces/IRoyaltiesProvider.sol";
+import "../../manager/interfaces/IPaymentManager.sol";
 
 error InvalidAddress();
 error InvalidInterface();
@@ -186,5 +185,8 @@ abstract contract EndemicExchangeCore {
         paymentManager = IPaymentManager(_paymentManager);
     }
 
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
     uint256[1000] private __gap;
 }

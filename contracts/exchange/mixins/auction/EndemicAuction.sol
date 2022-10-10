@@ -16,6 +16,11 @@ abstract contract EndemicAuction is
 {
     using AddressUpgradeable for address;
 
+    /**
+     * @notice Read active auction by id
+     * @dev Reverts if auction doesn't exist
+     * @param id id of the auction to read
+     */
     function getAuction(bytes32 id)
         external
         view
@@ -44,6 +49,11 @@ abstract contract EndemicAuction is
         );
     }
 
+    /**
+     * @notice Cancels active auction
+     * @dev Reverts if auction doesn't exist
+     * @param id - id of the auction to cancel
+     */
     function cancelAuction(bytes32 id) external nonReentrant {
         Auction memory auction = idToAuction[id];
         if (_msgSender() != auction.seller) revert Unauthorized();
@@ -72,6 +82,12 @@ abstract contract EndemicAuction is
         }
     }
 
+    /**
+     * @notice Creates auction id based on provided params
+     * @param nftContract contract address of the collection
+     * @param tokenId NFT token ID
+     * @param seller address of the NFT seller
+     */
     function createAuctionId(
         address nftContract,
         uint256 tokenId,
@@ -80,5 +96,8 @@ abstract contract EndemicAuction is
         return _createAuctionId(nftContract, tokenId, seller);
     }
 
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
     uint256[1000] private __gap;
 }

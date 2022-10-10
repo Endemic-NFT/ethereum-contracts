@@ -2,7 +2,6 @@
 pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "./EndemicExchangeCore.sol";
 
 error FeeTransferFailed();
@@ -10,7 +9,7 @@ error RoyaltiesTransferFailed();
 error FundsTransferFailed();
 
 abstract contract EndemicFundsDistributor {
-    address public feeClaimAddress;
+    address public feeRecipientAddress;
 
     function _distributeFunds(
         uint256 price,
@@ -91,7 +90,7 @@ abstract contract EndemicFundsDistributor {
     }
 
     function _transferEtherFees(uint256 value) internal {
-        (bool success, ) = payable(feeClaimAddress).call{value: value}("");
+        (bool success, ) = payable(feeRecipientAddress).call{value: value}("");
 
         if (!success) revert FeeTransferFailed();
     }
@@ -103,7 +102,7 @@ abstract contract EndemicFundsDistributor {
     ) internal {
         bool success = ERC20PaymentToken.transferFrom(
             sender,
-            feeClaimAddress,
+            feeRecipientAddress,
             value
         );
 
@@ -153,9 +152,14 @@ abstract contract EndemicFundsDistributor {
         if (!success) revert FundsTransferFailed();
     }
 
-    function _updateDistributorConfiguration(address _feeClaimAddress)
+    function _updateDistributorConfiguration(address _feeRecipientAddress)
         internal
     {
-        feeClaimAddress = _feeClaimAddress;
+        feeRecipientAddress = _feeRecipientAddress;
     }
+
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[1000] private __gap;
 }

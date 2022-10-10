@@ -14,6 +14,9 @@ abstract contract EndemicDutchAuction is
 {
     using AddressUpgradeable for address;
 
+    /**
+     * @notice Creates dutch auction for an NFT
+     */
     function createDutchAuction(
         address nftContract,
         uint256 tokenId,
@@ -38,7 +41,7 @@ abstract contract EndemicDutchAuction is
             _msgSender()
         );
 
-        // seller cannot recreate auction
+        // Seller cannot recreate auction
         // if it is already listed as reserve auction that is in progress or ended
         _requireIdleAuction(auctionId);
 
@@ -160,8 +163,6 @@ abstract contract EndemicDutchAuction is
             auction.endingPrice < MIN_PRICE ||
             auction.startingPrice < auction.endingPrice
         ) revert InvalidPriceConfiguration();
-
-        _validateAssetClass(auction);
     }
 
     function _calculateCurrentPrice(Auction memory auction)
@@ -214,5 +215,8 @@ abstract contract EndemicDutchAuction is
         }
     }
 
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
     uint256[1000] private __gap;
 }

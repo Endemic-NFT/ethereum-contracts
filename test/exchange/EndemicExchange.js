@@ -26,7 +26,9 @@ describe('EndemicExchange', () => {
     });
 
     it('should have correct fee claim address', async () => {
-      expect(await endemicExchange.feeClaimAddress()).to.equal(FEE_RECIPIENT);
+      expect(await endemicExchange.feeRecipientAddress()).to.equal(
+        FEE_RECIPIENT
+      );
     });
   });
 
@@ -46,7 +48,7 @@ describe('EndemicExchange', () => {
       expect(await endemicExchange.paymentManager()).to.equal(
         contractAddress3.address
       );
-      expect(await endemicExchange.feeClaimAddress()).to.equal(
+      expect(await endemicExchange.feeRecipientAddress()).to.equal(
         contractAddress4.address
       );
     });
