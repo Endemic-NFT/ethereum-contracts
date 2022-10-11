@@ -32,26 +32,37 @@ abstract contract EndemicOffer is
 
     mapping(uint256 => Offer) private offersById;
 
-    // Offer by token address => token id => offer bidder => offerId
+    /// @dev Offer by token address => token id => offer bidder => offerId
     mapping(address => mapping(uint256 => mapping(address => uint256)))
         private nftOfferIdsByBidder;
 
-    // Offer by token address => offer bidder => offerId
+    /// @dev Offer by token address => offer bidder => offerId
     mapping(address => mapping(address => uint256))
         private collectionOfferIdsByBidder;
 
+    /// @notice Active offer configuration
     struct Offer {
+        /// @notice Id created for this offer
         uint256 id;
+        /// @notice The address of the smart contract
         address nftContract;
+        /// @notice The address of the supported ERC20 smart contract used for payments
         address paymentErc20TokenAddress;
+        /// @notice The address of the offer bidder
         address bidder;
+        /// @notice The ID of the NFT
         uint256 tokenId;
+        /// @notice Amount bidded
         uint256 price;
+        /// @notice Amount bidded including fees
         uint256 priceWithTakerFee;
+        /// @notice Timestamp when offer expires
         uint256 expiresAt;
+        /// @notice Flag if offer is for collection or for an NFT
         bool isForCollection;
     }
 
+    /// @notice Fired when offer is created
     event OfferCreated(
         uint256 id,
         address indexed nftContract,
@@ -63,6 +74,7 @@ abstract contract EndemicOffer is
         bool isForCollection
     );
 
+    /// @notice Fired when offer is accepted by the NFT owner
     event OfferAccepted(
         uint256 id,
         address indexed nftContract,
@@ -73,6 +85,7 @@ abstract contract EndemicOffer is
         uint256 totalFees
     );
 
+    /// @notice Fired when offer is canceled
     event OfferCancelled(
         uint256 id,
         address indexed nftContract,
@@ -84,6 +97,7 @@ abstract contract EndemicOffer is
         nextOfferId = 1;
     }
 
+    /// @notice Create an offer in ETH for an NFT
     function placeNftOffer(
         address nftContract,
         uint256 tokenId,
@@ -107,6 +121,7 @@ abstract contract EndemicOffer is
         );
     }
 
+    /// @notice Create an offer in ERC20 token for an NFT
     function placeNftOfferInErc20(
         address nftContract,
         address paymentErc20TokenAddress,
@@ -140,6 +155,7 @@ abstract contract EndemicOffer is
         );
     }
 
+    /// @notice Create a collection offer in ETH for an NFT
     function placeCollectionOffer(address nftContract, uint256 duration)
         external
         payable
@@ -162,6 +178,7 @@ abstract contract EndemicOffer is
         );
     }
 
+    /// @notice Create a collection offer in ERC20 token for an NFT
     function placeCollectionOfferInErc20(
         address nftContract,
         address paymentErc20TokenAddress,
@@ -193,6 +210,7 @@ abstract contract EndemicOffer is
         );
     }
 
+    /// @notice Cancels offer for ID
     function cancelOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
         if (offer.bidder != _msgSender()) revert InvalidOffer();
@@ -200,6 +218,7 @@ abstract contract EndemicOffer is
         _cancelOffer(offer);
     }
 
+    /// @notice Cancels multiple offers
     function cancelOffers(uint256[] calldata offerIds) external nonReentrant {
         for (uint256 i = 0; i < offerIds.length; i++) {
             Offer memory offer = offersById[offerIds[i]];
@@ -208,6 +227,7 @@ abstract contract EndemicOffer is
         }
     }
 
+    /// @notice Accept an offer for NFT
     function acceptNftOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
 
@@ -216,6 +236,7 @@ abstract contract EndemicOffer is
         _acceptOffer(offer, offerId, offer.tokenId);
     }
 
+    /// @notice Accept a collection offer
     function acceptCollectionOffer(uint256 offerId, uint256 tokenId)
         external
         nonReentrant
@@ -358,7 +379,6 @@ abstract contract EndemicOffer is
                 tokenId,
                 offer.price
             );
-        // sale happened
 
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(
@@ -392,6 +412,7 @@ abstract contract EndemicOffer is
     function _cancelOffer(Offer memory offer) internal {
         _deleteOffer(offer);
 
+        // Return ETH to bidder
         if (offer.paymentErc20TokenAddress == ZERO_ADDRESS) {
             (bool success, ) = payable(offer.bidder).call{
                 value: offer.priceWithTakerFee
