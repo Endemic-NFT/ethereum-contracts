@@ -80,6 +80,9 @@ abstract contract EndemicDutchAuction is
         );
     }
 
+    /**
+     * @notice Purchase auction
+     */
     function bidForDutchAuction(bytes32 id, uint256 tokenAmount)
         external
         payable
@@ -143,6 +146,9 @@ abstract contract EndemicDutchAuction is
         );
     }
 
+    /**
+     * @notice Calculates current price for the auction
+     */
     function getCurrentPrice(bytes32 id) external view returns (uint256) {
         Auction memory auction = idToAuction[id];
 
@@ -154,6 +160,9 @@ abstract contract EndemicDutchAuction is
         return _calculateCurrentPrice(auction);
     }
 
+    /**
+     * @notice Validates dutch auction duration and price setup
+     */
     function _validateDutchAuction(Auction memory auction) internal pure {
         if (auction.duration < MIN_DURATION || MAX_DURATION < auction.duration)
             revert InvalidDuration();
@@ -165,6 +174,9 @@ abstract contract EndemicDutchAuction is
         ) revert InvalidPriceConfiguration();
     }
 
+    /**
+     * @notice Calculates current price depending on block timestamp
+     */
     function _calculateCurrentPrice(Auction memory auction)
         internal
         view
@@ -203,6 +215,9 @@ abstract contract EndemicDutchAuction is
         }
     }
 
+    /**
+     * @notice Makes sure auction token amount is properly reduced for asset class
+     */
     function _detractByAssetClass(Auction memory auction, uint256 tokenAmount)
         internal
     {

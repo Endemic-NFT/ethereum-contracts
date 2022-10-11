@@ -20,12 +20,15 @@ abstract contract EndemicReserveAuction is
     uint256 private constant RESERVE_AUCTION_DURATION = 24 hours;
     uint256 private constant MIN_BID_PERCENTAGE = 10;
 
+    /// @notice Fired when reserve bid is placed
     event ReserveBidPlaced(
         bytes32 indexed id,
         address indexed bidder,
         uint256 indexed reservePrice
     );
 
+    /// @notice Creates reserve auction
+    /// @dev Since we don't do escrow, only ERC20 payment is available
     function createReserveAuction(
         address nftContract,
         uint256 tokenId,
@@ -90,6 +93,8 @@ abstract contract EndemicReserveAuction is
         );
     }
 
+    /// @notice Place bid for reseve auction
+    /// @dev ERC20 allowance is required here
     function bidForReserveAuctionInErc20(bytes32 id, uint256 bidPriceWithFees)
         external
         nonReentrant
@@ -105,6 +110,7 @@ abstract contract EndemicReserveAuction is
         uint256 bidPrice = (bidPriceWithFees * MAX_FEE) / (takerFee + MAX_FEE);
 
         if (auction.endingAt != 0) {
+            // Auction already started which means it has a bid
             _outBidPreviousBidder(auction, bidPriceWithFees, bidPrice);
         } else {
             // Auction hasn't started yet
@@ -119,7 +125,8 @@ abstract contract EndemicReserveAuction is
         emit ReserveBidPlaced(auction.id, _msgSender(), bidPrice);
     }
 
-    function finalizeReserveAuction(bytes32 id) external {
+    /// @notice Finalizes reserve auction, transfering currency and NFT
+    function finalizeReserveAuction(bytes32 id) external nonReentrant {
         Auction memory auction = idToAuction[id];
 
         if (
