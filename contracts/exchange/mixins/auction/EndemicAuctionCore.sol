@@ -55,8 +55,6 @@ abstract contract EndemicAuctionCore is
         address paymentErc20TokenAddress;
         /// @notice The ID of the NFT
         uint256 tokenId;
-        /// @notice Auction duration
-        uint256 duration;
         /// @notice Amount of tokens to auction. Useful for ERC-1155
         uint256 amount;
         /// @notice Starting price of the dutch auction
@@ -65,7 +63,7 @@ abstract contract EndemicAuctionCore is
         uint256 endingPrice;
         /// @notice Timestamp when auction started
         uint256 startedAt;
-        /// @notice Timestamp when auction will end. Used for reserve auction.
+        /// @notice Timestamp when auction will end
         uint256 endingAt;
         /// @notice Type of NFT contract, ERC-721 or ERC-1155
         bytes4 assetClass;
@@ -78,7 +76,7 @@ abstract contract EndemicAuctionCore is
         bytes32 indexed id,
         uint256 startingPrice,
         uint256 endingPrice,
-        uint256 duration,
+        uint256 endingAt,
         address seller,
         uint256 amount,
         address paymentErc20TokenAddress,
@@ -170,16 +168,18 @@ abstract contract EndemicAuctionCore is
         return auction.auctionType == auctionType;
     }
 
-    /// @notice Checks if auction has not been started or completed
+    /// @notice Checks if auction is listed as reserve and has started or ended
     function _requireIdleAuction(bytes32 id) internal view {
         Auction memory auction = idToAuction[id];
+
+        if (auction.auctionType == AuctionType.DUTCH) return;
 
         if (auction.endingAt >= block.timestamp) revert AuctionInProgress();
         if (auction.endingAt != 0 && auction.endingAt < block.timestamp)
             revert AuctionEnded();
     }
 
-    /// @notice Validates auction request
+    /// @notice Overloaded function that validates is requested auction valid
     function _requireValidAuctionRequest(
         address paymentErc20TokenAddress,
         address nftContract,
@@ -189,6 +189,16 @@ abstract contract EndemicAuctionCore is
     ) internal view {
         _requireSupportedPaymentMethod(paymentErc20TokenAddress);
 
+        _requireValidAuctionRequest(nftContract, tokenId, amount, assetClass);
+    }
+
+    /// @notice Overloaded function that validates is requested auction valid
+    function _requireValidAuctionRequest(
+        address nftContract,
+        uint256 tokenId,
+        uint256 amount,
+        bytes4 assetClass
+    ) internal view {
         _requireCorrectNftInterface(assetClass, nftContract);
 
         _requireTokenOwnership(
@@ -205,13 +215,19 @@ abstract contract EndemicAuctionCore is
     /// @notice Validates bid request for an auction
     function _requireValidBidRequest(
         Auction memory auction,
-        AuctionType auctionType,
         uint256 tokenAmount
     ) internal view {
-        if (!_isActiveAuction(auction) || !_isAuctionType(auction, auctionType))
-            revert InvalidAuction();
+        if (!_isActiveAuction(auction)) revert InvalidAuction();
         if (auction.seller == msg.sender) revert Unauthorized();
         if (auction.amount < tokenAmount) revert InvalidAmount();
+    }
+
+    /// @notice Validates is desired auction type
+    function _requireAuctionType(
+        Auction memory auction,
+        AuctionType auctionType
+    ) internal view {
+        if (!_isAuctionType(auction, auctionType)) revert InvalidAuction();
     }
 
     function _createAuctionId(

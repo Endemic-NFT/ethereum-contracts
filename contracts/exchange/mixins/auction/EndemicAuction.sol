@@ -29,7 +29,6 @@ abstract contract EndemicAuction is
             address paymentErc20TokenAddress,
             uint256 startingPrice,
             uint256 endingPrice,
-            uint256 duration,
             uint256 startedAt,
             uint256 endingAt,
             uint256 amount
@@ -42,7 +41,6 @@ abstract contract EndemicAuction is
             auction.paymentErc20TokenAddress,
             auction.startingPrice,
             auction.endingPrice,
-            auction.duration,
             auction.startedAt,
             auction.endingAt,
             auction.amount
@@ -51,13 +49,14 @@ abstract contract EndemicAuction is
 
     /**
      * @notice Cancels active auction
-     * @dev Reverts if auction doesn't exist
+     * @dev Reverts if auction doesn't exist or if is listed as reserve and in progress
      * @param id - id of the auction to cancel
      */
     function cancelAuction(bytes32 id) external nonReentrant {
         Auction memory auction = idToAuction[id];
         if (_msgSender() != auction.seller) revert Unauthorized();
-        if (auction.endingAt != 0) revert AuctionInProgress();
+        if (auction.auctionType == AuctionType.RESERVE && auction.endingAt != 0)
+            revert AuctionInProgress();
 
         _removeAuction(auction.id);
 

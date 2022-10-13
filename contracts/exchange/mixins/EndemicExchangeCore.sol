@@ -138,7 +138,7 @@ abstract contract EndemicExchangeCore {
         if (paymentMethodAddress == ZERO_ADDRESS) {
             _requireSufficientEtherSupplied(sufficientAmount);
         } else {
-            _requireSufficientErc20Supplied(
+            _requireSufficientErc20Allowance(
                 sufficientAmount,
                 paymentMethodAddress,
                 buyer
@@ -155,7 +155,7 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _requireSufficientErc20Supplied(
+    function _requireSufficientErc20Allowance(
         uint256 sufficientAmount,
         address paymentMethodAddress,
         address buyer

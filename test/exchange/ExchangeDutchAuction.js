@@ -10,7 +10,7 @@ const {
 
 const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
 const { ERC1155_ASSET_CLASS, ERC721_ASSET_CLASS } = require('../helpers/ids');
-const { weiToEther } = require('../helpers/token');
+const { weiToEther, calculateAuctionDuration } = require('../helpers/token');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_DURATION_ERROR = 'InvalidDuration';
@@ -484,7 +484,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction1.duration.toString()).to.equal('60');
+      expect(calculateAuctionDuration(auction1)).to.equal('60');
 
       // Second
       expect(auction2.seller).to.equal(user1.address);
@@ -494,7 +494,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction2.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction2.duration.toString()).to.equal('120');
+      expect(calculateAuctionDuration(auction2)).to.equal('120');
 
       // third
       expect(auction3.seller).to.equal(user1.address);
@@ -504,7 +504,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction3.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.2')
       );
-      expect(auction3.duration.toString()).to.equal('150');
+      expect(calculateAuctionDuration(auction3)).to.equal('150');
     });
 
     it('should be able to create dutch auctions for multiple NFTs', async function () {
@@ -598,7 +598,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction1.duration.toString()).to.equal('1000');
+      expect(calculateAuctionDuration(auction1)).to.equal('1000');
 
       expect(auction1CurrentPrice).to.equal(auction1.endingPrice.toString()); //auction has passed => ending price
 
@@ -610,7 +610,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction2.duration.toString()).to.equal('2000');
+      expect(calculateAuctionDuration(auction2)).to.equal('2000');
       //   totalPriceChange = 0.2 - 1 = -0.9
       //   currentPriceChange = (totalPriceChange * 1500) / 2000 = -0.675
       //   currentPrice = 1.0 + currentPriceChange
@@ -624,7 +624,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction3.duration.toString()).to.equal('3000');
+      expect(calculateAuctionDuration(auction3)).to.equal('3000');
 
       //   totalPriceChange = 0.1 - 1 = -0.8
       //   currentPriceChange = (totalPriceChange * 1500) / 2000 = -0.45
@@ -1134,7 +1134,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction1.duration.toString()).to.equal('60');
+      expect(calculateAuctionDuration(auction1)).to.equal('60');
 
       // Second
       expect(auction2.seller).to.equal(user1.address);
@@ -1144,7 +1144,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction2.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction2.duration.toString()).to.equal('120');
+      expect(calculateAuctionDuration(auction2)).to.equal('120');
 
       // third
       expect(auction3.seller).to.equal(user1.address);
@@ -1154,7 +1154,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction3.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.2')
       );
-      expect(auction3.duration.toString()).to.equal('150');
+      expect(calculateAuctionDuration(auction3)).to.equal('150');
     });
 
     it('should be able to create dutch auctions for multiple NFTs with ERC20 token payment', async function () {
@@ -1248,7 +1248,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction1.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.3')
       );
-      expect(auction1.duration.toString()).to.equal('1500');
+      expect(calculateAuctionDuration(auction1)).to.equal('1500');
 
       expect(auction1CurrentPrice).to.equal(ethers.utils.parseUnits('0.3')); //auction has passed => ending price
 
@@ -1260,7 +1260,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction2.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.4')
       );
-      expect(auction2.duration.toString()).to.equal('2000');
+      expect(calculateAuctionDuration(auction2)).to.equal('2000');
 
       //   totalPriceChange = 0.4 - 2.0 = -1.6
       //   currentPriceChange = (totalPriceChange * 1750) / 2000 = --1.399999999999999911182158029987
@@ -1275,7 +1275,7 @@ describe('ExchangeDutchAuction', function () {
       expect(auction3.endingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.8')
       );
-      expect(auction3.duration.toString()).to.equal('3000');
+      expect(calculateAuctionDuration(auction3)).to.equal('3000');
 
       //   totalPriceChange = 0.8 - 1.4 = -0.6
       //   currentPriceChange = (totalPriceChange * 1750) / 1200 = --0.349

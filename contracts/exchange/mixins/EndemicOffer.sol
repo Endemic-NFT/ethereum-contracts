@@ -93,10 +93,6 @@ abstract contract EndemicOffer is
         address indexed bidder
     );
 
-    function __EndemicOffer___init_unchained() internal {
-        nextOfferId = 1;
-    }
-
     /// @notice Create an offer in ETH for an NFT
     function placeNftOffer(
         address nftContract,
@@ -133,7 +129,7 @@ abstract contract EndemicOffer is
         nonReentrant
         onlySupportedERC20Payments(paymentErc20TokenAddress)
     {
-        _requireSufficientErc20Supplied(
+        _requireSufficientErc20Allowance(
             offerInErc20,
             paymentErc20TokenAddress,
             _msgSender()
@@ -189,7 +185,7 @@ abstract contract EndemicOffer is
         nonReentrant
         onlySupportedERC20Payments(paymentErc20TokenAddress)
     {
-        _requireSufficientErc20Supplied(
+        _requireSufficientErc20Allowance(
             offerInErc20,
             paymentErc20TokenAddress,
             _msgSender()
@@ -286,7 +282,7 @@ abstract contract EndemicOffer is
         if (_bidderHasNftOffer(nftContract, tokenId, _msgSender()))
             revert OfferExists();
 
-        uint256 offerId = nextOfferId++;
+        uint256 offerId = ++nextOfferId;
 
         uint256 expiresAt = block.timestamp + duration;
 
@@ -326,7 +322,7 @@ abstract contract EndemicOffer is
         if (_bidderHasCollectionOffer(nftContract, _msgSender()))
             revert OfferExists();
 
-        uint256 offerId = nextOfferId++;
+        uint256 offerId = ++nextOfferId;
 
         uint256 expiresAt = block.timestamp + duration;
 

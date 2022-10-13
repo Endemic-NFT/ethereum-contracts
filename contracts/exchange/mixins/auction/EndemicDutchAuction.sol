@@ -45,6 +45,8 @@ abstract contract EndemicDutchAuction is
         // if it is already listed as reserve auction that is in progress or ended
         _requireIdleAuction(auctionId);
 
+        uint256 endingAt = block.timestamp + duration;
+
         Auction memory auction = Auction({
             auctionType: AuctionType.DUTCH,
             id: auctionId,
@@ -53,16 +55,15 @@ abstract contract EndemicDutchAuction is
             highestBidder: address(0),
             paymentErc20TokenAddress: paymentErc20TokenAddress,
             tokenId: tokenId,
-            duration: duration,
             amount: amount,
             startingPrice: startingPrice,
             endingPrice: endingPrice,
             startedAt: block.timestamp,
-            endingAt: 0, // 0 because availability to bid doesn't relay on time in dutch auction
+            endingAt: endingAt,
             assetClass: assetClass
         });
 
-        _validateDutchAuction(auction);
+        _validateDutchAuction(auction, duration);
 
         idToAuction[auctionId] = auction;
 
@@ -72,7 +73,7 @@ abstract contract EndemicDutchAuction is
             auctionId,
             startingPrice,
             endingPrice,
-            duration,
+            endingAt,
             _msgSender(),
             amount,
             paymentErc20TokenAddress,
@@ -90,7 +91,9 @@ abstract contract EndemicDutchAuction is
     {
         Auction memory auction = idToAuction[id];
 
-        _requireValidBidRequest(auction, AuctionType.DUTCH, tokenAmount);
+        _requireAuctionType(auction, AuctionType.DUTCH);
+
+        _requireValidBidRequest(auction, tokenAmount);
 
         _detractByAssetClass(auction, tokenAmount);
 
@@ -163,8 +166,11 @@ abstract contract EndemicDutchAuction is
     /**
      * @notice Validates dutch auction duration and price setup
      */
-    function _validateDutchAuction(Auction memory auction) internal pure {
-        if (auction.duration < MIN_DURATION || MAX_DURATION < auction.duration)
+    function _validateDutchAuction(Auction memory auction, uint256 duration)
+        internal
+        pure
+    {
+        if (duration < MIN_DURATION || MAX_DURATION < duration)
             revert InvalidDuration();
 
         if (
@@ -183,6 +189,7 @@ abstract contract EndemicDutchAuction is
         returns (uint256)
     {
         uint256 secondsPassed = 0;
+        uint256 duration = auction.endingAt - auction.startedAt;
 
         if (block.timestamp > auction.startedAt) {
             secondsPassed = block.timestamp - auction.startedAt;
@@ -193,7 +200,7 @@ abstract contract EndemicDutchAuction is
         //  time (at 64-bits) and currency (at 128-bits). _duration is
         //  also known to be non-zero (see the require() statement in
         //  _addAuction())
-        if (secondsPassed >= auction.duration) {
+        if (secondsPassed >= duration) {
             // We've reached the end of the dynamic pricing portion
             // of the auction, just return the end price.
             return auction.endingPrice;
@@ -207,7 +214,7 @@ abstract contract EndemicDutchAuction is
             // 64-bits, and totalPriceChange will easily fit within 128-bits, their product
             // will always fit within 256-bits.
             int256 currentPriceChange = (totalPriceChange *
-                int256(secondsPassed)) / int256(auction.duration);
+                int256(secondsPassed)) / int256(duration);
 
             // currentPriceChange can be negative, but if so, will have a magnitude
             // less that _startingPrice. Thus, this result will always end up positive.
