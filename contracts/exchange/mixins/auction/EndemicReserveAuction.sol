@@ -24,7 +24,8 @@ abstract contract EndemicReserveAuction is
     event ReserveBidPlaced(
         bytes32 indexed id,
         address indexed bidder,
-        uint256 indexed reservePrice
+        uint256 indexed reservePrice,
+        uint256 endingAt
     );
 
     /// @notice Creates reserve auction
@@ -68,7 +69,6 @@ abstract contract EndemicReserveAuction is
             seller: _msgSender(),
             paymentErc20TokenAddress: paymentErc20TokenAddress,
             tokenId: tokenId,
-            duration: RESERVE_AUCTION_DURATION, //always 24hrs
             amount: 1,
             startingPrice: reservePrice,
             endingPrice: 0,
@@ -101,7 +101,9 @@ abstract contract EndemicReserveAuction is
     {
         Auction memory auction = idToAuction[id];
 
-        _requireValidBidRequest(auction, AuctionType.RESERVE, 1);
+        _requireAuctionType(auction, AuctionType.RESERVE);
+
+        _requireValidBidRequest(auction, 1);
 
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
             auction.paymentErc20TokenAddress
@@ -122,7 +124,14 @@ abstract contract EndemicReserveAuction is
             );
         }
 
-        emit ReserveBidPlaced(auction.id, _msgSender(), bidPrice);
+        idToAuction[auction.id] = auction;
+
+        emit ReserveBidPlaced(
+            auction.id,
+            _msgSender(),
+            bidPrice,
+            auction.endingAt
+        );
     }
 
     /// @notice Finalizes reserve auction, transfering currency and NFT
@@ -192,13 +201,13 @@ abstract contract EndemicReserveAuction is
         uint256 bidPriceWithFees,
         uint256 bidPrice,
         uint256 takerFee
-    ) internal {
+    ) internal view {
         uint256 takerCut = _calculateCut(takerFee, auction.startingPrice);
 
         if (auction.startingPrice + takerCut > bidPriceWithFees)
             revert UnsufficientCurrencySupplied();
 
-        _requireSufficientErc20Supplied(
+        _requireSufficientErc20Allowance(
             auction.startingPrice + takerCut,
             auction.paymentErc20TokenAddress,
             _msgSender()
@@ -209,15 +218,13 @@ abstract contract EndemicReserveAuction is
         auction.endingPrice = bidPrice;
 
         auction.highestBidder = _msgSender();
-
-        idToAuction[auction.id] = auction;
     }
 
     function _outBidPreviousBidder(
         Auction memory auction,
         uint256 bidPriceWithFees,
         uint256 bidPrice
-    ) internal {
+    ) internal view {
         if (auction.endingAt < block.timestamp) revert AuctionEnded();
         // Bidder cannot outbid themself
         if (auction.highestBidder == _msgSender()) revert Unauthorized();
@@ -236,8 +243,6 @@ abstract contract EndemicReserveAuction is
         if (auction.endingAt < extendedEndingTime) {
             auction.endingAt = extendedEndingTime;
         }
-
-        idToAuction[auction.id] = auction;
     }
 
     function _requireSufficientOutBid(
@@ -252,7 +257,7 @@ abstract contract EndemicReserveAuction is
 
         if (minRequiredBid > bidPriceWithFees) revert InsufficientBid();
 
-        _requireSufficientErc20Supplied(
+        _requireSufficientErc20Allowance(
             minRequiredBid,
             paymentErc20TokenAddress,
             _msgSender()

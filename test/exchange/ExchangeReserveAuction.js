@@ -76,6 +76,14 @@ describe('ExchangeReserveAuction', function () {
     await mintERC1155(user1.address, 3);
   }
 
+  async function getCurrentEvmTimestamp() {
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+
+    return blockBefore.timestamp;
+  }
+
   describe('Create reserve auction with ERC20', function () {
     beforeEach(async function () {
       await deploy();
@@ -236,14 +244,14 @@ describe('ExchangeReserveAuction', function () {
       expect(auction1.startingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction1.duration.toString()).to.equal('86400'); //24hrs
+      expect(auction1.endingAt.toString()).to.equal('0'); //not started yet
 
       // Second
       expect(auction2.seller).to.equal(user1.address);
       expect(auction2.startingPrice.toString()).to.equal(
         ethers.utils.parseUnits('0.1')
       );
-      expect(auction2.duration.toString()).to.equal('86400'); //24hrs
+      expect(auction2.endingAt.toString()).to.equal('0'); //not started yet
     });
   });
 
@@ -443,7 +451,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(user1).finalizeReserveAuction(auctionId)
-      ).to.be.revertedWith('AuctionNotStarted');
+      ).to.be.revertedWith('AuctionInProgress');
     });
 
     it('should fail to bid if auction is dutch', async function () {
@@ -767,12 +775,15 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('0.103')
         );
 
+      const currentEvmTimestamp = await getCurrentEvmTimestamp();
+
       await expect(bid1)
         .to.emit(endemicExchange, RESERVE_BID_PLACED)
         .withArgs(
           erc721AuctionId,
           user2.address,
-          ethers.utils.parseUnits('0.1')
+          ethers.utils.parseUnits('0.1'),
+          currentEvmTimestamp + 86401 //24hrs
         );
     });
   });
@@ -908,9 +919,16 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('0.103')
         );
 
+      const currentEvmTimestamp = await getCurrentEvmTimestamp();
+
       await expect(bidTxWithUser3)
         .to.emit(endemicExchange, RESERVE_BID_PLACED)
-        .withArgs(auctionid, user3.address, ethers.utils.parseUnits('0.1'));
+        .withArgs(
+          auctionid,
+          user3.address,
+          ethers.utils.parseUnits('0.1'),
+          currentEvmTimestamp + 86401 //24hrs
+        );
 
       await endemicToken.transfer(
         user2.address,
@@ -931,7 +949,12 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(bidTxWithUser2)
         .to.emit(endemicExchange, RESERVE_BID_PLACED)
-        .withArgs(auctionid, user2.address, ethers.utils.parseUnits('0.2'));
+        .withArgs(
+          auctionid,
+          user2.address,
+          ethers.utils.parseUnits('0.2'),
+          currentEvmTimestamp + 86401
+        );
 
       //no new bids
       await network.provider.send('evm_increaseTime', [ONE_DAY]); //reserve auction needs to finish
@@ -1053,6 +1076,8 @@ describe('ExchangeReserveAuction', function () {
         .connect(user3)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
+      const currentEvmTimestamp = await getCurrentEvmTimestamp();
+
       // // bid with user 3
       const bidTx = endemicExchange
         .connect(user3)
@@ -1063,7 +1088,12 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(bidTx)
         .to.emit(endemicExchange, RESERVE_BID_PLACED)
-        .withArgs(auctionid2, user3.address, ethers.utils.parseUnits('0.5'));
+        .withArgs(
+          auctionid2,
+          user3.address,
+          ethers.utils.parseUnits('0.5'),
+          currentEvmTimestamp + 86398 //24hrs - few seconds that passes
+        );
 
       // Grab current balance
       const user2Bal1 = await endemicToken.balanceOf(user2.address);

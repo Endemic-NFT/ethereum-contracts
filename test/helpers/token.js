@@ -15,4 +15,10 @@ const addTakerFee = (value) => {
 const calculateCutFromPercent = (price, cut) =>
   price.mul(cut).div(BigNumber.from('10000'));
 
-module.exports = { weiToEther, addTakerFee };
+const calculateAuctionDuration = (auction) => {
+  const duration = +auction.endingAt - +auction.startedAt;
+
+  return duration.toString();
+};
+
+module.exports = { weiToEther, addTakerFee, calculateAuctionDuration };
