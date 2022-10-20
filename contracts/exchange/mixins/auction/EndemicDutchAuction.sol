@@ -105,6 +105,12 @@ abstract contract EndemicDutchAuction is
                 currentPrice
             );
 
+        currentPrice = _getCurrentPriceByPaymentMethod(
+            auction,
+            currentPrice,
+            takerCut
+        );
+
         _requireSufficientCurrencySupplied(
             currentPrice + takerCut,
             auction.paymentErc20TokenAddress,
@@ -220,6 +226,23 @@ abstract contract EndemicDutchAuction is
             paymentErc20TokenAddress,
             assetClass
         );
+    }
+
+    function _getCurrentPriceByPaymentMethod(
+        Auction memory auction,
+        uint256 currentPrice,
+        uint256 takerCut
+    ) internal view returns (uint256) {
+        if (auction.paymentErc20TokenAddress != ZERO_ADDRESS)
+            return currentPrice;
+
+        uint256 priceWithoutFees = msg.value - takerCut;
+
+        if (priceWithoutFees < currentPrice) {
+            revert UnsufficientCurrencySupplied();
+        }
+
+        return priceWithoutFees;
     }
 
     /**

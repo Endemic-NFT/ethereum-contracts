@@ -40,7 +40,7 @@ describe('NftTrade', function () {
       nftContract.address,
       1,
       ethers.utils.parseUnits('1'),
-      ethers.utils.parseUnits('1'),
+      ethers.utils.parseUnits('0.5'),
       60,
       1,
       ZERO_ADDRESS,

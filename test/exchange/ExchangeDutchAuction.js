@@ -166,6 +166,36 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
+            ethers.utils.parseUnits('0.00001'),
+            120,
+            1,
+            ZERO_ADDRESS,
+            ERC721_ASSET_CLASS
+          )
+      ).to.be.revertedWith('InvalidPriceConfiguration');
+
+      await expect(
+        endemicExchange
+          .connect(user1)
+          .createDutchAuction(
+            nftContract.address,
+            1,
+            ethers.utils.parseUnits('0.00001'),
+            ethers.utils.parseUnits('0.000001'),
+            120,
+            1,
+            ZERO_ADDRESS,
+            ERC721_ASSET_CLASS
+          )
+      ).to.be.revertedWith('InvalidPriceConfiguration');
+
+      await expect(
+        endemicExchange
+          .connect(user1)
+          .createDutchAuction(
+            nftContract.address,
+            1,
+            ethers.utils.parseUnits('0.1'),
             ethers.utils.parseUnits('0.2'),
             120,
             1,
@@ -2120,11 +2150,17 @@ describe('ExchangeDutchAuction', function () {
           value: ethers.utils.parseUnits(totalPrice.toString()),
         });
 
-      // User1 should receive 0.39492 ether, 80% of auction has passed
+      // User1 should receive 0.396156 ether, 80% of auction has passed
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.39492'));
+      expect(user1Diff.toString()).to.equal(
+        ethers.utils.parseUnits('0.396156')
+      );
+
+      // 0.39492 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
+      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.39492'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -2213,7 +2249,13 @@ describe('ExchangeDutchAuction', function () {
       const user1Diff = user1Bal2.sub(user1Bal1);
 
       //85% auction duration has passed when bought first one + 87% when bought two more
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.924'));
+      expect(user1Diff.toString()).to.equal(
+        ethers.utils.parseUnits('0.9265200000000001')
+      );
+
+      // 0.924 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
+      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.924'));
     });
 
     it('should be able to bid at endingPrice if auction has passed duration', async function () {
@@ -2245,7 +2287,11 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.019'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.19765'));
+
+      // 0.19 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
+      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.19'));
     });
 
     it('should fail to bid after someone else has bid', async function () {
@@ -2326,7 +2372,7 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           erc721AuctionId,
-          ethers.utils.parseUnits('0.0985'),
+          ethers.utils.parseUnits('0.0992725'),
           user2.address,
           1,
           ethers.utils.parseUnits('0.002955')
@@ -2352,7 +2398,7 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           erc1155AuctionId,
-          ethers.utils.parseUnits('0.197'),
+          ethers.utils.parseUnits('0.198545'),
           user2.address,
           2,
           ethers.utils.parseUnits('0.00591')
@@ -3796,7 +3842,7 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           auctionid,
-          ethers.utils.parseUnits('0.4388'),
+          ethers.utils.parseUnits('0.4400359'),
           user2.address,
           1,
           ethers.utils.parseUnits('0.024134')
@@ -3815,7 +3861,14 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Diff = user1Bal2.sub(user1Bal1);
 
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.38395'));
+      expect(user1Diff.toString()).to.equal(
+        ethers.utils.parseUnits('0.3851859')
+      );
+
+      // 0.38395 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
+      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.38395'));
+
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -3964,7 +4017,7 @@ describe('ExchangeDutchAuction', function () {
           ERC721_ASSET_CLASS
         );
 
-      await network.provider.send('evm_increaseTime', [1100]);
+      await network.provider.send('evm_increaseTime', [1140]);
       await network.provider.send('evm_mine');
 
       const auctionid2 = await endemicExchange.createAuctionId(
@@ -4002,10 +4055,10 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           auctionid2,
-          ethers.utils.parseUnits('0.54125'),
+          ethers.utils.parseUnits('0.5255125'),
           user3.address,
           1,
-          ethers.utils.parseUnits('0.02976875')
+          ethers.utils.parseUnits('0.028852083333333333')
         );
 
       //Grab updated balances
@@ -4020,10 +4073,10 @@ describe('ExchangeDutchAuction', function () {
       const user2Diff = user2Bal2.sub(user2Bal1);
 
       expect(claimEthBalanceDiff).to.equal(
-        ethers.utils.parseUnits('0.02976875')
+        ethers.utils.parseUnits('0.028852083333333333')
       );
       expect(user2Diff.toString()).to.equal(
-        ethers.utils.parseUnits('0.47359375')
+        ethers.utils.parseUnits('0.459939583333333334')
       );
 
       // New owner
@@ -4715,7 +4768,13 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Diff = user1Bal2.sub(user1Bal1);
       // 0.4395 minus 3% fee minus 10% royalties
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.38395'));
+      expect(user1Diff.toString()).to.equal(
+        ethers.utils.parseUnits('0.385185')
+      );
+
+      // 0.38395 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
+      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.38395'));
 
       const feeRecipientDiff = feeRecipientBalance2.sub(feeRecipientBalance1);
       expect(feeRecipientDiff.toString()).to.equal(
