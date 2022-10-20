@@ -3,10 +3,10 @@ const { ethers } = require('hardhat');
 
 const weiToEther = (weiValue) => ethers.utils.formatUnits(weiValue, 'ether');
 
-const addTakerFee = (value) => {
+const addTakerFee = (value, fee = '300') => {
   if (value === '0') return value;
   const valueBn = BigNumber.from(value.toString());
-  const takerFee = BigNumber.from('300');
+  const takerFee = BigNumber.from(fee);
   const takerFeeCut = calculateCutFromPercent(valueBn, takerFee);
 
   return valueBn.add(takerFeeCut).toString();

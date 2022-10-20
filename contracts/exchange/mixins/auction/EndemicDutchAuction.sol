@@ -15,7 +15,35 @@ abstract contract EndemicDutchAuction is
     using AddressUpgradeable for address;
 
     /**
+     * @notice Creates fixed auction for an NFT
+     * Fixed auction is variant of dutch auction where startingPrice is equal to endingPrice
+     */
+    function createFixedDutchAuction(
+        address nftContract,
+        uint256 tokenId,
+        uint256 startingPrice,
+        uint256 endingPrice,
+        uint256 amount,
+        address paymentErc20TokenAddress,
+        bytes4 assetClass
+    ) external nonReentrant {
+        if (startingPrice != endingPrice) revert InvalidPriceConfiguration();
+
+        _createAuction(
+            nftContract,
+            tokenId,
+            startingPrice,
+            endingPrice,
+            0,
+            amount,
+            paymentErc20TokenAddress,
+            assetClass
+        );
+    }
+
+    /**
      * @notice Creates dutch auction for an NFT
+     * Dutch auction is auction where price of NFT lineary drops from startingPrice to endingPrice
      */
     function createDutchAuction(
         address nftContract,
@@ -27,54 +55,17 @@ abstract contract EndemicDutchAuction is
         address paymentErc20TokenAddress,
         bytes4 assetClass
     ) external nonReentrant {
-        _requireValidAuctionRequest(
-            paymentErc20TokenAddress,
+        if (duration < MIN_DURATION || duration > MAX_DURATION)
+            revert InvalidDuration();
+
+        if (startingPrice <= endingPrice) revert InvalidPriceConfiguration();
+
+        _createAuction(
             nftContract,
             tokenId,
-            amount,
-            assetClass
-        );
-
-        bytes32 auctionId = _createAuctionId(
-            nftContract,
-            tokenId,
-            _msgSender()
-        );
-
-        // Seller cannot recreate auction
-        // if it is already listed as reserve auction that is in progress or ended
-        _requireIdleAuction(auctionId);
-
-        uint256 endingAt = block.timestamp + duration;
-
-        Auction memory auction = Auction({
-            auctionType: AuctionType.DUTCH,
-            id: auctionId,
-            nftContract: nftContract,
-            seller: _msgSender(),
-            highestBidder: address(0),
-            paymentErc20TokenAddress: paymentErc20TokenAddress,
-            tokenId: tokenId,
-            amount: amount,
-            startingPrice: startingPrice,
-            endingPrice: endingPrice,
-            startedAt: block.timestamp,
-            endingAt: endingAt,
-            assetClass: assetClass
-        });
-
-        _validateDutchAuction(auction, duration);
-
-        idToAuction[auctionId] = auction;
-
-        emit AuctionCreated(
-            nftContract,
-            tokenId,
-            auctionId,
             startingPrice,
             endingPrice,
-            endingAt,
-            _msgSender(),
+            duration,
             amount,
             paymentErc20TokenAddress,
             assetClass
@@ -164,20 +155,71 @@ abstract contract EndemicDutchAuction is
     }
 
     /**
-     * @notice Validates dutch auction duration and price setup
+     * @notice Creates auction for an NFT
      */
-    function _validateDutchAuction(Auction memory auction, uint256 duration)
-        internal
-        pure
-    {
-        if (duration < MIN_DURATION || MAX_DURATION < duration)
-            revert InvalidDuration();
+    function _createAuction(
+        address nftContract,
+        uint256 tokenId,
+        uint256 startingPrice,
+        uint256 endingPrice,
+        uint256 duration,
+        uint256 amount,
+        address paymentErc20TokenAddress,
+        bytes4 assetClass
+    ) internal {
+        if (startingPrice < MIN_PRICE || endingPrice < MIN_PRICE)
+            revert InvalidPriceConfiguration();
 
-        if (
-            auction.startingPrice < MIN_PRICE ||
-            auction.endingPrice < MIN_PRICE ||
-            auction.startingPrice < auction.endingPrice
-        ) revert InvalidPriceConfiguration();
+        _requireValidAuctionRequest(
+            paymentErc20TokenAddress,
+            nftContract,
+            tokenId,
+            amount,
+            assetClass
+        );
+
+        bytes32 auctionId = _createAuctionId(
+            nftContract,
+            tokenId,
+            _msgSender()
+        );
+
+        // Seller cannot recreate auction
+        // if it is already listed as reserve auction that is in progress or ended
+        _requireIdleAuction(auctionId);
+
+        uint256 endingAt = block.timestamp + duration;
+
+        Auction memory auction = Auction({
+            auctionType: AuctionType.DUTCH,
+            id: auctionId,
+            nftContract: nftContract,
+            seller: _msgSender(),
+            highestBidder: address(0),
+            paymentErc20TokenAddress: paymentErc20TokenAddress,
+            tokenId: tokenId,
+            amount: amount,
+            startingPrice: startingPrice,
+            endingPrice: endingPrice,
+            startedAt: block.timestamp,
+            endingAt: endingAt,
+            assetClass: assetClass
+        });
+
+        idToAuction[auctionId] = auction;
+
+        emit AuctionCreated(
+            nftContract,
+            tokenId,
+            auctionId,
+            startingPrice,
+            endingPrice,
+            endingAt,
+            _msgSender(),
+            amount,
+            paymentErc20TokenAddress,
+            assetClass
+        );
     }
 
     /**
