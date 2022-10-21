@@ -21,19 +21,16 @@ abstract contract EndemicDutchAuction is
     function createFixedDutchAuction(
         address nftContract,
         uint256 tokenId,
-        uint256 startingPrice,
-        uint256 endingPrice,
+        uint256 price,
         uint256 amount,
         address paymentErc20TokenAddress,
         bytes4 assetClass
     ) external nonReentrant {
-        if (startingPrice != endingPrice) revert InvalidPriceConfiguration();
-
         _createAuction(
             nftContract,
             tokenId,
-            startingPrice,
-            endingPrice,
+            price,
+            price,
             0,
             amount,
             paymentErc20TokenAddress,
@@ -105,8 +102,8 @@ abstract contract EndemicDutchAuction is
                 currentPrice
             );
 
-        currentPrice = _getCurrentPriceByPaymentMethod(
-            auction,
+        currentPrice = _determinePriceByPaymentMethod(
+            auction.paymentErc20TokenAddress,
             currentPrice,
             takerCut
         );
@@ -228,21 +225,42 @@ abstract contract EndemicDutchAuction is
         );
     }
 
-    function _getCurrentPriceByPaymentMethod(
-        Auction memory auction,
-        uint256 currentPrice,
+    /**
+     * @notice Determines auction price by payment method
+     * @dev Because of the nature of dutch auction we precalculate auction price in moment of rendering it on UI.
+     * When the user bids we calculate the price again at the moment of method execution.
+     * This price will be slightly smaller than one rendered on UI, which results in retaining a small amount of ether.
+     * Which is the difference between precalculated price and the price calculated in the moment of method execution.
+     * This is not the problem in the case of ERC20 payments because the difference will not retain on the contract
+     * due to the token allowance technique.
+     *
+     * With this method in case of ether payments we forward all supplied ethers with the check
+     * that it's not supplied less than @param currentPriceWithoutFees.
+     * Difference that would retain on the contract is forwarded to the seller, retaining zero ether on this contract.
+     *
+     * @param paymentErc20TokenAddress - determines payment method for the auction
+     * @param currentPriceWithoutFees - auction price calculated in moment of method execution without buyer fees
+     * @param takerCut - buyer fees calculated for @param currentPriceWithoutFees
+     */
+    function _determinePriceByPaymentMethod(
+        address paymentErc20TokenAddress,
+        uint256 currentPriceWithoutFees,
         uint256 takerCut
     ) internal view returns (uint256) {
-        if (auction.paymentErc20TokenAddress != ZERO_ADDRESS)
-            return currentPrice;
+        //if auction is in ERC20 we use price calculated in moment of method execution
+        if (paymentErc20TokenAddress != ZERO_ADDRESS) {
+            return currentPriceWithoutFees;
+        }
 
-        uint256 priceWithoutFees = msg.value - takerCut;
+        //auction is in ether so we use amount of supplied ethers without taker cut as auction price
+        uint256 suppliedEtherWithoutFees = msg.value - takerCut;
 
-        if (priceWithoutFees < currentPrice) {
+        //amount of supplied ether without buyer fees must not be smaller than the current price without buyer fees
+        if (suppliedEtherWithoutFees < currentPriceWithoutFees) {
             revert UnsufficientCurrencySupplied();
         }
 
-        return priceWithoutFees;
+        return suppliedEtherWithoutFees;
     }
 
     /**

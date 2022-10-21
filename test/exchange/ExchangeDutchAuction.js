@@ -1174,7 +1174,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.1'),
             1,
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
@@ -1187,7 +1186,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             1,
-            ethers.utils.parseUnits('0.1'),
             ethers.utils.parseUnits('0.1'),
             1,
             ZERO_ADDRESS,
@@ -1207,7 +1205,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.2'),
             1,
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
@@ -1220,7 +1217,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             noSuchTokenId,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             1,
             ZERO_ADDRESS,
@@ -1236,22 +1232,7 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             nftContract.address,
             1,
-            ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.2'),
-            1,
-            ZERO_ADDRESS,
-            ERC721_ASSET_CLASS
-          )
-      ).to.be.revertedWith('InvalidPriceConfiguration');
-
-      await expect(
-        endemicExchange
-          .connect(user1)
-          .createFixedDutchAuction(
-            nftContract.address,
-            1,
-            ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.1'),
+            ethers.utils.parseUnits('0.00001'),
             1,
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
@@ -1268,7 +1249,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -1280,7 +1260,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           endemicToken.address,
@@ -1316,7 +1295,6 @@ describe('ExchangeDutchAuction', function () {
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC1155_ASSET_CLASS
@@ -1328,7 +1306,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           endemicToken.address,
@@ -1367,7 +1344,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -1379,7 +1355,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           2,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -1390,7 +1365,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           2,
           ZERO_ADDRESS,
@@ -1463,7 +1437,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.2'),
             2,
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
@@ -1476,7 +1449,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             1,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             0,
             ZERO_ADDRESS,
@@ -1495,7 +1467,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             nftContract.address,
             noSuchTokenId,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             2,
             ZERO_ADDRESS,
@@ -1525,7 +1496,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.1'),
             1,
             endemicToken.address,
             ERC721_ASSET_CLASS
@@ -1538,7 +1508,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             1,
-            ethers.utils.parseUnits('0.1'),
             ethers.utils.parseUnits('0.1'),
             1,
             endemicToken.address,
@@ -1558,7 +1527,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             noSuchTokenId,
             ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.2'),
             1,
             endemicToken.address,
             ERC721_ASSET_CLASS
@@ -1571,7 +1539,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             noSuchTokenId,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             1,
             endemicToken.address,
@@ -1587,22 +1554,7 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             nftContract.address,
             1,
-            ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.2'),
-            1,
-            endemicToken.address,
-            ERC721_ASSET_CLASS
-          )
-      ).to.be.revertedWith('InvalidPriceConfiguration');
-
-      await expect(
-        endemicExchange
-          .connect(user1)
-          .createFixedDutchAuction(
-            nftContract.address,
-            1,
-            ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.1'),
+            ethers.utils.parseUnits('0.00001'),
             1,
             endemicToken.address,
             ERC721_ASSET_CLASS
@@ -1618,7 +1570,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.1'),
             1,
             '0x0000000000000000000000000000000000000001',
             ERC721_ASSET_CLASS
@@ -1631,7 +1582,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             1,
-            ethers.utils.parseUnits('0.1'),
             ethers.utils.parseUnits('0.1'),
             1,
             '0x0000000000000000000000000000000000000001',
@@ -1649,7 +1599,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -1661,7 +1610,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           ZERO_ADDRESS,
@@ -1698,7 +1646,6 @@ describe('ExchangeDutchAuction', function () {
           erc1155Contract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           endemicToken.address,
           ERC1155_ASSET_CLASS
@@ -1710,7 +1657,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           ZERO_ADDRESS,
@@ -1749,7 +1695,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -1761,7 +1706,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           2,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -1772,7 +1716,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           2,
           endemicToken.address,
@@ -1880,7 +1823,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.1'),
-            ethers.utils.parseUnits('0.1'),
             1,
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
@@ -1926,7 +1868,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -1955,7 +1896,6 @@ describe('ExchangeDutchAuction', function () {
             nftContract.address,
             1,
             ethers.utils.parseUnits('0.2'),
-            ethers.utils.parseUnits('0.2'),
             2,
             endemicToken.address,
             ERC721_ASSET_CLASS
@@ -1968,7 +1908,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             erc1155Contract.address,
             1,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             0,
             endemicToken.address,
@@ -1987,7 +1926,6 @@ describe('ExchangeDutchAuction', function () {
           .createFixedDutchAuction(
             nftContract.address,
             noSuchTokenId,
-            ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.2'),
             2,
             endemicToken.address,
@@ -2942,7 +2880,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -2953,7 +2890,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.1'),
           ethers.utils.parseUnits('0.1'),
           3,
           ZERO_ADDRESS,
@@ -3183,7 +3119,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -3194,7 +3129,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.1'),
           ethers.utils.parseUnits('0.1'),
           3,
           endemicToken.address,
@@ -3634,7 +3568,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1'),
-          ethers.utils.parseUnits('0.1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -3645,7 +3578,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           erc1155Contract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           3,
           ZERO_ADDRESS,
@@ -3737,7 +3669,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           ZERO_ADDRESS,
@@ -3881,7 +3812,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('1'),
-          ethers.utils.parseUnits('1'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -3905,7 +3835,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.5'),
           1,
           ZERO_ADDRESS,
@@ -4109,7 +4038,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
-          ethers.utils.parseUnits('0.2'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -4261,7 +4189,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
-          ethers.utils.parseUnits('0.2'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -4406,7 +4333,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('1'),
-          ethers.utils.parseUnits('1'),
           1,
           endemicToken.address,
           ERC721_ASSET_CLASS
@@ -4437,7 +4363,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.5'),
           1,
           endemicToken.address,
@@ -4653,7 +4578,6 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.2'),
-          ethers.utils.parseUnits('0.2'),
           1,
           ZERO_ADDRESS,
           ERC721_ASSET_CLASS
@@ -4811,7 +4735,6 @@ describe('ExchangeDutchAuction', function () {
         .createFixedDutchAuction(
           nftContract.address,
           1,
-          ethers.utils.parseUnits('0.2'),
           ethers.utils.parseUnits('0.2'),
           1,
           endemicToken.address,
