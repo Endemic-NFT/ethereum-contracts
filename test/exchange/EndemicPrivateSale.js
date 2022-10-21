@@ -65,7 +65,7 @@ describe('EndemicPrivateSale', () => {
 
     await owner.sendTransaction({
       to: signer.address,
-      value: ethers.utils.parseEther('1500'),
+      value: ethers.utils.parseEther('1650'),
     });
 
     await mintERC721(signer.address);
