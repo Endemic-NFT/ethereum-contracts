@@ -61,11 +61,10 @@ describe('Collection', function () {
         .to.emit(newCollection, 'Mint')
         .withArgs('1', owner.address);
 
-      const nftOwnerAddress = await newCollection.ownerOf(tokenId);
-      expect(nftOwnerAddress).to.equal(user.address);
-
-      const tokenUri = await newCollection.tokenURI(tokenId);
-      expect(tokenUri).to.equal(
+      expect(await newCollection.name()).to.equal('Endemic Collection');
+      expect(await newCollection.symbol()).to.equal('EC');
+      expect(await newCollection.ownerOf(tokenId)).to.equal(user.address);
+      expect(await newCollection.tokenURI(tokenId)).to.equal(
         'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
     });
@@ -92,6 +91,40 @@ describe('Collection', function () {
       expect(tokenUri).to.equal(
         'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
+    });
+
+    it('should mint multiple NFTs', async function () {
+      const promises = [];
+      for (let i = 0; i < 10; i++) {
+        promises.push(
+          nftContract
+            .connect(owner)
+            .mint(
+              user.address,
+              `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+            )
+        );
+      }
+
+      await Promise.all(promises);
+
+      for (let i = 0; i < 10; i++) {
+        promises.push(
+          nftContract
+            .connect(owner)
+            .mint(
+              user.address,
+              `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+            )
+        );
+        const nftOwnerAddress = await nftContract.ownerOf(i + 1);
+        expect(nftOwnerAddress).to.equal(user.address);
+
+        const tokenUri = await nftContract.tokenURI(i + 1);
+        expect(tokenUri).to.equal(
+          `ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+        );
+      }
     });
 
     it('should not mint an NFT if not owner', async function () {
@@ -170,6 +203,24 @@ describe('Collection', function () {
       expect(await nftContract.totalSupply()).to.equal('0');
     });
 
+    it('should burn multiple tokens', async function () {
+      await nftContract.mint(
+        owner.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+
+      await nftContract.mint(
+        owner.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+
+      await nftContract.burn(1);
+      expect(await nftContract.totalSupply()).to.equal('1');
+
+      await nftContract.burn(2);
+      expect(await nftContract.totalSupply()).to.equal('0');
+    });
+
     it('should fail to burn if not token owner', async function () {
       await nftContract.mint(
         owner.address,
@@ -177,7 +228,7 @@ describe('Collection', function () {
       );
 
       await expect(nftContract.connect(user).burn(1)).to.be.revertedWith(
-        'CallerNotTokenOwner'
+        'CallerNotOwner()'
       );
     });
   });

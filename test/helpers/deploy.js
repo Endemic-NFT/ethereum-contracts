@@ -46,18 +46,6 @@ const deployEndemicCollectionWithFactory = async () => {
   };
 };
 
-const deployEndemicCollectionWithOpenspaceFactory = async () => {
-  const nftFactory = await deployOpenspaceCollectionFactory();
-  const nftContract = await deployCollection(nftFactory.address);
-
-  await nftFactory.updateImplementation(nftContract.address);
-
-  return {
-    nftFactory,
-    nftContract,
-  };
-};
-
 const deployEndemicERC1155 = async () => {
   const EndemicERC1155 = await ethers.getContractFactory('EndemicERC1155');
   const nftContract = await upgrades.deployProxy(
@@ -163,7 +151,6 @@ module.exports = {
   deployCollectionFactory,
   deployCollection,
   deployEndemicCollectionWithFactory,
-  deployEndemicCollectionWithOpenspaceFactory,
   deployEndemicExchangeWithDeps,
   deployEndemicERC1155,
   deployRoyaltiesProvider,

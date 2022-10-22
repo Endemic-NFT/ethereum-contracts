@@ -3,7 +3,7 @@ pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./mixins/ERC721A.sol";
+import "./mixins/ERC721Base.sol";
 import "./mixins/CollectionRoyalties.sol";
 import "./mixins/CollectionFactory.sol";
 
@@ -12,10 +12,11 @@ import "./interfaces/ICollectionInitializer.sol";
 
 error CallerNotOwner();
 error CallerNotTokenOwner();
+error URIQueryForNonexistentToken();
 
 contract Collection is
-    ERC721A,
     Initializable,
+    ERC721Base,
     CollectionRoyalties,
     CollectionFactory
 {
@@ -52,7 +53,6 @@ contract Collection is
      * @param _collectionFactory The factory which is used to create new collections
      */
     constructor(address _collectionFactory)
-        ERC721A("Collection Template", "CT")
         CollectionFactory(_collectionFactory)
     {}
 
@@ -64,46 +64,36 @@ contract Collection is
     ) external onlyCollectionFactory initializer {
         owner = creator;
 
-        _name = name;
-        _symbol = symbol;
-
-        _currentIndex = _startTokenId();
-
+        __ERC721_init_unchained(name, symbol);
         initializeCollectionRoyalties(creator, royalties);
     }
 
     function mint(address recipient, string calldata tokenCID)
         external
         onlyOwner
-        returns (uint256)
+        returns (uint256 tokenId)
     {
-        uint256 tokenId = _currentIndex;
-        _safeMint(recipient, 1);
+        tokenId = ++latestTokenId;
+        _safeMint(recipient, tokenId);
         _tokenCIDs[tokenId] = tokenCID;
         emit Mint(tokenId, owner);
-        return tokenId;
     }
 
     function mintAndApprove(
         address recipient,
         string calldata tokenCID,
         address operator
-    ) external onlyOwner returns (uint256) {
-        uint256 tokenId = _currentIndex;
-        _safeMint(recipient, 1);
+    ) external onlyOwner returns (uint256 tokenId) {
+        tokenId = ++latestTokenId;
+        _safeMint(recipient, tokenId);
         setApprovalForAll(operator, true);
         _tokenCIDs[tokenId] = tokenCID;
         emit Mint(tokenId, owner);
         return tokenId;
     }
 
-    function burn(uint256 tokenId) external {
-        TokenOwnership memory prevOwnership = _ownershipOf(tokenId);
-
-        bool isOwner = msg.sender == prevOwnership.addr;
-        if (!isOwner) revert CallerNotTokenOwner();
-
-        _burn(tokenId);
+    function burn(uint256 tokenId) public override onlyOwner {
+        super.burn(tokenId);
     }
 
     function tokenURI(uint256 tokenId)
@@ -122,10 +112,6 @@ contract Collection is
         _setRoyalties(recipient, value);
     }
 
-    function _startTokenId() internal view virtual override returns (uint256) {
-        return 1;
-    }
-
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -137,6 +123,11 @@ contract Collection is
             return true;
         }
         return super.supportsInterface(interfaceId);
+    }
+
+    function _burn(uint256 tokenId) internal override {
+        delete _tokenCIDs[tokenId];
+        super._burn(tokenId);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
