@@ -122,7 +122,7 @@ describe('ExchangeReserveAuction', function () {
             ethers.utils.parseUnits('0.2'),
             endemicToken.address
           )
-      ).to.be.revertedWith('OwnerQueryForNonexistentToken');
+      ).to.be.revertedWith('ERC721: invalid token ID');
     });
 
     it('should fail to create reserve auction for not supported ERC20 token payment', async function () {

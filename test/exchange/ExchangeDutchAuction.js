@@ -237,7 +237,7 @@ describe('ExchangeDutchAuction', function () {
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('OwnerQueryForNonexistentToken');
+      ).to.be.revertedWith('ERC721: invalid token ID');
 
       await expect(
         endemicExchange
@@ -685,7 +685,7 @@ describe('ExchangeDutchAuction', function () {
             endemicToken.address,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('OwnerQueryForNonexistentToken');
+      ).to.be.revertedWith('ERC721: invalid token ID');
 
       await expect(
         endemicExchange
@@ -1209,7 +1209,7 @@ describe('ExchangeDutchAuction', function () {
             ZERO_ADDRESS,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('OwnerQueryForNonexistentToken');
+      ).to.be.revertedWith('ERC721: invalid token ID');
 
       await expect(
         endemicExchange
@@ -1531,7 +1531,7 @@ describe('ExchangeDutchAuction', function () {
             endemicToken.address,
             ERC721_ASSET_CLASS
           )
-      ).to.be.revertedWith('OwnerQueryForNonexistentToken');
+      ).to.be.revertedWith('ERC721: invalid token ID');
 
       await expect(
         endemicExchange

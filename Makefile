@@ -6,10 +6,6 @@ deployRoyaltiesProvider:
 deployErc721Factory:
 	npx hardhat run scripts/erc-721/deploy-erc721-factory.js --network ${network}
 
-.PHONY: deployOpenspaceFactory
-deployOpenspaceFactory:
-	npx hardhat run scripts/erc-721/deploy-openspace-factory.js --network ${network}
-
 .PHONY: deployEndemicErc721
 deployEndemicErc721:
 	npx hardhat run scripts/erc-721/deploy-erc721.js --network ${network}
@@ -54,6 +50,10 @@ deployContractImporter:
 deployEndemicTokenPausable:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20-pausable.js --network ${network}
 	
+.PHONY: deployAndUpdateErc721Implementation
+deployAndUpdateErc721Implementation:
+	npx hardhat run scripts/erc-721/deploy-and-upgrade-erc721-implementation.js --network ${network}
+
 .PHONY: verify
 verify:
 	npx hardhat verify --network ${network} "${address}"

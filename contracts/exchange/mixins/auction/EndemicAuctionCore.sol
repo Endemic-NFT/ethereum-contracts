@@ -226,7 +226,7 @@ abstract contract EndemicAuctionCore is
     function _requireAuctionType(
         Auction memory auction,
         AuctionType auctionType
-    ) internal view {
+    ) internal pure {
         if (!_isAuctionType(auction, auctionType)) revert InvalidAuction();
     }
 
