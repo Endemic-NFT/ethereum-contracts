@@ -1,4 +1,4 @@
-const { ethers } = require('hardhat');
+const { ethers, upgrades } = require('hardhat');
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -11,12 +11,20 @@ async function main() {
   const EndemicCollectionFactory = await ethers.getContractFactory(
     'EndemicCollectionFactory'
   );
-  const endemicERC721Factory = await EndemicCollectionFactory.deploy();
-  await endemicERC721Factory.deployed();
+
+  const endemicERC721FactoryProxy = await upgrades.deployProxy(
+    EndemicCollectionFactory,
+    [],
+    {
+      deployer,
+      initializer: 'initialize',
+    }
+  );
+  await endemicERC721FactoryProxy.deployed();
 
   console.log(
-    'Deployed EndemicCollectionFactory to:',
-    endemicERC721Factory.address
+    'Deployed EndemicCollectionFactory proxy to:',
+    endemicERC721FactoryProxy.address
   );
 }
 
