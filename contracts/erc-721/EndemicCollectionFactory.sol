@@ -10,7 +10,7 @@ import "./interfaces/ICollectionInitializer.sol";
 
 import "./Collection.sol";
 
-contract EndemicCollectionFactory is AccessControlUpgradeable {
+contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
     using AddressUpgradeable for address;
     using ClonesUpgradeable for address;
 
@@ -51,7 +51,7 @@ contract EndemicCollectionFactory is AccessControlUpgradeable {
         _;
     }
 
-    constructor() {
+    function initialize() external initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -123,4 +123,9 @@ contract EndemicCollectionFactory is AccessControlUpgradeable {
             royalties
         );
     }
+
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[1000] private __gap;
 }
