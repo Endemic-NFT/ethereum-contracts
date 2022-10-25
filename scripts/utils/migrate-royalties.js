@@ -14,15 +14,13 @@ async function main() {
     royaltiesProviderProxy
   );
 
-  await Promise.all(
-    collections.forEach(async (collection) => {
-      await royaltiesProvider.setRoyaltiesForCollection(
-        collection.id,
-        collection.royaltiesRecipient,
-        collection.royalties
-      );
-    })
-  );
+  for (let i = 0; i < collections.length; i++) {
+    await royaltiesProvider.setRoyaltiesForCollection(
+      collections[i].id,
+      collections[i].royaltiesRecipient,
+      collections[i].royalties
+    );
+  }
 }
 
 main()

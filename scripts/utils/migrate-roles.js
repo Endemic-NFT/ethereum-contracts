@@ -1,7 +1,6 @@
 const { ethers, network } = require('hardhat');
 const { getVerifiedUsers } = require('./get-entities');
 const { getForNetwork } = require('./addresses');
-const { keccak256 } = require('../../test/helpers/eip712');
 
 async function main() {
   const { endemicErc721Factory } = getForNetwork(network.name);
@@ -15,16 +14,11 @@ async function main() {
     endemicErc721Factory
   );
 
-  const MINTER_ROLE = keccak256('MINTER_ROLE');
+  const MINTER_ROLE = await endemicCollectionFactory.MINTER_ROLE();
 
-  await Promise.all(
-    verifiedUsers.forEach(async (verifiedUser) => {
-      await endemicCollectionFactory.grantRole(
-        MINTER_ROLE,
-        verifiedUser.address
-      );
-    })
-  );
+  for (let i = 0; i < verifiedUsers.length; i++) {
+    await endemicCollectionFactory.grantRole(MINTER_ROLE, verifiedUsers[i].id);
+  }
 }
 
 main()
