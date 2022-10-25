@@ -1,17 +1,3 @@
-const rinkeby = {
-  royaltiesProviderProxy: '0xD26379F5dcb89E257cDB7F5Ce46b98B98Cab6752',
-  endemicErc721Factory: '0x8A2619ff673EeA38324Bf03d212d23e50831E182',
-  endemicErc721: '0x369dFC49b3540d340FcE60A622FEFdD1a4C6c6F6',
-  endemicExchangeProxy: '0x9DaBd7D44BBf227e51eBe3d05E070851edD572cC',
-  contractImporter: '0x8350146089b4B4B591439953fF36D22Fc07ebf18',
-
-  endemicERC1155Proxy: '',
-  endemicERC1155Beacon: '',
-  endemicERC1155Factory: '',
-
-  endemicENDToken: '',
-};
-
 const goerli = {
   royaltiesProviderProxy: '0xD0E7364473F0843461F2631306AE248539Dab487',
   endemicErc721Factory: '0xB4550D625035B1D563B6c883B34AE83E0fa71411',
@@ -27,16 +13,13 @@ const goerli = {
   endemicENDToken: '0x27f31c8B3D6024C44155De1198dB86F23124b1A4',
 };
 
-const aurora_test = {
-  royaltiesProviderProxy: '',
-  endemicErc721Factory: '0x21aAB5F1458BC5BDaeC902683fd518A647eF52d4',
-  endemicErc721: '0x7d05e42A3bacB672dB99D951c34F8012aB847De5',
-  endemicExchangeProxy: '',
+const arbitrum_goerli = {
+  royaltiesProviderProxy: '0x03B19c39355fD271A0fF071fAeaEe65F4fe26914',
+  endemicErc721Factory: '0x45F3e4c28b68142e7C83c55aA95F3c5281006DB8',
+  endemicErc721: '0xFC69e4EFaB6e85D0400bf74873aEc6A5e4b73fbc',
+  endemicExchangeProxy: '0xF85Ab30873673dDe16E1d70518cB21814eE8fF9A',
   contractImporter: '',
-
-  endemicERC1155Proxy: '',
-  endemicERC1155Beacon: '',
-  endemicERC1155Factory: '',
+  paymentManagerProxy: '0x4bfe31506DBCbf63ECda7320A060008e81acf8c5',
 };
 
 const aurora = {
@@ -48,11 +31,10 @@ const mainnet = {
 };
 
 const networks = {
-  rinkeby,
-  aurora_test,
   aurora,
   mainnet,
   goerli,
+  arbitrum_goerli,
 };
 
 const getForNetwork = (network) => networks[network];

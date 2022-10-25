@@ -2,7 +2,6 @@ const { ethers } = require('hardhat');
 const ProxyAdminJSON = require('@openzeppelin/upgrades-core/artifacts/ProxyAdmin.json');
 
 const networkMap = {
-  aurora_testnet: 'unknown-1313161555',
   aurora: 'unknown-1313161554',
 };
 

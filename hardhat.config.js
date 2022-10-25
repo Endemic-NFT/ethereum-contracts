@@ -30,8 +30,8 @@ module.exports = {
       url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
-    aurora_test: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+    arbitrum_goerli: {
+      url: `https://arb-goerli.g.alchemy.com/v2/zMu4j95E42a2ZCtpwDUEM1I2c0olIZKw`,
       accounts: [process.env.PRIVATE_KEY],
     },
     aurora: {
