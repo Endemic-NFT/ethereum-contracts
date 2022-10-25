@@ -31,7 +31,7 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY],
     },
     arbitrum_goerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/zMu4j95E42a2ZCtpwDUEM1I2c0olIZKw`,
+      url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     aurora: {
