@@ -54,6 +54,10 @@ deployEndemicTokenPausable:
 deployAndUpdateErc721Implementation:
 	npx hardhat run scripts/erc-721/deploy-and-upgrade-erc721-implementation.js --network ${network}
 
+.PHONY: updatePaymentManager
+updatePaymentManager:
+	npx hardhat run scripts/utils/update-payment-manager.js --network ${network}
+
 .PHONY: verify
 verify:
 	npx hardhat verify --network ${network} "${address}"
