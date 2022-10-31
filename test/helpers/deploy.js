@@ -21,7 +21,14 @@ const deployCollectionFactory = async () => {
   const EndemicCollectionFactory = await ethers.getContractFactory(
     'EndemicCollectionFactory'
   );
-  const nftContractFactory = await EndemicCollectionFactory.deploy();
+  const nftContractFactory = await upgrades.deployProxy(
+    EndemicCollectionFactory,
+    [],
+    {
+      initializer: 'initialize',
+    }
+  );
+
   await nftContractFactory.deployed();
 
   return nftContractFactory;
