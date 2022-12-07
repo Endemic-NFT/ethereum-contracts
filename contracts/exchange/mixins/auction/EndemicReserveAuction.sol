@@ -258,7 +258,7 @@ abstract contract EndemicReserveAuction is
         if (minRequiredBid > bidPriceWithFees) revert InsufficientBid();
 
         _requireSufficientErc20Allowance(
-            minRequiredBid,
+            bidPriceWithFees,
             paymentErc20TokenAddress,
             _msgSender()
         );
