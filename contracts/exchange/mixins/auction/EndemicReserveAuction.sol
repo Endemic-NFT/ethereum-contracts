@@ -208,7 +208,7 @@ abstract contract EndemicReserveAuction is
             revert UnsufficientCurrencySupplied();
 
         _requireSufficientErc20Allowance(
-            auction.startingPrice + takerCut,
+            bidPriceWithFees,
             auction.paymentErc20TokenAddress,
             _msgSender()
         );
