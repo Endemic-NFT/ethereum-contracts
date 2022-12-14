@@ -25,7 +25,7 @@ const arbitrum_goerli = {
 const aurora = {
   royaltiesProviderProxy: '0x4282CAB4548FBB27f1eaBD1b16F5B8c3D128B268',
   endemicErc721Factory: '0x76FA7f90D3900eB95Cfc58AB12c916984AeC50c8',
-  endemicErc721: '0x2A486aAC12Cd469A4E84e0DFe6131D1ae57c438B',
+  endemicErc721: '0x56BD4958781792ace55169a9FbBB6FC7Ce4eF43a',
   endemicExchangeProxy: '0x0c45c5971f751D93F2e4Ae0E7CeB149967b846d2',
   contractImporter: '0x427f522121534EB79d40Cbeeb5C62e172c05979d',
   paymentManagerProxy: '0x50929DA8eDEf4077eFBBddDe6B47D5e7A0442063',

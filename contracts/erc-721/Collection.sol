@@ -92,10 +92,6 @@ contract Collection is
         return tokenId;
     }
 
-    function burn(uint256 tokenId) public override onlyOwner {
-        super.burn(tokenId);
-    }
-
     function tokenURI(uint256 tokenId)
         public
         view
