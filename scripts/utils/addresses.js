@@ -18,7 +18,6 @@ const arbitrum_goerli = {
   endemicErc721Factory: '0x45F3e4c28b68142e7C83c55aA95F3c5281006DB8',
   endemicErc721: '0xFC69e4EFaB6e85D0400bf74873aEc6A5e4b73fbc',
   endemicExchangeProxy: '0xF85Ab30873673dDe16E1d70518cB21814eE8fF9A',
-  contractImporter: '',
   paymentManagerProxy: '0x4bfe31506DBCbf63ECda7320A060008e81acf8c5',
 };
 
@@ -27,7 +26,6 @@ const aurora = {
   endemicErc721Factory: '0x76FA7f90D3900eB95Cfc58AB12c916984AeC50c8',
   endemicErc721: '0x56BD4958781792ace55169a9FbBB6FC7Ce4eF43a',
   endemicExchangeProxy: '0x0c45c5971f751D93F2e4Ae0E7CeB149967b846d2',
-  contractImporter: '0x427f522121534EB79d40Cbeeb5C62e172c05979d',
   paymentManagerProxy: '0x50929DA8eDEf4077eFBBddDe6B47D5e7A0442063',
 
   endemicENDToken: '0x7916afb40e8d776e9002477d4bad56767711b8e7',

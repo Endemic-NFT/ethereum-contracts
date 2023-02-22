@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.18;
 
-import "../interfaces/IERC2981Royalties.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-error RoyaltiesTooHigh();
+import "../interfaces/IERC2981Royalties.sol";
 
 abstract contract CollectionRoyalties is Initializable, IERC2981Royalties {
     uint256 public constant MAX_ROYALTIES = 10000;
@@ -14,7 +13,9 @@ abstract contract CollectionRoyalties is Initializable, IERC2981Royalties {
 
     event RoyaltiesUpdated(address indexed recipient, uint256 indexed value);
 
-    function initializeCollectionRoyalties(address recipient, uint256 royalties)
+    error RoyaltiesTooHigh();
+
+    function __CollectionRoyalties_init(address recipient, uint256 royalties)
         internal
         onlyInitializing
     {

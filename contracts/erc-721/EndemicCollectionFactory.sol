@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
@@ -16,6 +16,7 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     address public implementation;
+    address public collectionAdministrator;
 
     event NFTContractCreated(
         address indexed nftContract,
@@ -26,7 +27,10 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
         uint256 royalties
     );
 
-    event ImplementationUpdated(address indexed implementation);
+    event ImplementationUpdated(address indexed newImplementation);
+    event CollectionAdministratorUpdated(address indexed newAdministrator);
+
+    error CollectionAdministratorCannotBeZeroAddress();
 
     struct DeployParams {
         string name;
@@ -92,10 +96,24 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
             msg.sender,
             "Collection Template",
             "CT",
-            1000
+            1000,
+            collectionAdministrator
         );
 
         emit ImplementationUpdated(newImplementation);
+    }
+
+    function updateCollectionAdministrator(address newCollectionAdministrator)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (newCollectionAdministrator == address(0)) {
+            revert CollectionAdministratorCannotBeZeroAddress();
+        }
+
+        collectionAdministrator = newCollectionAdministrator;
+
+        emit CollectionAdministratorUpdated(newCollectionAdministrator);
     }
 
     function _deployContract(
@@ -111,7 +129,8 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
             owner,
             name,
             symbol,
-            royalties
+            royalties,
+            collectionAdministrator
         );
 
         emit NFTContractCreated(

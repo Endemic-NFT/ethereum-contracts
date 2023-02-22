@@ -1,35 +1,28 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./mixins/ERC721Base.sol";
-import "./mixins/CollectionRoyalties.sol";
-import "./mixins/CollectionFactory.sol";
+import {ERC721Base} from "./mixins/ERC721Base.sol";
+import {CollectionRoyalties} from "./mixins/CollectionRoyalties.sol";
+import {CollectionFactory} from "./mixins/CollectionFactory.sol";
+import {MintApproval} from "./mixins/MintApproval.sol";
 
-import "./interfaces/IERC2981Royalties.sol";
-import "./interfaces/ICollectionInitializer.sol";
-
-error CallerNotOwner();
-error CallerNotTokenOwner();
-error URIQueryForNonexistentToken();
+import {IERC2981Royalties} from "./interfaces/IERC2981Royalties.sol";
+import {ICollectionInitializer} from "./interfaces/ICollectionInitializer.sol";
 
 contract Collection is
     Initializable,
     ERC721Base,
     CollectionRoyalties,
-    CollectionFactory
+    CollectionFactory,
+    MintApproval
 {
     /**
      * @notice Base URI of the collection
      * @dev We always default to ipfs
      */
     string public constant baseURI = "ipfs://";
-
-    /**
-     * @notice Owner of the contract
-     */
-    address public owner;
 
     /**
      * @dev Stores a CID for each NFT.
@@ -43,10 +36,8 @@ contract Collection is
      */
     event Mint(uint256 indexed tokenId, address artistId);
 
-    modifier onlyOwner() {
-        if (owner != msg.sender) revert CallerNotOwner();
-        _;
-    }
+    error CallerNotTokenOwner();
+    error URIQueryForNonexistentToken();
 
     /**
      * @notice Initialize imutable variables
@@ -60,36 +51,45 @@ contract Collection is
         address creator,
         string memory name,
         string memory symbol,
-        uint256 royalties
+        uint256 royalties,
+        address administrator
     ) external onlyCollectionFactory initializer {
-        owner = creator;
-
+        _transferOwnership(creator);
         __ERC721_init_unchained(name, symbol);
-        initializeCollectionRoyalties(creator, royalties);
+        __Administrated_init(administrator);
+        __CollectionRoyalties_init(creator, royalties);
     }
 
-    function mint(address recipient, string calldata tokenCID)
-        external
-        onlyOwner
-        returns (uint256 tokenId)
-    {
-        tokenId = ++latestTokenId;
-        _safeMint(recipient, tokenId);
-        _tokenCIDs[tokenId] = tokenCID;
-        emit Mint(tokenId, owner);
+    function mint(
+        address recipient,
+        string calldata tokenCID,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external onlyOwner {
+        // Make sure that mint is approved
+        _checkMintApproval(owner(), tokenCID, v, r, s);
+
+        // Mint token to the recipient
+        _mintBase(recipient, tokenCID);
     }
 
     function mintAndApprove(
         address recipient,
         string calldata tokenCID,
-        address operator
-    ) external onlyOwner returns (uint256 tokenId) {
-        tokenId = ++latestTokenId;
-        _safeMint(recipient, tokenId);
+        address operator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external onlyOwner {
+        // Make sure that mint is approved
+        _checkMintApproval(owner(), tokenCID, v, r, s);
+
+        // Mint token to the recipient
+        _mintBase(recipient, tokenCID);
+
+        // Approve operator to access tokens
         setApprovalForAll(operator, true);
-        _tokenCIDs[tokenId] = tokenCID;
-        emit Mint(tokenId, owner);
-        return tokenId;
     }
 
     function tokenURI(uint256 tokenId)
@@ -119,6 +119,20 @@ contract Collection is
             return true;
         }
         return super.supportsInterface(interfaceId);
+    }
+
+    function _mintBase(address recipient, string calldata tokenCID) internal {
+        // Create new token ID
+        uint256 tokenId = ++latestTokenId;
+
+        // Mint token ID to the recipient
+        _mint(recipient, tokenId);
+
+        // Save token URI
+        _tokenCIDs[tokenId] = tokenCID;
+
+        // Emit mint event
+        emit Mint(tokenId, owner());
     }
 
     function _burn(uint256 tokenId) internal override {

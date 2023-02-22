@@ -18,10 +18,6 @@ deployEndemicExchange:
 deployEndemicToken:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20.js --network ${network}
 
-.PHONY: deployEndemicVesting
-deployEndemicVesting:
-	npx hardhat run scripts/erc-20/deploy-endemic-vesting.js --network ${network}
-
 .PHONY: deployPaymentManager
 deployPaymentManager:
 	npx hardhat run scripts/payment-manager/deploy-payment-manager.js --network ${network}
@@ -41,10 +37,6 @@ deployERC1155Beacon:
 .PHONY: deployERC1155Factory
 deployERC1155Factory:
 	npx hardhat run scripts/erc-1155/deploy-erc1155-factory.js --network ${network}
-
-.PHONY: deployContractImporter
-deployContractImporter:
-	npx hardhat run scripts/import/deploy-contract-importer.js --network ${network}
 
 .PHONY: deployEndemicTokenPausable
 deployEndemicTokenPausable:
