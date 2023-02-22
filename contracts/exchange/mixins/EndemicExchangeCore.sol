@@ -11,17 +11,10 @@ import "../../manager/interfaces/IPaymentManager.sol";
 error InvalidAddress();
 error InvalidInterface();
 error SellerNotAssetOwner();
-error InvalidAssetClass();
 error UnsufficientCurrencySupplied();
 error InvalidPaymentMethod();
 
 abstract contract EndemicExchangeCore {
-    bytes4 public constant ERC721_INTERFACE = bytes4(0x80ac58cd);
-    bytes4 public constant ERC1155_INTERFACE = bytes4(0xd9b67a26);
-
-    bytes4 public constant ERC721_ASSET_CLASS = bytes4(keccak256("ERC721"));
-    bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
-
     IRoyaltiesProvider public royaltiesProvider;
     IPaymentManager public paymentManager;
 

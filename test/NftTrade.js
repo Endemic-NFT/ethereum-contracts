@@ -5,7 +5,6 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicCollectionWithFactory,
 } = require('./helpers/deploy');
-const { ERC721_ASSET_CLASS } = require('./helpers/ids');
 
 describe('NftTrade', function () {
   let endemicExchange, nftContract;
@@ -42,9 +41,7 @@ describe('NftTrade', function () {
       ethers.utils.parseUnits('1'),
       ethers.utils.parseUnits('0.5'),
       60,
-      1,
-      ZERO_ADDRESS,
-      ERC721_ASSET_CLASS
+      ZERO_ADDRESS
     );
     const auctionId = await endemicExchange.createAuctionId(
       nftContract.address,

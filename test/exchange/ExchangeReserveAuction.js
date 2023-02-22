@@ -3,12 +3,10 @@ const { ethers, network } = require('hardhat');
 const {
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
-  deployEndemicERC1155,
   deployEndemicToken,
 } = require('../helpers/deploy');
 
 const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
-const { ERC721_ASSET_CLASS } = require('../helpers/ids');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
@@ -68,7 +66,6 @@ describe('ExchangeReserveAuction', function () {
     paymentManagerContract = result.paymentManagerContract;
 
     nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
-    erc1155Contract = await deployEndemicERC1155();
 
     await mintERC721(user1.address);
     await mintERC721(user1.address);
@@ -438,9 +435,7 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('1.0'),
           ethers.utils.parseUnits('0.1'),
           1000,
-          1,
-          ZERO_ADDRESS,
-          ERC721_ASSET_CLASS
+          ZERO_ADDRESS
         );
 
       const auctionId = await endemicExchange.createAuctionId(
@@ -463,9 +458,7 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('1.0'),
           ethers.utils.parseUnits('0.1'),
           1000,
-          1,
-          ZERO_ADDRESS,
-          ERC721_ASSET_CLASS
+          ZERO_ADDRESS
         );
 
       const auctionId = await endemicExchange.createAuctionId(

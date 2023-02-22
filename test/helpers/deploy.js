@@ -1,14 +1,6 @@
 const { ethers, upgrades } = require('hardhat');
 const { FEE_RECIPIENT } = require('./constants');
 
-const deployEndemicRewards = async (endemicTokenAddress) => {
-  const EndemicRewards = await ethers.getContractFactory('EndemicRewards');
-
-  const endemicRewards = await EndemicRewards.deploy(endemicTokenAddress);
-  await endemicRewards.deployed();
-  return endemicRewards;
-};
-
 const deployEndemicToken = async (deployer) => {
   const EndemicToken = await ethers.getContractFactory('EndemicToken');
 
@@ -44,7 +36,6 @@ const deployCollection = async (erc721FactoryAddress) => {
 const deployEndemicCollectionWithFactory = async () => {
   const nftFactory = await deployCollectionFactory();
   const nftContract = await deployCollection(nftFactory.address);
-
   await nftFactory.updateImplementation(nftContract.address);
 
   return {
@@ -53,17 +44,38 @@ const deployEndemicCollectionWithFactory = async () => {
   };
 };
 
-const deployEndemicERC1155 = async () => {
-  const EndemicERC1155 = await ethers.getContractFactory('EndemicERC1155');
-  const nftContract = await upgrades.deployProxy(
-    EndemicERC1155,
-    ['Endemic ERC 1155', 'ENDR', 'ipfs://'],
-    {
-      initializer: '__EndemicERC1155_init',
-    }
+const deployInitializedCollection = async (
+  collectionOwner,
+  collectionAdministrator,
+  mintApprover
+) => {
+  const { nftFactory } = await deployEndemicCollectionWithFactory();
+  await nftFactory.updateCollectionAdministrator(
+    collectionAdministrator.address
   );
-  await nftContract.deployed();
-  return nftContract;
+
+  const tx = await nftFactory.createTokenForOwner({
+    owner: collectionOwner.address,
+    name: 'My Collection',
+    symbol: 'MC',
+    category: 'Art',
+    royalties: 1500,
+  });
+
+  const receipt = await tx.wait();
+  const eventData = receipt.events.find(
+    ({ event }) => event === 'NFTContractCreated'
+  );
+  const [newAddress] = eventData.args;
+
+  const Collection = await ethers.getContractFactory('Collection');
+  const collection = await Collection.attach(newAddress);
+
+  await collection
+    .connect(collectionAdministrator)
+    .updateMintApprover(mintApprover.address);
+
+  return collection;
 };
 
 const deployEndemicExchange = async (
@@ -132,35 +144,12 @@ const deployPaymentManager = async (makerFee, takerFee) => {
   return paymentManagerProxy;
 };
 
-const deployEndemicVesting = async (deployer, tgeStartTime, startTime) => {
-  const EndemicVesting = await ethers.getContractFactory('EndemicVesting');
-
-  const endemicToken = await deployEndemicToken(deployer);
-
-  const endemicVesting = await EndemicVesting.deploy(
-    tgeStartTime,
-    startTime,
-    endemicToken.address,
-    []
-  );
-
-  await endemicVesting.deployed();
-
-  return {
-    endemicVesting,
-    endemicToken,
-  };
-};
-
 module.exports = {
-  deployEndemicRewards,
   deployEndemicToken,
   deployCollectionFactory,
-  deployCollection,
+  deployInitializedCollection,
   deployEndemicCollectionWithFactory,
   deployEndemicExchangeWithDeps,
-  deployEndemicERC1155,
   deployRoyaltiesProvider,
-  deployEndemicVesting,
   deployPaymentManager,
 };

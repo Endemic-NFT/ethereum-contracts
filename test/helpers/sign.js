@@ -11,7 +11,24 @@ const sign = async (signer, message) => {
   return ethers.utils.splitSignature(flatSig);
 };
 
+const createMintApprovalSignature = async (
+  nftContract,
+  signer,
+  minter,
+  tokenUri
+) => {
+  let abiEncoded = ethers.utils.defaultAbiCoder.encode(
+    ['address', 'address', 'string'],
+    [nftContract.address, minter.address, tokenUri]
+  );
+
+  const hash = ethers.utils.keccak256(ethers.utils.arrayify(abiEncoded));
+  let sig = await sign(signer, hash);
+  return sig;
+};
+
 module.exports = {
   hashAndSign,
   sign,
+  createMintApprovalSignature,
 };
