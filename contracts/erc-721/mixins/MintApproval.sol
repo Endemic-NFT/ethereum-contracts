@@ -30,7 +30,7 @@ abstract contract MintApproval is AdministratedUpgradable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) internal {
+    ) internal view {
         if (
             _recoverSigner(_prepareMessage(minter, tokenCID), v, r, s) !=
             mintApprover
