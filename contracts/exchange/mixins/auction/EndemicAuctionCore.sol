@@ -7,18 +7,6 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../EndemicExchangeCore.sol";
 import "../EndemicFundsDistributor.sol";
 
-error Unauthorized();
-
-error InvalidAuction();
-error InvalidPrice();
-error InvalidDuration();
-error InvalidPriceConfiguration();
-error InvalidAmount();
-
-error AuctionNotStarted();
-error AuctionInProgress();
-error AuctionEnded();
-
 abstract contract EndemicAuctionCore is
     EndemicFundsDistributor,
     EndemicExchangeCore
@@ -29,6 +17,18 @@ abstract contract EndemicAuctionCore is
     uint256 internal constant MIN_DURATION = 1 minutes;
 
     mapping(bytes32 => Auction) internal idToAuction;
+
+    error Unauthorized();
+
+    error InvalidAuction();
+    error InvalidPrice();
+    error InvalidDuration();
+    error InvalidPriceConfiguration();
+    error InvalidAmount();
+
+    error AuctionNotStarted();
+    error AuctionInProgress();
+    error AuctionEnded();
 
     /// @notice We support two auction types.
     /// Dutch auction has falling price.
@@ -55,8 +55,6 @@ abstract contract EndemicAuctionCore is
         address paymentErc20TokenAddress;
         /// @notice The ID of the NFT
         uint256 tokenId;
-        /// @notice Amount of tokens to auction. Useful for ERC-1155
-        uint256 amount;
         /// @notice Starting price of the dutch auction
         uint256 startingPrice;
         /// @notice Ending price of the dutch auction
@@ -65,8 +63,6 @@ abstract contract EndemicAuctionCore is
         uint256 startedAt;
         /// @notice Timestamp when auction will end
         uint256 endingAt;
-        /// @notice Type of NFT contract, ERC-721 or ERC-1155
-        bytes4 assetClass;
     }
 
     /// @notice Fired when auction is created
@@ -78,9 +74,7 @@ abstract contract EndemicAuctionCore is
         uint256 endingPrice,
         uint256 endingAt,
         address seller,
-        uint256 amount,
-        address paymentErc20TokenAddress,
-        bytes4 assetClass
+        address paymentErc20TokenAddress
     );
 
     /// @notice Fired when auction is sucessfuly complated
@@ -88,7 +82,6 @@ abstract contract EndemicAuctionCore is
         bytes32 indexed id,
         uint256 indexed totalPrice,
         address winner,
-        uint256 amount,
         uint256 totalFees
     );
 
@@ -99,55 +92,6 @@ abstract contract EndemicAuctionCore is
     /// @param auctionId ID of the auction to delete
     function _removeAuction(bytes32 auctionId) internal {
         delete idToAuction[auctionId];
-    }
-
-    /// @notice Calculates remaining auction token amount.
-    /// @dev It will delete auction for ERC-721 since amount is always 1
-    function _deductFromAuction(Auction memory auction, uint256 amount)
-        internal
-    {
-        idToAuction[auction.id].amount -= amount;
-        if (idToAuction[auction.id].amount <= 0) {
-            _removeAuction(auction.id);
-        }
-    }
-
-    /// @notice Transfers NFT from seller to buyer
-    function _transferNFT(
-        address from,
-        address receiver,
-        address nftContract,
-        uint256 tokenId,
-        uint256 amount,
-        bytes4 assetClass
-    ) internal {
-        if (assetClass == ERC721_ASSET_CLASS) {
-            IERC721(nftContract).transferFrom(from, receiver, tokenId);
-        } else if (assetClass == ERC1155_ASSET_CLASS) {
-            IERC1155(nftContract).safeTransferFrom(
-                from,
-                receiver,
-                tokenId,
-                amount,
-                ""
-            );
-        } else {
-            revert InvalidAssetClass();
-        }
-    }
-
-    /// @notice Validates if asset class and token amount match
-    function _validateAssetClass(bytes4 assetClass, uint256 amount)
-        internal
-        pure
-    {
-        if (assetClass == ERC721_ASSET_CLASS) {
-            if (amount != 1) revert InvalidAmount();
-        } else if (assetClass == ERC1155_ASSET_CLASS) {
-            if (amount <= 0) revert InvalidAmount();
-        } else {
-            revert InvalidAssetClass();
-        }
     }
 
     /// @notice Checks if auction is currently active
@@ -183,43 +127,23 @@ abstract contract EndemicAuctionCore is
     function _requireValidAuctionRequest(
         address paymentErc20TokenAddress,
         address nftContract,
-        uint256 tokenId,
-        uint256 amount,
-        bytes4 assetClass
+        uint256 tokenId
     ) internal view {
         _requireSupportedPaymentMethod(paymentErc20TokenAddress);
 
-        _requireValidAuctionRequest(nftContract, tokenId, amount, assetClass);
-    }
-
-    /// @notice Overloaded function that validates is requested auction valid
-    function _requireValidAuctionRequest(
-        address nftContract,
-        uint256 tokenId,
-        uint256 amount,
-        bytes4 assetClass
-    ) internal view {
-        _requireCorrectNftInterface(assetClass, nftContract);
-
-        _requireTokenOwnership(
-            assetClass,
-            nftContract,
-            tokenId,
-            amount,
-            msg.sender
-        );
-
-        _validateAssetClass(assetClass, amount);
+        if (IERC721(nftContract).ownerOf(tokenId) != msg.sender)
+            revert SellerNotAssetOwner();
     }
 
     /// @notice Validates bid request for an auction
-    function _requireValidBidRequest(
-        Auction memory auction,
-        uint256 tokenAmount
-    ) internal view {
-        if (!_isActiveAuction(auction)) revert InvalidAuction();
-        if (auction.seller == msg.sender) revert Unauthorized();
-        if (auction.amount < tokenAmount) revert InvalidAmount();
+    function _requireValidBidRequest(Auction memory auction) internal view {
+        if (!_isActiveAuction(auction)) {
+            revert InvalidAuction();
+        }
+
+        if (auction.seller == msg.sender) {
+            revert Unauthorized();
+        }
     }
 
     /// @notice Validates is desired auction type
@@ -227,7 +151,9 @@ abstract contract EndemicAuctionCore is
         Auction memory auction,
         AuctionType auctionType
     ) internal pure {
-        if (!_isAuctionType(auction, auctionType)) revert InvalidAuction();
+        if (!_isAuctionType(auction, auctionType)) {
+            revert InvalidAuction();
+        }
     }
 
     function _createAuctionId(

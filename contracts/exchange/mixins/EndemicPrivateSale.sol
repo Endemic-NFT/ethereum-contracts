@@ -82,7 +82,7 @@ abstract contract EndemicPrivateSale is
 
         uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
 
-        address buyer = _msgSender();
+        address buyer = msg.sender;
 
         _requireSupportedPaymentMethod(paymentErc20TokenAddress);
         _requireSufficientCurrencySupplied(
@@ -142,9 +142,9 @@ abstract contract EndemicPrivateSale is
         uint256 price,
         uint256 deadline
     ) internal {
-        privateSaleInvalidated[nftContract][tokenId][seller][_msgSender()][
-            price
-        ][deadline] = true;
+        privateSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
+            deadline
+        ] = true;
 
         (
             uint256 makerCut,
@@ -159,7 +159,7 @@ abstract contract EndemicPrivateSale is
                 price
             );
 
-        IERC721(nftContract).transferFrom(seller, _msgSender(), tokenId);
+        IERC721(nftContract).transferFrom(seller, msg.sender, tokenId);
 
         _distributeFunds(
             price,
@@ -168,7 +168,7 @@ abstract contract EndemicPrivateSale is
             royaltieFee,
             royaltiesRecipient,
             seller,
-            _msgSender(),
+            msg.sender,
             paymentErc20TokenAddress
         );
 
@@ -176,7 +176,7 @@ abstract contract EndemicPrivateSale is
             nftContract,
             tokenId,
             seller,
-            _msgSender(),
+            msg.sender,
             price,
             totalCut,
             paymentErc20TokenAddress

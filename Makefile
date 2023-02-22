@@ -26,18 +26,6 @@ deployPaymentManager:
 upgradeEndemicExchange:
 	npx hardhat run scripts/exchange/upgrade-endemic-exchange-proxy.js --network ${network}
 
-.PHONY: deployInitialERC1155
-deployInitialERC1155:
-	npx hardhat run scripts/erc-1155/deploy-erc1155-initial.js --network ${network}
-	
-.PHONY: deployERC1155Beacon
-deployERC1155Beacon:
-	npx hardhat run scripts/erc-1155/deploy-erc1155-beacon.js --network ${network}
-
-.PHONY: deployERC1155Factory
-deployERC1155Factory:
-	npx hardhat run scripts/erc-1155/deploy-erc1155-factory.js --network ${network}
-
 .PHONY: deployEndemicTokenPausable
 deployEndemicTokenPausable:
 	npx hardhat run scripts/erc-20/deploy-endemic-erc20-pausable.js --network ${network}

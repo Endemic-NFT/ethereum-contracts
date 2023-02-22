@@ -86,39 +86,6 @@ abstract contract EndemicExchangeCore {
         return (amount * fee) / MAX_FEE;
     }
 
-    function _requireCorrectNftInterface(
-        bytes4 _assetClass,
-        address _nftContract
-    ) internal view {
-        if (_assetClass == ERC721_ASSET_CLASS) {
-            if (!IERC721(_nftContract).supportsInterface(ERC721_INTERFACE))
-                revert InvalidInterface();
-        } else if (_assetClass == ERC1155_ASSET_CLASS) {
-            if (!IERC1155(_nftContract).supportsInterface(ERC1155_INTERFACE))
-                revert InvalidInterface();
-        } else {
-            revert InvalidAssetClass();
-        }
-    }
-
-    function _requireTokenOwnership(
-        bytes4 assetClass,
-        address nftContract,
-        uint256 tokenId,
-        uint256 amount,
-        address seller
-    ) internal view {
-        if (assetClass == ERC721_ASSET_CLASS) {
-            if (IERC721(nftContract).ownerOf(tokenId) != seller)
-                revert SellerNotAssetOwner();
-        } else if (assetClass == ERC1155_ASSET_CLASS) {
-            if (IERC1155(nftContract).balanceOf(seller, tokenId) < amount)
-                revert SellerNotAssetOwner();
-        } else {
-            revert InvalidAssetClass();
-        }
-    }
-
     function _requireSupportedPaymentMethod(address paymentMethodAddress)
         internal
         view

@@ -30,20 +30,22 @@ abstract contract EndemicAuction is
             uint256 startingPrice,
             uint256 endingPrice,
             uint256 startedAt,
-            uint256 endingAt,
-            uint256 amount
+            uint256 endingAt
         )
     {
         Auction memory auction = idToAuction[id];
-        if (!_isActiveAuction(auction)) revert InvalidAuction();
+
+        if (!_isActiveAuction(auction)) {
+            revert InvalidAuction();
+        }
+
         return (
             auction.seller,
             auction.paymentErc20TokenAddress,
             auction.startingPrice,
             auction.endingPrice,
             auction.startedAt,
-            auction.endingAt,
-            auction.amount
+            auction.endingAt
         );
     }
 
@@ -54,7 +56,7 @@ abstract contract EndemicAuction is
      */
     function cancelAuction(bytes32 id) external nonReentrant {
         Auction memory auction = idToAuction[id];
-        if (_msgSender() != auction.seller) revert Unauthorized();
+        if (msg.sender != auction.seller) revert Unauthorized();
         if (auction.auctionType == AuctionType.RESERVE && auction.endingAt != 0)
             revert AuctionInProgress();
 

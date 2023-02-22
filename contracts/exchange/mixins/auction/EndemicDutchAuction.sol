@@ -22,9 +22,7 @@ abstract contract EndemicDutchAuction is
         address nftContract,
         uint256 tokenId,
         uint256 price,
-        uint256 amount,
-        address paymentErc20TokenAddress,
-        bytes4 assetClass
+        address paymentErc20TokenAddress
     ) external nonReentrant {
         _createAuction(
             nftContract,
@@ -32,9 +30,7 @@ abstract contract EndemicDutchAuction is
             price,
             price,
             0,
-            amount,
-            paymentErc20TokenAddress,
-            assetClass
+            paymentErc20TokenAddress
         );
     }
 
@@ -48,9 +44,7 @@ abstract contract EndemicDutchAuction is
         uint256 startingPrice,
         uint256 endingPrice,
         uint256 duration,
-        uint256 amount,
-        address paymentErc20TokenAddress,
-        bytes4 assetClass
+        address paymentErc20TokenAddress
     ) external nonReentrant {
         if (duration < MIN_DURATION || duration > MAX_DURATION)
             revert InvalidDuration();
@@ -63,29 +57,23 @@ abstract contract EndemicDutchAuction is
             startingPrice,
             endingPrice,
             duration,
-            amount,
-            paymentErc20TokenAddress,
-            assetClass
+            paymentErc20TokenAddress
         );
     }
 
     /**
      * @notice Purchase auction
      */
-    function bidForDutchAuction(bytes32 id, uint256 tokenAmount)
-        external
-        payable
-        nonReentrant
-    {
+    function bidForDutchAuction(bytes32 id) external payable nonReentrant {
         Auction memory auction = idToAuction[id];
 
         _requireAuctionType(auction, AuctionType.DUTCH);
 
-        _requireValidBidRequest(auction, tokenAmount);
+        _requireValidBidRequest(auction);
 
-        _detractByAssetClass(auction, tokenAmount);
+        _removeAuction(auction.id);
 
-        uint256 currentPrice = _calculateCurrentPrice(auction) * tokenAmount;
+        uint256 currentPrice = _calculateCurrentPrice(auction);
 
         if (currentPrice == 0) revert InvalidPrice();
 
@@ -111,16 +99,13 @@ abstract contract EndemicDutchAuction is
         _requireSufficientCurrencySupplied(
             currentPrice + takerCut,
             auction.paymentErc20TokenAddress,
-            _msgSender()
+            msg.sender
         );
 
-        _transferNFT(
+        IERC721(auction.nftContract).transferFrom(
             auction.seller,
-            _msgSender(),
-            auction.nftContract,
-            auction.tokenId,
-            tokenAmount,
-            auction.assetClass
+            msg.sender,
+            auction.tokenId
         );
 
         _distributeFunds(
@@ -130,17 +115,11 @@ abstract contract EndemicDutchAuction is
             royaltieFee,
             royaltiesRecipient,
             auction.seller,
-            _msgSender(),
+            msg.sender,
             auction.paymentErc20TokenAddress
         );
 
-        emit AuctionSuccessful(
-            auction.id,
-            currentPrice,
-            _msgSender(),
-            tokenAmount,
-            totalCut
-        );
+        emit AuctionSuccessful(auction.id, currentPrice, msg.sender, totalCut);
     }
 
     /**
@@ -166,9 +145,7 @@ abstract contract EndemicDutchAuction is
         uint256 startingPrice,
         uint256 endingPrice,
         uint256 duration,
-        uint256 amount,
-        address paymentErc20TokenAddress,
-        bytes4 assetClass
+        address paymentErc20TokenAddress
     ) internal {
         if (startingPrice < MIN_PRICE || endingPrice < MIN_PRICE)
             revert InvalidPriceConfiguration();
@@ -176,16 +153,10 @@ abstract contract EndemicDutchAuction is
         _requireValidAuctionRequest(
             paymentErc20TokenAddress,
             nftContract,
-            tokenId,
-            amount,
-            assetClass
+            tokenId
         );
 
-        bytes32 auctionId = _createAuctionId(
-            nftContract,
-            tokenId,
-            _msgSender()
-        );
+        bytes32 auctionId = _createAuctionId(nftContract, tokenId, msg.sender);
 
         // Seller cannot recreate auction
         // if it is already listed as reserve auction that is in progress or ended
@@ -197,16 +168,14 @@ abstract contract EndemicDutchAuction is
             auctionType: AuctionType.DUTCH,
             id: auctionId,
             nftContract: nftContract,
-            seller: _msgSender(),
+            seller: msg.sender,
             highestBidder: address(0),
             paymentErc20TokenAddress: paymentErc20TokenAddress,
             tokenId: tokenId,
-            amount: amount,
             startingPrice: startingPrice,
             endingPrice: endingPrice,
             startedAt: block.timestamp,
-            endingAt: endingAt,
-            assetClass: assetClass
+            endingAt: endingAt
         });
 
         idToAuction[auctionId] = auction;
@@ -218,10 +187,8 @@ abstract contract EndemicDutchAuction is
             startingPrice,
             endingPrice,
             endingAt,
-            _msgSender(),
-            amount,
-            paymentErc20TokenAddress,
-            assetClass
+            msg.sender,
+            paymentErc20TokenAddress
         );
     }
 
@@ -302,21 +269,6 @@ abstract contract EndemicDutchAuction is
             // currentPriceChange can be negative, but if so, will have a magnitude
             // less that _startingPrice. Thus, this result will always end up positive.
             return uint256(int256(auction.startingPrice) + currentPriceChange);
-        }
-    }
-
-    /**
-     * @notice Makes sure auction token amount is properly reduced for asset class
-     */
-    function _detractByAssetClass(Auction memory auction, uint256 tokenAmount)
-        internal
-    {
-        if (auction.assetClass == ERC721_ASSET_CLASS) {
-            _removeAuction(auction.id);
-        } else if (auction.assetClass == ERC1155_ASSET_CLASS) {
-            _deductFromAuction(auction, tokenAmount);
-        } else {
-            revert InvalidAssetClass();
         }
     }
 

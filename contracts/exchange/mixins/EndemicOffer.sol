@@ -132,7 +132,7 @@ abstract contract EndemicOffer is
         _requireSufficientErc20Allowance(
             offerInErc20,
             paymentErc20TokenAddress,
-            _msgSender()
+            msg.sender
         );
 
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
@@ -188,7 +188,7 @@ abstract contract EndemicOffer is
         _requireSufficientErc20Allowance(
             offerInErc20,
             paymentErc20TokenAddress,
-            _msgSender()
+            msg.sender
         );
 
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
@@ -209,7 +209,7 @@ abstract contract EndemicOffer is
     /// @notice Cancels offer for ID
     function cancelOffer(uint256 offerId) external nonReentrant {
         Offer memory offer = offersById[offerId];
-        if (offer.bidder != _msgSender()) revert InvalidOffer();
+        if (offer.bidder != msg.sender) revert InvalidOffer();
 
         _cancelOffer(offer);
     }
@@ -218,7 +218,7 @@ abstract contract EndemicOffer is
     function cancelOffers(uint256[] calldata offerIds) external nonReentrant {
         for (uint256 i = 0; i < offerIds.length; i++) {
             Offer memory offer = offersById[offerIds[i]];
-            if (offer.bidder != _msgSender()) revert InvalidOffer();
+            if (offer.bidder != msg.sender) revert InvalidOffer();
             _cancelOffer(offer);
         }
     }
@@ -277,19 +277,19 @@ abstract contract EndemicOffer is
         IERC721 nft = IERC721(nftContract);
         address nftOwner = nft.ownerOf(tokenId);
 
-        if (nftOwner == _msgSender()) revert InvalidTokenOwner();
+        if (nftOwner == msg.sender) revert InvalidTokenOwner();
         if (duration < MIN_OFFER_DURATION) revert DurationTooShort();
-        if (_bidderHasNftOffer(nftContract, tokenId, _msgSender()))
+        if (_bidderHasNftOffer(nftContract, tokenId, msg.sender))
             revert OfferExists();
 
         uint256 offerId = ++nextOfferId;
 
         uint256 expiresAt = block.timestamp + duration;
 
-        nftOfferIdsByBidder[nftContract][tokenId][_msgSender()] = offerId;
+        nftOfferIdsByBidder[nftContract][tokenId][msg.sender] = offerId;
         offersById[offerId] = Offer({
             id: offerId,
-            bidder: _msgSender(),
+            bidder: msg.sender,
             nftContract: nftContract,
             tokenId: tokenId,
             price: price,
@@ -303,7 +303,7 @@ abstract contract EndemicOffer is
             offerId,
             nftContract,
             tokenId,
-            _msgSender(),
+            msg.sender,
             price,
             expiresAt,
             paymentErc20TokenAddress,
@@ -319,17 +319,17 @@ abstract contract EndemicOffer is
         uint256 priceWithTakerFee
     ) internal {
         if (duration < MIN_OFFER_DURATION) revert DurationTooShort();
-        if (_bidderHasCollectionOffer(nftContract, _msgSender()))
+        if (_bidderHasCollectionOffer(nftContract, msg.sender))
             revert OfferExists();
 
         uint256 offerId = ++nextOfferId;
 
         uint256 expiresAt = block.timestamp + duration;
 
-        collectionOfferIdsByBidder[nftContract][_msgSender()] = offerId;
+        collectionOfferIdsByBidder[nftContract][msg.sender] = offerId;
         offersById[offerId] = Offer({
             id: offerId,
-            bidder: _msgSender(),
+            bidder: msg.sender,
             nftContract: nftContract,
             tokenId: 0,
             price: price,
@@ -343,7 +343,7 @@ abstract contract EndemicOffer is
             offerId,
             nftContract,
             0,
-            _msgSender(),
+            msg.sender,
             price,
             expiresAt,
             paymentErc20TokenAddress,
@@ -359,7 +359,7 @@ abstract contract EndemicOffer is
         if (offer.id != offerId || offer.expiresAt < block.timestamp) {
             revert InvalidOffer();
         }
-        if (offer.bidder == _msgSender()) revert AcceptFromSelf();
+        if (offer.bidder == msg.sender) revert AcceptFromSelf();
 
         _deleteOffer(offer);
 
@@ -378,7 +378,7 @@ abstract contract EndemicOffer is
 
         // Transfer token to bidder
         IERC721(offer.nftContract).transferFrom(
-            _msgSender(),
+            msg.sender,
             offer.bidder,
             tokenId
         );
@@ -389,7 +389,7 @@ abstract contract EndemicOffer is
             totalCut,
             royaltieFee,
             royaltiesRecipient,
-            _msgSender(),
+            msg.sender,
             offer.bidder,
             offer.paymentErc20TokenAddress
         );
@@ -399,7 +399,7 @@ abstract contract EndemicOffer is
             offer.nftContract,
             tokenId,
             offer.bidder,
-            _msgSender(),
+            msg.sender,
             offer.price,
             totalCut
         );

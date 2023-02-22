@@ -125,8 +125,8 @@ contract RoyaltiesProvider is OwnableUpgradeable {
 
     function checkOwner(address nftContract) internal view {
         if (
-            (owner() != _msgSender()) &&
-            (OwnableUpgradeable(nftContract).owner() != _msgSender())
+            (owner() != msg.sender) &&
+            (OwnableUpgradeable(nftContract).owner() != msg.sender)
         ) {
             revert InvalidOwner();
         }
