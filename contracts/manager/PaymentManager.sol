@@ -10,9 +10,9 @@ contract PaymentManager is OwnableUpgradeable {
     address internal constant ZERO_ADDRESS = address(0);
     uint256 internal constant MAX_FEE = 10000;
 
-    mapping(address => bool) public supportedPaymentMethods;
+    mapping(address paymentMethod=> bool enabled) public supportedPaymentMethods;
 
-    mapping(address => PaymentMethodFees) public feesByPaymentMethod;
+    mapping(address paymentMethod => PaymentMethodFees feesConfig) public feesByPaymentMethod;
 
     struct PaymentMethodFees {
         address paymentMethodAddress;
