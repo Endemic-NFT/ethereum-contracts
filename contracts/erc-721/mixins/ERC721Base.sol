@@ -4,8 +4,15 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 
 abstract contract ERC721Base is ERC721BurnableUpgradeable {
+    /**
+     * @notice The tokenId of the most recently minted NFT.
+     * @dev Minting starts at tokenId 1.
+     */
     uint256 public latestTokenId;
 
+    /**
+     * @notice Tracks how many tokens have been burned.
+     */
     uint256 private burnCounter;
 
     /**

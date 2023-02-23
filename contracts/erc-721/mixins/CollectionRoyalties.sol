@@ -34,6 +34,15 @@ abstract contract CollectionRoyalties is Initializable, IERC2981Royalties {
         return (royaltiesRecipient, (value * royaltiesAmount) / 10000);
     }
 
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        returns (bool)
+    {
+        return interfaceId == type(IERC2981Royalties).interfaceId;
+    }
+
     function _setRoyalties(address recipient, uint256 value) internal {
         if (value > MAX_ROYALTIES) revert RoyaltiesTooHigh();
         royaltiesRecipient = recipient;

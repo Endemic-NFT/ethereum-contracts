@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
 import {ERC721Base} from "./mixins/ERC721Base.sol";
 import {CollectionRoyalties} from "./mixins/CollectionRoyalties.sol";
@@ -12,11 +13,12 @@ import {IERC2981Royalties} from "./interfaces/IERC2981Royalties.sol";
 import {ICollectionInitializer} from "./interfaces/ICollectionInitializer.sol";
 
 contract Collection is
-    Initializable,
-    ERC721Base,
-    CollectionRoyalties,
     CollectionFactory,
-    MintApproval
+    Initializable,
+    ERC721Upgradeable,
+    MintApproval,
+    ERC721Base,
+    CollectionRoyalties
 {
     /**
      * @notice Base URI of the collection
@@ -27,14 +29,19 @@ contract Collection is
     /**
      * @dev Stores a CID for each NFT.
      */
-    mapping(uint256 => string) private _tokenCIDs;
+    mapping(uint256 tokenId => string tokenCID) private _tokenCIDs;
 
     /**
      * @notice Emitted when NFT is minted
      * @param tokenId The tokenId of the newly minted NFT.
      * @param artistId The address of the creator
+     * @param tokenCID Token CID
      */
-    event Mint(uint256 indexed tokenId, address artistId);
+    event Minted(
+        uint256 indexed tokenId,
+        address indexed artistId,
+        string indexed tokenCID
+    );
 
     error CallerNotTokenOwner();
     error URIQueryForNonexistentToken();
@@ -111,13 +118,9 @@ contract Collection is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        virtual
-        override
+        override(CollectionRoyalties, ERC721Upgradeable)
         returns (bool)
     {
-        if (interfaceId == type(IERC2981Royalties).interfaceId) {
-            return true;
-        }
         return super.supportsInterface(interfaceId);
     }
 
@@ -132,10 +135,10 @@ contract Collection is
         _tokenCIDs[tokenId] = tokenCID;
 
         // Emit mint event
-        emit Mint(tokenId, owner());
+        emit Minted(tokenId, owner(), tokenCID);
     }
 
-    function _burn(uint256 tokenId) internal override {
+    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721Base) {
         delete _tokenCIDs[tokenId];
         super._burn(tokenId);
     }
