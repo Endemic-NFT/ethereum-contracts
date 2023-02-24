@@ -1,4 +1,4 @@
-require('@nomiclabs/hardhat-waffle');
+require('@nomicfoundation/hardhat-chai-matchers');
 require('@nomiclabs/hardhat-etherscan');
 require('@openzeppelin/hardhat-upgrades');
 require('hardhat-contract-sizer');

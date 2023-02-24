@@ -2,67 +2,62 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const {
   deployRoyaltiesProvider,
-  deployEndemicCollectionWithFactory,
+  deployInitializedCollection,
 } = require('./helpers/deploy');
 
 describe('RoyaltiesProvider', function () {
-  let royaltiesProviderContract, nftContract, nftContractFactory;
+  let royaltiesProviderContract, nftContract;
   let owner, nftContractOwner, user2, feeRecipient, feeRecipient2;
   let account, fee;
 
-  async function deploy() {
-    [owner, nftContractOwner, user2, feeRecipient, feeRecipient2] =
-      await ethers.getSigners();
+  beforeEach(async () => {
+    let collectionAdministrator, mintApprover;
+
+    [
+      owner,
+      nftContractOwner,
+      user2,
+      feeRecipient,
+      feeRecipient2,
+      collectionAdministrator,
+      mintApprover,
+    ] = await ethers.getSigners();
 
     royaltiesProviderContract = await deployRoyaltiesProvider();
-    const deployResults = await deployEndemicCollectionWithFactory();
-    nftContractFactory = deployResults.nftFactory;
 
-    const tx = await nftContractFactory.createTokenForOwner({
-      owner: nftContractOwner.address,
-      name: 'My Collection',
-      symbol: 'MC',
-      category: 'Art',
-      royalties: 1000,
+    nftContract = await deployInitializedCollection(
+      nftContractOwner,
+      collectionAdministrator,
+      mintApprover
+    );
+  });
+
+  describe('deploy', async () => {
+    it('sets initial owner', async () => {
+      expect(await royaltiesProviderContract.owner()).to.eq(owner.address);
     });
 
-    const res = await tx.wait();
-    const nftContractAddresss = res.events.find(
-      (e) => e.event === 'NFTContractCreated'
-    ).args.nftContract;
-
-    const Collection = await ethers.getContractFactory('Collection');
-    nftContract = await Collection.attach(nftContractAddresss);
-  }
-
-  describe('Intial state', async () => {
-    beforeEach(deploy);
-
-    it('should set initial owner', async () => {
-      const contractOwner = await royaltiesProviderContract.owner();
-      expect(contractOwner).to.eq(owner.address);
-    });
-
-    it('should have fee limit', async () => {
+    it('has fee limit', async () => {
       const limit = await royaltiesProviderContract.royaltyFeeLimit();
       expect(limit).to.eq('5000');
     });
   });
 
-  describe('Setting royalties for collection', () => {
-    beforeEach(deploy);
-
-    it('should not be able to royalties fee over the limit', async () => {
+  describe('setRoyaltiesForCollection', () => {
+    it('reverts if royalty fee is over the limit', async () => {
       await expect(
         royaltiesProviderContract.setRoyaltiesForCollection(
           nftContract.address,
           feeRecipient.address,
           5100
         )
-      ).to.be.revertedWith('Royalties over the limit');
+      ).to.be.revertedWithCustomError(
+        royaltiesProviderContract,
+        'FeeOverTheLimit'
+      );
     });
 
-    it('should set for collection if caller is collection owner', async () => {
+    it('sets for collection if a caller is the collection owner', async () => {
       await royaltiesProviderContract.setRoyaltiesForCollection(
         nftContract.address,
         feeRecipient.address,
@@ -80,7 +75,7 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.1'));
     });
 
-    it('should set for collection if caller is royalties contract owner', async () => {
+    it('sets for collection if a caller is the royalties contract owner', async () => {
       await royaltiesProviderContract.setRoyaltiesForCollection(
         nftContract.address,
         feeRecipient.address,
@@ -98,7 +93,7 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.1'));
     });
 
-    it('should fail to set if caller is not royalties owner or contract owner', async () => {
+    it('reverts if a caller is not royalties owner nor contract owner', async () => {
       await expect(
         royaltiesProviderContract
           .connect(user2)
@@ -107,14 +102,15 @@ describe('RoyaltiesProvider', function () {
             feeRecipient.address,
             1500
           )
-      ).to.be.revertedWith('InvalidOwner');
+      ).to.be.revertedWithCustomError(
+        royaltiesProviderContract,
+        'InvalidOwner'
+      );
     });
   });
 
-  describe('Setting royalties for token', () => {
-    beforeEach(deploy);
-
-    it('should not be able to set royalties over the limit', async () => {
+  describe('setRoyaltiesForToken', () => {
+    it('reverts if royalties are over the limit', async () => {
       await expect(
         royaltiesProviderContract.setRoyaltiesForToken(
           nftContract.address,
@@ -122,10 +118,13 @@ describe('RoyaltiesProvider', function () {
           feeRecipient.address,
           5100
         )
-      ).to.be.revertedWith('Royalties over the limit');
+      ).to.be.revertedWithCustomError(
+        royaltiesProviderContract,
+        'FeeOverTheLimit'
+      );
     });
 
-    it('should set for token if caller is collection owner', async () => {
+    it('sets for token if a caller is the collection owner', async () => {
       await royaltiesProviderContract
         .connect(nftContractOwner)
         .setRoyaltiesForToken(
@@ -146,7 +145,7 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.1'));
     });
 
-    it('should set for token if caller is royalties contract owner', async () => {
+    it('sets for token if caller is royalties contract owner', async () => {
       await royaltiesProviderContract.setRoyaltiesForToken(
         nftContract.address,
         1,
@@ -165,7 +164,7 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.2'));
     });
 
-    it('should use even when collection royalties are set', async () => {
+    it('uses token royalties when collection royalties are set', async () => {
       await royaltiesProviderContract.setRoyaltiesForToken(
         nftContract.address,
         1,
@@ -190,7 +189,7 @@ describe('RoyaltiesProvider', function () {
       expect(fee).to.equal(ethers.utils.parseUnits('0.2'));
     });
 
-    it('should fail to set if caller is not royalties owner or contract owner', async () => {
+    it('reverts if a caller is not royalties owner or contract owner', async () => {
       await expect(
         royaltiesProviderContract
           .connect(user2)
@@ -200,13 +199,10 @@ describe('RoyaltiesProvider', function () {
             feeRecipient.address,
             1500
           )
-      ).to.be.revertedWith('InvalidOwner');
+      ).to.be.revertedWithCustomError(
+        royaltiesProviderContract,
+        'InvalidOwner'
+      );
     });
-  });
-
-  describe('ERC2981', function () {
-    it('should support ERC2981 royalties', () => {});
-
-    it('should not use if custom token or collection royalties are set', () => {});
   });
 });

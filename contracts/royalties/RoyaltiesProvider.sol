@@ -32,6 +32,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         uint256 fee
     );
 
+    error FeeOverTheLimit();
+    error LimitTooHigh();
+
     struct Royalties {
         address account;
         uint256 fee;
@@ -91,7 +94,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= royaltyFeeLimit, "Royalties over the limit");
+        if (fee > royaltyFeeLimit) {
+            revert FeeOverTheLimit();
+        }
 
         checkOwner(nftContract);
 
@@ -108,7 +113,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= royaltyFeeLimit, "Royalties over the limit");
+        if (fee > royaltyFeeLimit) {
+            revert FeeOverTheLimit();
+        }
 
         checkOwner(nftContract);
 
@@ -118,7 +125,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
     }
 
     function setRoyaltiesLimit(uint256 newLimit) public onlyOwner {
-        require(newLimit <= 9500, "Royalty fee limit too high");
+        if (newLimit > 9500) {
+            revert LimitTooHigh();
+        }
         royaltyFeeLimit = newLimit;
         emit NewRoyaltiesLimit(newLimit);
     }
