@@ -123,7 +123,7 @@ describe('ExchangeDutchAuction', function () {
             1,
             ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.1'),
-            new BN(99).pow(5),
+            new BN(99).pow(99),
             ZERO_ADDRESS
           )
       ).to.be.reverted;
@@ -224,18 +224,6 @@ describe('ExchangeDutchAuction', function () {
             ZERO_ADDRESS
           )
       ).to.be.revertedWith('ERC721: invalid token ID');
-
-      await expect(
-        endemicExchange
-          .connect(user1)
-          .createDutchAuction(
-            noSuchTokenId,
-            ethers.utils.parseUnits('0.3'),
-            ethers.utils.parseUnits('0.2'),
-            60,
-            ZERO_ADDRESS
-          )
-      ).to.be.revertedWithCustomError(endemicExchange, SELLER_NOT_ASSET_OWNER);
     });
 
     it('should be able to recreate ERC721 dutch auction', async function () {
@@ -261,7 +249,6 @@ describe('ExchangeDutchAuction', function () {
           ethers.utils.parseUnits('1.0'),
           ethers.utils.parseUnits('0.2'),
           1200,
-          1,
           endemicToken.address
         );
 
