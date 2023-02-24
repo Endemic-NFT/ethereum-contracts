@@ -3,35 +3,46 @@ const { ethers } = require('hardhat');
 const { ZERO_ADDRESS } = require('./helpers/constants');
 const {
   deployEndemicExchangeWithDeps,
-  deployEndemicCollectionWithFactory,
+  deployInitializedCollection,
 } = require('./helpers/deploy');
+const { createMintApprovalSignature } = require('./helpers/sign');
 
 describe('NftTrade', function () {
   let endemicExchange, nftContract;
-  let owner, user1, user2;
+  let owner, user1, user2, collectionAdministrator, mintApprover;
 
-  async function mint(id, recipient) {
-    await nftContract
-      .connect(owner)
-      .mint(
-        recipient,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-      );
-  }
+  const createApprovalAndMint = async (recipient) => {
+    const { v, r, s } = await createMintApprovalSignature(
+      nftContract,
+      mintApprover,
+      owner,
+      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+    );
+    return nftContract.mint(
+      recipient,
+      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      v,
+      r,
+      s
+    );
+  };
 
-  async function deploy(makerFee = 0, takerFee = 300) {
-    [owner, user1, user2] = await ethers.getSigners();
+  beforeEach(async () => {
+    [owner, user1, user2, collectionAdministrator, mintApprover] =
+      await ethers.getSigners();
 
-    nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
+    nftContract = await deployInitializedCollection(
+      owner,
+      collectionAdministrator,
+      mintApprover
+    );
 
-    const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
+    const result = await deployEndemicExchangeWithDeps(0, 300);
 
     endemicExchange = result.endemicExchangeContract;
 
-    await mint(1, owner.address);
-  }
-
-  beforeEach(deploy);
+    await createApprovalAndMint(owner.address);
+  });
 
   it('should be able to accept bid after buying NFT', async () => {
     await nftContract.approve(endemicExchange.address, 1);
@@ -57,7 +68,7 @@ describe('NftTrade', function () {
       });
 
     //user2 buys NFT
-    await endemicExchange.connect(user2).bidForDutchAuction(auctionId, 1, {
+    await endemicExchange.connect(user2).bidForDutchAuction(auctionId, {
       value: ethers.utils.parseUnits('1.03'),
     });
     expect(await nftContract.ownerOf(1)).to.equal(user2.address);
