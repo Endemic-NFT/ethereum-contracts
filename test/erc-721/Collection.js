@@ -232,7 +232,7 @@ describe('Collection', function () {
     it('respects royalties amount limit', async () => {
       await expect(
         nftContract.setRoyalties(royaltiesRecipient.address, 10001)
-      ).to.be.revertedWith('RoyaltiesTooHigh');
+      ).to.be.revertedWithCustomError(nftContract, 'RoyaltiesTooHigh');
     });
   });
 
