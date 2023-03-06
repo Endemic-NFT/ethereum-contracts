@@ -63,6 +63,7 @@ contract Collection is
     ) external onlyCollectionFactory initializer {
         _transferOwnership(creator);
         __ERC721_init_unchained(name, symbol);
+        __EIP712_init_unchained(name, "1");
         __Administrated_init(administrator);
         __CollectionRoyalties_init(creator, royalties);
     }

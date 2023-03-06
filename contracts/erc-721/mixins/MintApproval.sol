@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+
 import {AdministratedUpgradable} from "../access/AdministratedUpgradable.sol";
 
-abstract contract MintApproval is AdministratedUpgradable {
+abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
     address public mintApprover;
 
     event MintApproverUpdated(address indexed newMintApprover);
@@ -32,7 +34,7 @@ abstract contract MintApproval is AdministratedUpgradable {
         bytes32 s
     ) internal view {
         if (
-            _recoverSigner(_prepareMessage(minter, tokenCID), v, r, s) !=
+            ecrecover(_prepareMessage(minter, tokenCID), v, r, s) !=
             mintApprover
         ) {
             revert MintNotApproved();
@@ -44,18 +46,14 @@ abstract contract MintApproval is AdministratedUpgradable {
         view
         returns (bytes32)
     {
-        return keccak256(abi.encode(address(this), minter, tokenCID));
-    }
-
-    function _recoverSigner(
-        bytes32 message,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) private pure returns (address) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-
-        bytes32 prefixedProof = keccak256(abi.encodePacked(prefix, message));
-        return ecrecover(prefixedProof, v, r, s);
+        return _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    keccak256("MintApproval(address minter,string tokenCID)"),
+                    minter,
+                    keccak256(abi.encodePacked(tokenCID))
+                )
+            )
+        );
     }
 }

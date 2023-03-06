@@ -209,7 +209,7 @@ describe('Collection', function () {
       );
 
       await expect(nftContract.connect(user).burn(1)).to.be.revertedWith(
-        'ERC721: caller is not token owner nor approved'
+        'ERC721: caller is not token owner or approved'
       );
     });
   });
