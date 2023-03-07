@@ -31,17 +31,18 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
         string calldata tokenCID,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        uint256 nonce
     ) internal view {
         if (
-            ecrecover(_prepareMessage(minter, tokenCID), v, r, s) !=
+            ecrecover(_prepareMessage(minter, tokenCID, nonce), v, r, s) !=
             mintApprover
         ) {
             revert MintNotApproved();
         }
     }
 
-    function _prepareMessage(address minter, string calldata tokenCID)
+    function _prepareMessage(address minter, string calldata tokenCID, uint256 nonce)
         private
         view
         returns (bytes32)
@@ -49,9 +50,10 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
         return _hashTypedDataV4(
             keccak256(
                 abi.encode(
-                    keccak256("MintApproval(address minter,string tokenCID)"),
+                    keccak256("MintApproval(address minter,string tokenCID,uint256 nonce)"),
                     minter,
-                    keccak256(abi.encodePacked(tokenCID))
+                    keccak256(abi.encodePacked(tokenCID)),
+                    nonce
                 )
             )
         );

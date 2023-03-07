@@ -15,7 +15,8 @@ const createMintApprovalSignature = async (
   nftContract,
   signer,
   minter,
-  tokenUri
+  tokenUri,
+  nonce
 ) => {
   const signature = await signer._signTypedData(
     {
@@ -28,11 +29,13 @@ const createMintApprovalSignature = async (
       MintApproval: [
         { name: 'minter', type: 'address' },
         { name: 'tokenCID', type: 'string' },
+        { name: 'nonce', type: 'uint256' },
       ],
     },
     {
       minter: minter.address,
       tokenCID: tokenUri,
+      nonce,
     }
   );
 

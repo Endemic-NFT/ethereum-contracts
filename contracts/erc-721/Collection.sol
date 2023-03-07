@@ -73,10 +73,11 @@ contract Collection is
         string calldata tokenCID,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        uint256 nonce
     ) external onlyOwner {
         // Make sure that mint is approved
-        _checkMintApproval(owner(), tokenCID, v, r, s);
+        _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
 
         // Mint token to the recipient
         _mintBase(recipient, tokenCID);
@@ -88,10 +89,11 @@ contract Collection is
         address operator,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        uint256 nonce
     ) external onlyOwner {
         // Make sure that mint is approved
-        _checkMintApproval(owner(), tokenCID, v, r, s);
+        _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
 
         // Mint token to the recipient
         _mintBase(recipient, tokenCID);

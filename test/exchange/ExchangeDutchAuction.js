@@ -47,14 +47,16 @@ describe('ExchangeDutchAuction', function () {
       nftContract,
       mintApprover,
       owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi'
+      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
+      0
     );
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
       v,
       r,
-      s
+      s,
+      0
     );
   };
 

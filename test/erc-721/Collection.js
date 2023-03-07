@@ -18,14 +18,17 @@ describe('Collection', function () {
     );
   });
 
-  const createApprovalAndMint = async (caller, recipient, tokenUri) => {
+  const createApprovalAndMint = async (caller, recipient, tokenUri, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
       mintApprover,
       owner,
-      tokenUri
+      tokenUri,
+      nonce
     );
-    return nftContract.connect(caller).mint(recipient, tokenUri, v, r, s);
+    return nftContract
+      .connect(caller)
+      .mint(recipient, tokenUri, v, r, s, nonce);
   };
 
   it('deploys with correct initial setup', async function () {
@@ -48,7 +51,8 @@ describe('Collection', function () {
       const mintTx = await createApprovalAndMint(
         owner,
         user.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(mintTx)
@@ -75,7 +79,8 @@ describe('Collection', function () {
           createApprovalAndMint(
             owner,
             user.address,
-            `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+            `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`,
+            i
           )
         );
       }
@@ -98,7 +103,8 @@ describe('Collection', function () {
         createApprovalAndMint(
           user,
           user.address,
-          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          0
         )
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
@@ -107,7 +113,8 @@ describe('Collection', function () {
       await createApprovalAndMint(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await nftContract.burn(1);
@@ -115,7 +122,8 @@ describe('Collection', function () {
       await createApprovalAndMint(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        1
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(2);
@@ -142,7 +150,8 @@ describe('Collection', function () {
         nftContract,
         mintApprover,
         owner,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await nftContract.mintAndApprove(
@@ -151,7 +160,8 @@ describe('Collection', function () {
         operator.address,
         v,
         r,
-        s
+        s,
+        0
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(tokenId);
@@ -173,7 +183,8 @@ describe('Collection', function () {
       await createApprovalAndMint(
         owner,
         user.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await nftContract.connect(user).burn(1);
@@ -185,13 +196,15 @@ describe('Collection', function () {
       await createApprovalAndMint(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await createApprovalAndMint(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        1
       );
 
       await nftContract.burn(1);
@@ -205,7 +218,8 @@ describe('Collection', function () {
       await createApprovalAndMint(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(nftContract.connect(user).burn(1)).to.be.revertedWith(
