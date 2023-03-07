@@ -39,13 +39,13 @@ describe('ExchangeReserveAuction', function () {
     mintApprover,
     collectionAdministrator;
 
-  const createApprovalAndMint = async (recipient) => {
+  const createApprovalAndMint = async (recipient, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
       mintApprover,
       owner,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      0
+      nonce
     );
     return nftContract.mint(
       recipient,
@@ -53,7 +53,7 @@ describe('ExchangeReserveAuction', function () {
       v,
       r,
       s,
-      0
+      nonce
     );
   };
 
@@ -80,8 +80,8 @@ describe('ExchangeReserveAuction', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
+    await createApprovalAndMint(user1.address, 0);
+    await createApprovalAndMint(user1.address, 1);
   }
 
   async function getCurrentEvmTimestamp() {
@@ -212,7 +212,7 @@ describe('ExchangeReserveAuction', function () {
     });
 
     it('should be able to create reserve auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address);
+      await createApprovalAndMint(user1.address, 2);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);

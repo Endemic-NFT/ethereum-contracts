@@ -37,13 +37,13 @@ describe('ExchangeOffer', function () {
     collectionAdministrator,
     mintApprover;
 
-  const createApprovalAndMint = async (recipient) => {
+  const createApprovalAndMint = async (recipient, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
       mintApprover,
       owner,
       'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-      0
+      nonce
     );
     return nftContract.mint(
       recipient,
@@ -51,7 +51,7 @@ describe('ExchangeOffer', function () {
       v,
       r,
       s,
-      0
+      nonce
     );
   };
 
@@ -78,10 +78,10 @@ describe('ExchangeOffer', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
+    await createApprovalAndMint(user1.address, 0);
+    await createApprovalAndMint(user1.address, 1);
+    await createApprovalAndMint(user1.address, 2);
+    await createApprovalAndMint(user1.address, 3);
 
     await nftContract.connect(user1).approve(endemicExchange.address, 1);
     await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -382,7 +382,7 @@ describe('ExchangeOffer', function () {
       });
 
       it('should successfully create multiple offers on same token', async () => {
-        await createApprovalAndMint(user1.address);
+        await createApprovalAndMint(user1.address, 4);
 
         await endemicToken.transfer(
           user2.address,
@@ -1541,7 +1541,7 @@ describe('ExchangeOffer', function () {
       });
 
       it('should successfully create multiple offers on same collection', async () => {
-        await createApprovalAndMint(user1.address);
+        await createApprovalAndMint(user1.address, 4);
 
         await endemicToken.transfer(
           user2.address,

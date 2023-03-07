@@ -37,13 +37,13 @@ describe('EndemicPrivateSale', () => {
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
-  const createApprovalAndMint = async (recipient) => {
+  const createApprovalAndMint = async (recipient, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
       mintApprover,
       owner,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      0
+      nonce
     );
     return nftContract.mint(
       recipient,
@@ -51,7 +51,7 @@ describe('EndemicPrivateSale', () => {
       v,
       r,
       s,
-      0
+      nonce
     );
   };
 
@@ -70,7 +70,7 @@ describe('EndemicPrivateSale', () => {
       mintApprover
     );
 
-    await createApprovalAndMint(owner.address);
+    await createApprovalAndMint(owner.address, 0);
   }
 
   const getSignedPrivateSale = async (paymentErc20TokenAddress) => {
@@ -83,7 +83,7 @@ describe('EndemicPrivateSale', () => {
       value: ethers.utils.parseEther('1650'),
     });
 
-    await createApprovalAndMint(signer.address);
+    await createApprovalAndMint(signer.address, 1);
 
     await nftContract.connect(signer).approve(endemicExchange.address, 2);
 

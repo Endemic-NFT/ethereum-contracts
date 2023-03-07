@@ -8,10 +8,13 @@ import {AdministratedUpgradable} from "../access/AdministratedUpgradable.sol";
 abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
     address public mintApprover;
 
+    mapping(uint256 nonce => bool used) private _usedNonces;
+
     event MintApproverUpdated(address indexed newMintApprover);
 
     error MintApproverCannotBeZeroAddress();
     error MintNotApproved();
+    error NonceUsed();
 
     function updateMintApprover(address newMintApprover)
         external
@@ -33,13 +36,17 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
         bytes32 r,
         bytes32 s,
         uint256 nonce
-    ) internal view {
+    ) internal {
+        if (_usedNonces[nonce]) revert NonceUsed();
+
         if (
             ecrecover(_prepareMessage(minter, tokenCID, nonce), v, r, s) !=
             mintApprover
         ) {
             revert MintNotApproved();
         }
+
+        _usedNonces[nonce] = true;
     }
 
     function _prepareMessage(address minter, string calldata tokenCID, uint256 nonce)
