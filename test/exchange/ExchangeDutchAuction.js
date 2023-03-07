@@ -1277,11 +1277,6 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('0.375')
       );
 
-      // 0.39492 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
-      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
-
-      // expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.39492')); get back to this later
-
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
       expect(tokenOwner).to.equal(user2.address);
@@ -1316,7 +1311,7 @@ describe('ExchangeDutchAuction', function () {
       // 0.1 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
       // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
 
-      // expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.1')); solve this later
+      expect(user1Diff).to.be.lt(ethers.utils.parseUnits('0.01'));
     });
 
     it('should fail to bid after someone else has bid', async function () {
@@ -1449,7 +1444,7 @@ describe('ExchangeDutchAuction', function () {
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
       //   currentPriceChange = (totalPriceChange * 800) / 1000 = -0.96
-      //   currentPrice = 1.4 + currentPriceChange = 0.43999999999999995
+      //   currentPrice = 1.4 + currentPriceChange = 0.44
       //   fee = (currentPrice * 300) / 10000
 
       const auctionCurrentPrice = await endemicExchange.getCurrentPrice(
