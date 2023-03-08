@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 import {ERC721Base} from "./mixins/ERC721Base.sol";
 import {CollectionRoyalties} from "./mixins/CollectionRoyalties.sol";
@@ -50,9 +51,9 @@ contract Collection is
      * @notice Initialize imutable variables
      * @param _collectionFactory The factory which is used to create new collections
      */
-    constructor(address _collectionFactory)
-        CollectionFactory(_collectionFactory)
-    {}
+    constructor(
+        address _collectionFactory
+    ) CollectionFactory(_collectionFactory) {}
 
     function initialize(
         address creator,
@@ -99,13 +100,9 @@ contract Collection is
         setApprovalForAll(operator, true);
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
         return string(abi.encodePacked(_baseURI(), _tokenCIDs[tokenId]));
@@ -115,13 +112,19 @@ contract Collection is
         _setRoyalties(recipient, value);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(CollectionRoyalties, ERC721Upgradeable)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return
+            super.supportsInterface(interfaceId) ||
+            type(IERC165Upgradeable).interfaceId == interfaceId ||
+            type(IERC721Upgradeable).interfaceId == interfaceId ||
+            type(IERC721MetadataUpgradeable).interfaceId == interfaceId;
     }
 
     function _mintBase(address recipient, string calldata tokenCID) internal {
@@ -138,7 +141,9 @@ contract Collection is
         emit Minted(tokenId, owner(), tokenCID);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721Base) {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721Upgradeable, ERC721Base) {
         delete _tokenCIDs[tokenId];
         super._burn(tokenId);
     }
