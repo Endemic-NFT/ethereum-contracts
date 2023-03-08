@@ -76,8 +76,11 @@ contract Collection is
         bytes32 s,
         uint256 nonce
     ) external onlyOwner {
-        // Make sure that mint is approved
-        _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
+        // Check if mint approval is required
+        if (mintApprovalRequired) {
+            // Make sure that mint is approved
+            _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
+        }
 
         // Mint token to the recipient
         _mintBase(recipient, tokenCID);
@@ -92,8 +95,11 @@ contract Collection is
         bytes32 s,
         uint256 nonce
     ) external onlyOwner {
-        // Make sure that mint is approved
-        _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
+        // Check if mint approval is required
+        if (mintApprovalRequired) {
+            // Make sure that mint is approved
+            _checkMintApproval(owner(), tokenCID, v, r, s, nonce);
+        }
 
         // Mint token to the recipient
         _mintBase(recipient, tokenCID);

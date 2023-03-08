@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable
 import {AdministratedUpgradable} from "../access/AdministratedUpgradable.sol";
 
 abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
+    bool mintApprovalRequired;
+
     address public mintApprover;
 
     mapping(uint256 nonce => bool used) private _usedNonces;
@@ -15,6 +17,10 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
     error MintApproverCannotBeZeroAddress();
     error MintNotApproved();
     error NonceUsed();
+
+    function toggleMintApproval() external onlyAdministrator {
+        mintApprovalRequired = !mintApprovalRequired;
+    }
 
     function updateMintApprover(address newMintApprover)
         external
