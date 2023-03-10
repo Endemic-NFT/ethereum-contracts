@@ -98,6 +98,42 @@ describe('Collection', function () {
       }
     });
 
+    it('reverts if mint approval is already used', async function () {
+      const nonce = 0;
+      await createApprovalAndMint(
+        owner,
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        nonce
+      );
+
+      await expect(
+        createApprovalAndMint(
+          owner,
+          user.address,
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          nonce
+        )
+      ).to.be.revertedWithCustomError(nftContract, 'NonceUsed');
+    });
+
+    it('mints if mint approval is not required', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const tokenId = 1;
+      await nftContract.mint(
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        ethers.constants.Zero,
+        ethers.constants.HashZero,
+        ethers.constants.HashZero,
+        ethers.constants.Zero
+      );
+
+      const nftOwnerAddress = await nftContract.ownerOf(tokenId);
+      expect(nftOwnerAddress).to.equal(user.address);
+    });
+
     it('reverts is minter is not the owner', async function () {
       await expect(
         createApprovalAndMint(
