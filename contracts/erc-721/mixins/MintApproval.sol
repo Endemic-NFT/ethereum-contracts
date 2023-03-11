@@ -65,7 +65,7 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
                 abi.encode(
                     keccak256("MintApproval(address minter,string tokenCID,uint256 nonce)"),
                     minter,
-                    keccak256(abi.encodePacked(tokenCID)),
+                    keccak256(bytes(tokenCID)),
                     nonce
                 )
             )
