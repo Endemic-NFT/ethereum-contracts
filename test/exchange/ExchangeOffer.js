@@ -6,7 +6,12 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { FEE_RECIPIENT, ZERO_ADDRESS } = require('../helpers/constants');
+const {
+  FEE_RECIPIENT,
+  ZERO_ADDRESS,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 
 const INVALID_OFFER_ERROR = 'InvalidOffer';
 const INVALID_TOKEN_OWNER = 'InvalidTokenOwner';
@@ -40,10 +45,10 @@ describe('ExchangeOffer', function () {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-      ethers.constants.Zero,
-      ethers.constants.HashZero,
-      ethers.constants.HashZero,
-      ethers.constants.Zero
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 

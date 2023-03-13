@@ -7,7 +7,12 @@ const {
   deployEndemicToken,
 } = require('../helpers/deploy');
 
-const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
+const {
+  ZERO_ADDRESS,
+  FEE_RECIPIENT,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 const {
   weiToEther,
   calculateAuctionDuration,
@@ -45,10 +50,10 @@ describe('ExchangeDutchAuction', function () {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      ethers.constants.Zero,
-      ethers.constants.HashZero,
-      ethers.constants.HashZero,
-      ethers.constants.Zero
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 

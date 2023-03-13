@@ -10,7 +10,7 @@ const {
   signTypedData,
   SignTypedDataVersion,
 } = require('@metamask/eth-sig-util');
-const { ZERO_ADDRESS } = require('../helpers/constants');
+const { ZERO_ADDRESS, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 const { addTakerFee } = require('../helpers/token');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
@@ -40,10 +40,10 @@ describe('EndemicPrivateSale', () => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      ethers.constants.Zero,
-      ethers.constants.HashZero,
-      ethers.constants.HashZero,
-      ethers.constants.Zero
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 

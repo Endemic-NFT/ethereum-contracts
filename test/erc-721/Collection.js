@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { deployInitializedCollection } = require('../helpers/deploy');
 const { createMintApprovalSignature } = require('../helpers/sign');
+const { ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
 describe('Collection', function () {
   let nftContract;
@@ -21,14 +22,7 @@ describe('Collection', function () {
   const mintToken = async (caller, recipient, tokenUri) => {
     return nftContract
       .connect(caller)
-      .mint(
-        recipient,
-        tokenUri,
-        ethers.constants.Zero,
-        ethers.constants.HashZero,
-        ethers.constants.HashZero,
-        ethers.constants.Zero
-      );
+      .mint(recipient, tokenUri, ZERO, ZERO_BYTES32, ZERO_BYTES32, ZERO);
   };
 
   const createApprovalAndMint = async (caller, recipient, tokenUri, nonce) => {
@@ -199,10 +193,10 @@ describe('Collection', function () {
         user.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
         operator.address,
-        ethers.constants.Zero,
-        ethers.constants.HashZero,
-        ethers.constants.HashZero,
-        ethers.constants.Zero
+        ZERO,
+        ZERO_BYTES32,
+        ZERO_BYTES32,
+        ZERO
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(tokenId);
