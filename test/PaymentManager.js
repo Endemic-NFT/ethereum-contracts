@@ -79,13 +79,13 @@ describe('PaymentManager', function () {
     it('reverts for unsupported payment method', async () => {
       await expect(
         paymentManager.updatePaymentMethodFees(owner.address, 100, 100)
-      ).to.be.revertedWith(UNSUPPORTED_PAYMENT_METHOD);
+      ).to.be.revertedWithCustomError(paymentManager, UNSUPPORTED_PAYMENT_METHOD);
     });
 
     it('reverts for invalid fees', async () => {
       await expect(
         paymentManager.updatePaymentMethodFees(ZERO_ADDRESS, 100000, 100000)
-      ).to.be.revertedWith(INVALID_FEES);
+      ).to.be.revertedWithCustomError(paymentManager, INVALID_FEES);
     });
   });
 

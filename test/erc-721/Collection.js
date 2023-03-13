@@ -257,5 +257,14 @@ describe('Collection', function () {
         true
       );
     });
+    it('supports ERC721', async () => {
+      expect(await nftContract.supportsInterface('0x80ac58cd')).to.eq(true);
+    });
+    it('supports ERC165', async () => {
+      expect(await nftContract.supportsInterface('0x01ffc9a7')).to.eq(true);
+    });
+    it('supports ERC721Metadata', async () => {
+      expect(await nftContract.supportsInterface('0x5b5e139f')).to.eq(true);
+    });
   });
 });
