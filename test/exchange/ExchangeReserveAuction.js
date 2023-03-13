@@ -5,7 +5,6 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { createMintApprovalSignature } = require('../helpers/sign');
 
 const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
 
@@ -39,21 +38,14 @@ describe('ExchangeReserveAuction', function () {
     mintApprover,
     collectionAdministrator;
 
-  const createApprovalAndMint = async (recipient, nonce) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      nonce
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s,
-      nonce
+      ethers.constants.Zero,
+      ethers.constants.HashZero,
+      ethers.constants.HashZero,
+      ethers.constants.Zero
     );
   };
 
@@ -80,8 +72,8 @@ describe('ExchangeReserveAuction', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address, 0);
-    await createApprovalAndMint(user1.address, 1);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
   }
 
   async function getCurrentEvmTimestamp() {
@@ -212,7 +204,7 @@ describe('ExchangeReserveAuction', function () {
     });
 
     it('should be able to create reserve auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address, 2);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);

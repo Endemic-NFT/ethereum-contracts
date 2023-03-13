@@ -75,8 +75,6 @@ const deployInitializedCollection = async (
     .connect(collectionAdministrator)
     .updateMintApprover(mintApprover.address);
 
-  await collection.connect(collectionAdministrator).toggleMintApproval();
-
   return collection;
 };
 

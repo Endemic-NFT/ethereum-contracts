@@ -12,7 +12,6 @@ const {
 } = require('@metamask/eth-sig-util');
 const { ZERO_ADDRESS } = require('../helpers/constants');
 const { addTakerFee } = require('../helpers/token');
-const { createMintApprovalSignature } = require('../helpers/sign');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
@@ -37,21 +36,14 @@ describe('EndemicPrivateSale', () => {
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
-  const createApprovalAndMint = async (recipient, nonce) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      nonce
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s,
-      nonce
+      ethers.constants.Zero,
+      ethers.constants.HashZero,
+      ethers.constants.HashZero,
+      ethers.constants.Zero
     );
   };
 
@@ -70,7 +62,7 @@ describe('EndemicPrivateSale', () => {
       mintApprover
     );
 
-    await createApprovalAndMint(owner.address, 0);
+    await mintToken(owner.address);
   }
 
   const getSignedPrivateSale = async (paymentErc20TokenAddress) => {
@@ -83,7 +75,7 @@ describe('EndemicPrivateSale', () => {
       value: ethers.utils.parseEther('1650'),
     });
 
-    await createApprovalAndMint(signer.address, 1);
+    await mintToken(signer.address);
 
     await nftContract.connect(signer).approve(endemicExchange.address, 2);
 

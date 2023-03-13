@@ -13,7 +13,6 @@ const {
   calculateAuctionDuration,
   addTakerFee,
 } = require('../helpers/token');
-const { createMintApprovalSignature } = require('../helpers/sign');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_DURATION_ERROR = 'InvalidDuration';
@@ -42,21 +41,14 @@ describe('ExchangeDutchAuction', function () {
     collectionAdministrator,
     mintApprover;
 
-  const createApprovalAndMint = async (recipient, nonce) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      nonce
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s,
-      nonce
+      ethers.constants.Zero,
+      ethers.constants.HashZero,
+      ethers.constants.HashZero,
+      ethers.constants.Zero
     );
   };
 
@@ -83,8 +75,8 @@ describe('ExchangeDutchAuction', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address, 0);
-    await createApprovalAndMint(user1.address, 1);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
   }
 
   describe('Create dutch auction with Ether', function () {
@@ -283,7 +275,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create dutch auctions for multiple NFTs', async function () {
-      await createApprovalAndMint(user1.address, 2);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -527,7 +519,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create dutch auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address, 2);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -984,7 +976,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create fixed auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address, 2);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
