@@ -156,7 +156,7 @@ describe('EndemicCollectionFactory', function () {
             name: 'My Collection',
             symbol: 'MC',
             category: 'Art',
-            royalties: 0
+            royalties: 0,
           })
         ).to.be.reverted;
       });

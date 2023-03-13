@@ -1,6 +1,5 @@
 const { expect } = require('chai');
 const { ethers, network } = require('hardhat');
-const BN = require('bignumber.js');
 const {
   deployInitializedCollection,
   deployEndemicExchangeWithDeps,
@@ -1208,7 +1207,6 @@ describe('ExchangeDutchAuction', function () {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
     });
 
     it('should fail to bid on dutch auction because auction is listed as reserved', async function () {
@@ -1273,9 +1271,7 @@ describe('ExchangeDutchAuction', function () {
       // User1 should receive 0.373232 ether, 80% of auction has passed
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.lte(
-        ethers.utils.parseUnits('0.375')
-      );
+      expect(user1Diff.toString()).to.lte(ethers.utils.parseUnits('0.375'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1494,10 +1490,10 @@ describe('ExchangeDutchAuction', function () {
 
       await endemicToken.transfer(
         user2.address,
-        (2 * + auction1CurrentPrice).toString()
+        (2 * +auction1CurrentPrice).toString()
       );
 
-      const totalPrice = addTakerFee(auction1CurrentPrice)
+      const totalPrice = addTakerFee(auction1CurrentPrice);
 
       await endemicToken
         .connect(user2)
@@ -1717,7 +1713,7 @@ describe('ExchangeDutchAuction', function () {
   });
 
   describe('Bidding with ERC20 on fixed auction', function () {
-    let erc721AuctionId, erc1155AuctionId;
+    let erc721AuctionId;
 
     beforeEach(async function () {
       await deploy();
