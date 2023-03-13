@@ -149,13 +149,14 @@ describe('EndemicCollectionFactory', function () {
         expect(royalties).to.equal('1500');
       });
 
-      it('reverts is caller is not authorized', async function () {
+      it('reverts if caller is not authorized', async function () {
         await expect(
           factoryContract.connect(user).createTokenForOwner({
             owner: user.address,
             name: 'My Collection',
             symbol: 'MC',
             category: 'Art',
+            royalties: 0
           })
         ).to.be.reverted;
       });

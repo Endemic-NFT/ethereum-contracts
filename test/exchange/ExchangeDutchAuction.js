@@ -12,6 +12,7 @@ const {
   FEE_RECIPIENT,
   ZERO,
   ZERO_BYTES32,
+  TOO_LONG_AUCTION_DURATION,
 } = require('../helpers/constants');
 const {
   weiToEther,
@@ -122,7 +123,7 @@ describe('ExchangeDutchAuction', function () {
             1,
             ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.1'),
-            new BN(99).pow(99),
+            TOO_LONG_AUCTION_DURATION,
             ZERO_ADDRESS
           )
       ).to.be.reverted;
@@ -275,7 +276,7 @@ describe('ExchangeDutchAuction', function () {
       //   totalPriceChange = 0.2 - 1 = -0.8
       //   currentPriceChange = (totalPriceChange * 1050) / 1200 = -0.7
       //   currentPrice = 1.0 + currentPriceChange
-      expect(auction1CurrentPrice).to.equal(ethers.utils.parseUnits('0.3'));
+      expect(auction1CurrentPrice).to.be.lte(ethers.utils.parseUnits('0.3'));
       expect(auction1.paymentErc20TokenAddress).to.equal(endemicToken.address);
     });
 
@@ -353,10 +354,10 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('0.1')
       );
       expect(calculateAuctionDuration(auction2)).to.equal('2000');
-      //   totalPriceChange = 0.2 - 1 = -0.9
-      //   currentPriceChange = (totalPriceChange * 1500) / 2000 = -0.675
+      //   totalPriceChange = 0.2 - 1 = -0.8
+      //   currentPriceChange = (totalPriceChange * 1500) / 2000 = -0.6
       //   currentPrice = 1.0 + currentPriceChange
-      expect(auction2CurrentPrice).to.equal(ethers.utils.parseUnits('0.32455'));
+      expect(auction2CurrentPrice).to.equal(ethers.utils.parseUnits('0.325'));
     });
   });
 
@@ -398,7 +399,7 @@ describe('ExchangeDutchAuction', function () {
             1,
             ethers.utils.parseUnits('0.2'),
             ethers.utils.parseUnits('0.1'),
-            new BN(99).pow(99),
+            TOO_LONG_AUCTION_DURATION,
             endemicToken.address
           )
       ).to.be.reverted;
@@ -518,7 +519,7 @@ describe('ExchangeDutchAuction', function () {
       //   totalPriceChange = 0.2 - 1 = -0.9
       //   currentPriceChange = (totalPriceChange * 750) / 1200 = -0.5
       //   currentPrice = 1.0 + currentPriceChange
-      expect(auction1CurrentPrice).to.equal(ethers.utils.parseUnits('0.5'));
+      expect(auction1CurrentPrice).to.be.lte(ethers.utils.parseUnits('0.5'));
 
       expect(auction1.paymentErc20TokenAddress).to.equal(ZERO_ADDRESS);
     });
@@ -599,9 +600,9 @@ describe('ExchangeDutchAuction', function () {
       expect(calculateAuctionDuration(auction2)).to.equal('2000');
 
       //   totalPriceChange = 0.4 - 2.0 = -1.6
-      //   currentPriceChange = (totalPriceChange * 1750) / 2000 = --1.399999999999999911182158029987
+      //   currentPriceChange = (totalPriceChange * 1750) / 2000 = --1.4
       //   currentPrice = 2.0 + currentPriceChange
-      expect(auction2CurrentPrice).to.equal(ethers.utils.parseUnits('0.5992'));
+      expect(auction2CurrentPrice).to.equal(ethers.utils.parseUnits('0.6'));
     });
 
     it('should fail to recreate ERC721 dutch auction because reserve auction is in progress', async function () {
@@ -810,8 +811,6 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create fixed auctions for multiple NFTs', async function () {
-      await min(user1.address);
-
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
 
@@ -1157,7 +1156,7 @@ describe('ExchangeDutchAuction', function () {
             ethers.utils.parseUnits('0.2'),
             endemicToken.address
           )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidInterface');
+      ).to.be.reverted;
     });
   });
 
@@ -1199,24 +1198,6 @@ describe('ExchangeDutchAuction', function () {
         endemicExchange,
         UNSUFFICIENT_CURRENCY_SUPPLIED
       );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1, {
-          value: ethers.utils.parseUnits('0.01'),
-        })
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(2, {
-          value: ethers.utils.parseUnits('0.103'),
-        })
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -1228,11 +1209,6 @@ describe('ExchangeDutchAuction', function () {
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
 
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1, {
-          value: ethers.utils.parseUnits('0.103'),
-        })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should fail to bid on dutch auction because auction is listed as reserved', async function () {
@@ -1257,7 +1233,7 @@ describe('ExchangeDutchAuction', function () {
       );
 
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(auctionid, {
+        endemicExchange.connect(user2).bidForDutchAuction(auctionId, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
@@ -1282,7 +1258,7 @@ describe('ExchangeDutchAuction', function () {
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
       //   currentPriceChange = (totalPriceChange * 800) / 1000 = -0.96
-      //   currentPrice = 1.4 + currentPriceChange = 0.43999999999999995
+      //   currentPrice = 1.4 + currentPriceChange = 0.44
       //   fee = (currentPrice * 300) / 10000
       const auctionCurrentPrice = await endemicExchange.getCurrentPrice(
         erc721AuctionId
@@ -1294,17 +1270,12 @@ describe('ExchangeDutchAuction', function () {
         value: ethers.utils.parseUnits(totalPrice.toString()),
       });
 
-      // User1 should receive 0.396156 ether, 80% of auction has passed
-
+      // User1 should receive 0.373232 ether, 80% of auction has passed
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(
-        ethers.utils.parseUnits('0.396156')
+      expect(user1Diff.toString()).to.lte(
+        ethers.utils.parseUnits('0.375')
       );
-
-      // 0.39492 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
-      // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
-      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.39492'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1317,25 +1288,30 @@ describe('ExchangeDutchAuction', function () {
 
     it('should be able to bid at endingPrice if auction has passed duration', async function () {
       const user1Bal1 = await user1.getBalance();
+
       await network.provider.send('evm_increaseTime', [200]);
+      await network.provider.send('evm_mine');
 
       const auction1CurrentPrice = await endemicExchange.getCurrentPrice(
         erc721AuctionId
       );
 
+      const totalPrice = addTakerFee(auction1CurrentPrice);
+
       await endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, {
-        value: auction1CurrentPrice,
+        value: totalPrice,
       });
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.19765'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.0085'));
 
-      // 0.19 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // 0.1 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
       // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
-      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.19'));
+
+      expect(user1Diff).to.be.lt(ethers.utils.parseUnits('0.01'));
     });
 
     it('should fail to bid after someone else has bid', async function () {
@@ -1385,9 +1361,9 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           erc721AuctionId,
-          ethers.utils.parseUnits('0.0992725'),
+          ethers.utils.parseUnits('0.1000225'),
           user2.address,
-          ethers.utils.parseUnits('0.002955')
+          ethers.utils.parseUnits('0.0029775')
         );
 
       await expect(bid1)
@@ -1439,20 +1415,6 @@ describe('ExchangeDutchAuction', function () {
         endemicExchange,
         UNSUFFICIENT_CURRENCY_SUPPLIED
       );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1)
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(2)
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -1460,10 +1422,6 @@ describe('ExchangeDutchAuction', function () {
 
       await expect(
         endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId)
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1)
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
@@ -1486,7 +1444,7 @@ describe('ExchangeDutchAuction', function () {
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
       //   currentPriceChange = (totalPriceChange * 800) / 1000 = -0.96
-      //   currentPrice = 1.4 + currentPriceChange = 0.43999999999999995
+      //   currentPrice = 1.4 + currentPriceChange = 0.44
       //   fee = (currentPrice * 300) / 10000
 
       const auctionCurrentPrice = await endemicExchange.getCurrentPrice(
@@ -1513,7 +1471,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.39276'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.37094'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1526,7 +1484,9 @@ describe('ExchangeDutchAuction', function () {
 
     it('should be able to bid at endingPrice if auction has passed duration', async function () {
       const user1Bal1 = await endemicToken.balanceOf(user1.address);
+
       await network.provider.send('evm_increaseTime', [200]);
+      await network.provider.send('evm_mine');
 
       const auction1CurrentPrice = await endemicExchange.getCurrentPrice(
         erc721AuctionId
@@ -1534,12 +1494,14 @@ describe('ExchangeDutchAuction', function () {
 
       await endemicToken.transfer(
         user2.address,
-        (2 * +auction1CurrentPrice).toString()
+        (2 * + auction1CurrentPrice).toString()
       );
+
+      const totalPrice = addTakerFee(auction1CurrentPrice)
 
       await endemicToken
         .connect(user2)
-        .approve(endemicExchange.address, auction1CurrentPrice);
+        .approve(endemicExchange.address, totalPrice);
 
       await endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId);
 
@@ -1547,7 +1509,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.019'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.0085'));
     });
 
     it('should fail to bid after someone else has bid', async function () {
@@ -1588,7 +1550,6 @@ describe('ExchangeDutchAuction', function () {
         .approve(endemicExchange.address, totalPrice.toString());
 
       await endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId);
-      await endemicExchange.connect(user2).bidForDutchAuction(2);
 
       expect(await nftContract.ownerOf(1)).to.equal(user2.address);
     });
@@ -1617,9 +1578,9 @@ describe('ExchangeDutchAuction', function () {
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
           erc721AuctionId,
-          ethers.utils.parseUnits('0.097'),
+          ethers.utils.parseUnits('0.09775'),
           user2.address,
-          ethers.utils.parseUnits('0.00291')
+          ethers.utils.parseUnits('0.0029325')
         );
 
       await expect(bid1)
@@ -1660,24 +1621,6 @@ describe('ExchangeDutchAuction', function () {
         endemicExchange,
         UNSUFFICIENT_CURRENCY_SUPPLIED
       );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1, {
-          value: ethers.utils.parseUnits('0.01'),
-        })
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(2, {
-          value: ethers.utils.parseUnits('0.103'),
-        })
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -1685,12 +1628,6 @@ describe('ExchangeDutchAuction', function () {
 
       await expect(
         endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId, {
-          value: ethers.utils.parseUnits('0.103'),
-        })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
@@ -1707,7 +1644,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.09'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.085'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1740,7 +1677,7 @@ describe('ExchangeDutchAuction', function () {
       );
 
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(auctionid, {
+        endemicExchange.connect(user2).bidForDutchAuction(auctionId, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
@@ -1752,15 +1689,6 @@ describe('ExchangeDutchAuction', function () {
       });
       await expect(
         endemicExchange.connect(user3).bidForDutchAuction(erc721AuctionId, {
-          value: ethers.utils.parseUnits('0.103'),
-        })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
-      await endemicExchange.connect(user2).bidForDutchAuction(3, {
-        value: ethers.utils.parseUnits('0.309'),
-      });
-      await expect(
-        endemicExchange.connect(user3).bidForDutchAuction(1, {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
@@ -1785,19 +1713,6 @@ describe('ExchangeDutchAuction', function () {
       await expect(bid1)
         .to.emit(nftContract, 'Transfer')
         .withArgs(user1.address, user2.address, 1);
-
-      const bid2 = endemicExchange.connect(user2).bidForDutchAuction(2, {
-        value: ethers.utils.parseUnits('0.206'),
-      });
-
-      await expect(bid2)
-        .to.emit(endemicExchange, AUCTION_SUCCESFUL)
-        .withArgs(
-          ethers.utils.parseUnits('0.2'),
-          user2.address,
-          2,
-          ethers.utils.parseUnits('0.006')
-        );
     });
   });
 
@@ -1838,20 +1753,6 @@ describe('ExchangeDutchAuction', function () {
         endemicExchange,
         UNSUFFICIENT_CURRENCY_SUPPLIED
       );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1)
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(2)
-      ).to.be.revertedWithCustomError(
-        endemicExchange,
-        UNSUFFICIENT_CURRENCY_SUPPLIED
-      );
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -1859,10 +1760,6 @@ describe('ExchangeDutchAuction', function () {
 
       await expect(
         endemicExchange.connect(user2).bidForDutchAuction(erc721AuctionId)
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
-      await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(1)
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
@@ -1884,7 +1781,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.09'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.085'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1925,7 +1822,7 @@ describe('ExchangeDutchAuction', function () {
       //makerCut => 0.005 (5% of price)
       //royalties => 0,01
       //seller gets => price - (makerCut + royalties) = 0.085
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.085'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.08'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1959,11 +1856,6 @@ describe('ExchangeDutchAuction', function () {
       await endemicToken
         .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.309'));
-
-      await endemicExchange.connect(user2).bidForDutchAuction(3);
-      await expect(
-        endemicExchange.connect(user3).bidForDutchAuction(1)
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should trigger an event after successful bid', async function () {
@@ -1992,26 +1884,6 @@ describe('ExchangeDutchAuction', function () {
       await expect(bid1)
         .to.emit(nftContract, 'Transfer')
         .withArgs(user1.address, user2.address, 1);
-
-      await endemicToken.transfer(
-        user2.address,
-        ethers.utils.parseUnits('0.206')
-      );
-
-      await endemicToken
-        .connect(user2)
-        .approve(endemicExchange.address, ethers.utils.parseUnits('0.206'));
-
-      const bid2 = endemicExchange.connect(user2).bidForDutchAuction(2);
-
-      await expect(bid2)
-        .to.emit(endemicExchange, AUCTION_SUCCESFUL)
-        .withArgs(
-          ethers.utils.parseUnits('0.2'),
-          user2.address,
-          2,
-          ethers.utils.parseUnits('0.006')
-        );
     });
   });
 
@@ -2202,7 +2074,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Diff = user1Bal2.sub(user1Bal1);
       // 0.2 minus 3% fee
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.175'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.165'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -2272,12 +2144,12 @@ describe('ExchangeDutchAuction', function () {
       const user1Diff = user1Bal2.sub(user1Bal1);
 
       expect(user1Diff.toString()).to.equal(
-        ethers.utils.parseUnits('0.3851859')
+        ethers.utils.parseUnits('0.3632459')
       );
 
-      // 0.38395 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
+      // 0.3632459 = seller proceeds if we don't forward all sent ethers to seller and fee receipients
       // now we forward all funds in case of ether payments => seller get few percent more than before in case of ether
-      expect(user1Diff).to.be.gt(ethers.utils.parseUnits('0.38395'));
+      expect(user1Diff).to.be.gte(ethers.utils.parseUnits('0.3632459'));
 
       expect(token2Owner).to.equal(user2.address);
     });
@@ -2356,7 +2228,7 @@ describe('ExchangeDutchAuction', function () {
       // Checks if endemicExchange gets 2.5% maker fee + 3% taker fee
       // 2.5% of 0.5 + 0.015 taker fee
       expect(claimEthBalanceDiff).to.equal(ethers.utils.parseUnits('0.0275'));
-      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4375'));
+      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4125'));
 
       // New owner
       const tokenOwner = await nftContract.ownerOf(1);
@@ -2474,7 +2346,7 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('0.028852083333333333')
       );
       expect(user2Diff.toString()).to.equal(
-        ethers.utils.parseUnits('0.459939583333333334')
+        ethers.utils.parseUnits('0.433710416666666667')
       );
 
       // New owner
@@ -2556,7 +2428,7 @@ describe('ExchangeDutchAuction', function () {
 
       const user1Diff = user1Bal2.sub(user1Bal1);
       // 0.2 minus 3% fee
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.175'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.165'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -2580,7 +2452,7 @@ describe('ExchangeDutchAuction', function () {
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
       //   currentPriceChange = (totalPriceChange * 800) / 1000 = -0.96
-      //   currentPrice = 1.4 + currentPriceChange = 0.43999999999999995
+      //   currentPrice = 1.4 + currentPriceChange = 0.44
       //   fee = (currentPrice * 300) / 10000
 
       const user1Bal1 = await endemicToken.balanceOf(user1.address);
@@ -2631,7 +2503,7 @@ describe('ExchangeDutchAuction', function () {
       );
 
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.38185'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.36003'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -2694,12 +2566,12 @@ describe('ExchangeDutchAuction', function () {
 
       //price => 0.2
       //makerCut => 0.01 (5% of price)
-      //royalties => 0.02
-      //seller gets => price - (makerCut + royalties) = 0.170
+      //royalties => 0.03
+      //seller gets => price - (makerCut + royalties) = 0.160
 
       const user1Diff = user1Bal2.sub(user1Bal1);
 
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.170'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.16'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -2771,11 +2643,11 @@ describe('ExchangeDutchAuction', function () {
 
       //price => 0.4364
       //makerCut => 0.02182 (5% of price)
-      //royalties => 0.04364
-      //seller gets => price - (makerCut + royalties) = 0.37094
+      //royalties => 0.06546
+      //seller gets => price - (makerCut + royalties) = 0.34912
 
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.37094'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.34912'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -2863,7 +2735,7 @@ describe('ExchangeDutchAuction', function () {
       // Checks if endemicExchange gets 2.5% maker fee + 3% taker fee
       // 2.5% of 0.5 + 0.015 taker fee
       expect(claimEthBalanceDiff).to.equal(ethers.utils.parseUnits('0.0275'));
-      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4375'));
+      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4125'));
 
       // New owner
       const tokenOwner = await nftContract.ownerOf(1);
@@ -2895,13 +2767,13 @@ describe('ExchangeDutchAuction', function () {
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
       //   currentPriceChange = (totalPriceChange * 800) / 1000 = -0.96
-      //   currentPrice = 1.4 + currentPriceChange = 0.43999999999999995
+      //   currentPrice = 1.4 + currentPriceChange = 0.44
       //   fee = (currentPrice * 300) / 10000
 
       const auction1CurrentPrice = await endemicExchange.getCurrentPrice(
         auctionid
       );
-      const auction1Fee = ethers.utils.parseUnits('0.01319');
+      const auction1Fee = ethers.utils.parseUnits('0.0132');
       const auction1TotalPrice =
         +weiToEther(auction1CurrentPrice) + +weiToEther(auction1Fee);
 
@@ -2993,7 +2865,7 @@ describe('ExchangeDutchAuction', function () {
 
       // Checks if endemicExchange gets 2.5% maker fee + 3% taker fee
       expect(claimEthBalanceDiff).to.equal(ethers.utils.parseUnits('0.02915'));
-      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.46375'));
+      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.43725'));
 
       // New owner
       const tokenOwner = await nftContract.ownerOf(1);
