@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC165.sol";
@@ -31,6 +31,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     );
+
+    error FeeOverTheLimit();
+    error LimitTooHigh();
 
     struct Royalties {
         address account;
@@ -91,7 +94,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= royaltyFeeLimit, "Royalties over the limit");
+        if (fee > royaltyFeeLimit) {
+            revert FeeOverTheLimit();
+        }
 
         checkOwner(nftContract);
 
@@ -108,7 +113,9 @@ contract RoyaltiesProvider is OwnableUpgradeable {
         address feeRecipient,
         uint256 fee
     ) external {
-        require(fee <= royaltyFeeLimit, "Royalties over the limit");
+        if (fee > royaltyFeeLimit) {
+            revert FeeOverTheLimit();
+        }
 
         checkOwner(nftContract);
 
@@ -118,15 +125,17 @@ contract RoyaltiesProvider is OwnableUpgradeable {
     }
 
     function setRoyaltiesLimit(uint256 newLimit) public onlyOwner {
-        require(newLimit <= 9500, "Royalty fee limit too high");
+        if (newLimit > 9500) {
+            revert LimitTooHigh();
+        }
         royaltyFeeLimit = newLimit;
         emit NewRoyaltiesLimit(newLimit);
     }
 
     function checkOwner(address nftContract) internal view {
         if (
-            (owner() != _msgSender()) &&
-            (OwnableUpgradeable(nftContract).owner() != _msgSender())
+            (owner() != msg.sender) &&
+            (OwnableUpgradeable(nftContract).owner() != msg.sender)
         ) {
             revert InvalidOwner();
         }

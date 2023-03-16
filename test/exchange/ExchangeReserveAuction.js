@@ -1,14 +1,17 @@
 const { expect } = require('chai');
 const { ethers, network } = require('hardhat');
 const {
-  deployEndemicCollectionWithFactory,
+  deployInitializedCollection,
   deployEndemicExchangeWithDeps,
-  deployEndemicERC1155,
   deployEndemicToken,
 } = require('../helpers/deploy');
 
-const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
-const { ERC721_ASSET_CLASS } = require('../helpers/ids');
+const {
+  ZERO_ADDRESS,
+  FEE_RECIPIENT,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
@@ -29,37 +32,38 @@ describe('ExchangeReserveAuction', function () {
   let endemicExchange,
     endemicToken,
     nftContract,
-    erc1155Contract,
     royaltiesProviderContract,
     paymentManagerContract;
 
-  let owner, user1, user2, user3, feeRecipient;
+  let owner,
+    user1,
+    user2,
+    user3,
+    feeRecipient,
+    mintApprover,
+    collectionAdministrator;
 
-  async function mintERC721(recipient) {
-    await nftContract
-      .connect(owner)
-      .mint(
-        recipient,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-      );
-  }
-
-  async function mintERC1155(recipient, amount) {
-    await erc1155Contract.connect(owner).create({
-      artist: user2.address,
-      supply: 10,
-      tokenURI: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-    });
-
-    await erc1155Contract.connect(owner).mint({
+  const mintToken = async (recipient) => {
+    return nftContract.mint(
       recipient,
-      tokenId: 1,
-      amount,
-    });
-  }
+      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
+    );
+  };
 
   async function deploy(makerFee = 0, takerFee) {
-    [owner, user1, user2, user3, feeRecipient] = await ethers.getSigners();
+    [
+      owner,
+      user1,
+      user2,
+      user3,
+      feeRecipient,
+      collectionAdministrator,
+      mintApprover,
+    ] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
@@ -67,13 +71,14 @@ describe('ExchangeReserveAuction', function () {
     endemicExchange = result.endemicExchangeContract;
     paymentManagerContract = result.paymentManagerContract;
 
-    nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
-    erc1155Contract = await deployEndemicERC1155();
+    nftContract = await deployInitializedCollection(
+      owner,
+      collectionAdministrator,
+      mintApprover
+    );
 
-    await mintERC721(user1.address);
-    await mintERC721(user1.address);
-
-    await mintERC1155(user1.address, 3);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
   }
 
   async function getCurrentEvmTimestamp() {
@@ -106,7 +111,7 @@ describe('ExchangeReserveAuction', function () {
             ethers.utils.parseUnits('0.1'),
             endemicToken.address
           )
-      ).to.be.revertedWith(SELLER_NOT_ASSET_OWNER);
+      ).to.be.revertedWithCustomError(endemicExchange, SELLER_NOT_ASSET_OWNER);
     });
 
     it('should fail to create reserve auction for nonexistant NFT', async function () {
@@ -135,7 +140,7 @@ describe('ExchangeReserveAuction', function () {
             ethers.utils.parseUnits('0.1'),
             '0x0000000000000000000000000000000000000001'
           )
-      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
     it('should fail to create reserve auction for null erc20 address', async function () {
@@ -148,7 +153,7 @@ describe('ExchangeReserveAuction', function () {
             ethers.utils.parseUnits('0.1'),
             ZERO_ADDRESS
           )
-      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
     it('should fail to create reserve auction with invalid price configuration', async function () {
@@ -161,7 +166,10 @@ describe('ExchangeReserveAuction', function () {
             ethers.utils.parseUnits('0.00001'),
             endemicToken.address
           )
-      ).to.be.revertedWith(INVALID_PRICE_CONFIGURATION);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        INVALID_PRICE_CONFIGURATION
+      );
     });
 
     it('should be able to recreate ERC721 reserve auction', async function () {
@@ -201,7 +209,7 @@ describe('ExchangeReserveAuction', function () {
     });
 
     it('should be able to create reserve auctions for multiple NFTs with ERC20 token payment', async function () {
-      await mintERC721(user1.address);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -296,7 +304,10 @@ describe('ExchangeReserveAuction', function () {
         endemicExchange
           .connect(user2)
           .bidForReserveAuctionInErc20(erc721AuctionId, 100)
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should fail to bid if auction has been concluded', async function () {
@@ -306,7 +317,7 @@ describe('ExchangeReserveAuction', function () {
         endemicExchange
           .connect(user2)
           .bidForReserveAuctionInErc20(erc721AuctionId, 100)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid and finalize by buyer on ERC721 reserve auction', async function () {
@@ -344,7 +355,7 @@ describe('ExchangeReserveAuction', function () {
       // User1 should receive 100 wei, fee is zero
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.09'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.085'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -352,7 +363,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid and finalize by seller on ERC721 reserve auction', async function () {
@@ -390,7 +401,7 @@ describe('ExchangeReserveAuction', function () {
       // User1 should receive 100 wei, fee is zero
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.09'));
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.085'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -398,7 +409,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid in middle of auction and finalize after by buyer', async function () {
@@ -438,9 +449,7 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('1.0'),
           ethers.utils.parseUnits('0.1'),
           1000,
-          1,
-          ZERO_ADDRESS,
-          ERC721_ASSET_CLASS
+          ZERO_ADDRESS
         );
 
       const auctionId = await endemicExchange.createAuctionId(
@@ -451,7 +460,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(user1).finalizeReserveAuction(auctionId)
-      ).to.be.revertedWith('AuctionInProgress');
+      ).to.be.revertedWithCustomError(endemicExchange, 'AuctionInProgress');
     });
 
     it('should fail to bid if auction is dutch', async function () {
@@ -463,9 +472,7 @@ describe('ExchangeReserveAuction', function () {
           ethers.utils.parseUnits('1.0'),
           ethers.utils.parseUnits('0.1'),
           1000,
-          1,
-          ZERO_ADDRESS,
-          ERC721_ASSET_CLASS
+          ZERO_ADDRESS
         );
 
       const auctionId = await endemicExchange.createAuctionId(
@@ -490,7 +497,7 @@ describe('ExchangeReserveAuction', function () {
             auctionId,
             ethers.utils.parseUnits('0.309')
           )
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should be able to bid in middle of auction and finalize after by seller', async function () {
@@ -544,7 +551,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(user3).finalizeReserveAuction(erc721AuctionId)
-      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, UNAUTHORIZED_ERROR);
     });
 
     it('should be able to bid in last 15mins and extend auction by 15mins', async function () {
@@ -634,7 +641,7 @@ describe('ExchangeReserveAuction', function () {
           erc721AuctionId,
           ethers.utils.parseUnits('0.103') //not larger than 10% of previous bid
         )
-      ).to.be.revertedWith(INSUFFICIENT_BID);
+      ).to.be.revertedWithCustomError(endemicExchange, INSUFFICIENT_BID);
     });
 
     it('should fail to outbid previous bidder with too low allowance', async function () {
@@ -676,7 +683,10 @@ describe('ExchangeReserveAuction', function () {
             erc721AuctionId,
             ethers.utils.parseUnits('0.203')
           )
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should fail to outbid himself', async function () {
@@ -709,7 +719,7 @@ describe('ExchangeReserveAuction', function () {
             erc721AuctionId,
             ethers.utils.parseUnits('0.203')
           )
-      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, UNAUTHORIZED_ERROR);
     });
 
     it('should outbid previous bidder', async function () {
@@ -831,13 +841,13 @@ describe('ExchangeReserveAuction', function () {
             user1.address
           )
         )
-      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, UNAUTHORIZED_ERROR);
     });
 
     it('should fail to conclude auction if not seller', async function () {
       await expect(
         endemicExchange.connect(user2).cancelAuction(erc721AuctionId)
-      ).to.be.revertedWith(UNAUTHORIZED_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, UNAUTHORIZED_ERROR);
     });
 
     it('should be able to conclude auction', async function () {
@@ -846,7 +856,7 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.getAuction(erc721AuctionId)
-      ).to.be.revertedWith(INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
     });
 
     it('should trigger event after canceling auction', async function () {
@@ -967,14 +977,13 @@ describe('ExchangeReserveAuction', function () {
       const token2Owner = await nftContract.ownerOf(1);
       const claimEthBalanceDiff = claimEthBalance2.sub(claimEthBalance1);
 
-      // 3% of 0.2 + 3% fee
       expect(claimEthBalanceDiff.toString()).to.equal(
         ethers.utils.parseUnits('0.011')
       );
 
       const user1Diff = user1Bal2.sub(user1Bal1);
-      // 0.2 minus 3% fee
-      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.175'));
+
+      expect(user1Diff.toString()).to.equal(ethers.utils.parseUnits('0.165'));
       expect(token2Owner).to.equal(user2.address);
     });
 
@@ -1115,7 +1124,7 @@ describe('ExchangeReserveAuction', function () {
       // Checks if endemicExchange gets 2.5% maker fee + 3% taker fee
       // 2.5% of 0.5 + 0.015 taker fee
       expect(claimEthBalanceDiff).to.equal(ethers.utils.parseUnits('0.0275'));
-      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4375'));
+      expect(user2Diff.toString()).to.equal(ethers.utils.parseUnits('0.4125'));
 
       // New owner
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1127,9 +1136,6 @@ describe('ExchangeReserveAuction', function () {
     beforeEach(async function () {
       await deploy(250, 300, 2200);
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
-      await erc1155Contract
-        .connect(user1)
-        .setApprovalForAll(endemicExchange.address, true);
 
       await royaltiesProviderContract.setRoyaltiesForCollection(
         nftContract.address,

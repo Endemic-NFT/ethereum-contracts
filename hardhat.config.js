@@ -1,4 +1,4 @@
-require('@nomiclabs/hardhat-waffle');
+require('@nomicfoundation/hardhat-chai-matchers');
 require('@nomiclabs/hardhat-etherscan');
 require('@openzeppelin/hardhat-upgrades');
 require('hardhat-contract-sizer');
@@ -11,7 +11,7 @@ require('dotenv').config();
  */
 module.exports = {
   solidity: {
-    version: '0.8.15',
+    version: '0.8.18',
     settings: {
       optimizer: {
         enabled: true,

@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const { ethers, network } = require('hardhat');
 const {
   deployEndemicExchangeWithDeps,
-  deployEndemicCollectionWithFactory,
+  deployInitializedCollection,
   deployEndemicToken,
 } = require('../helpers/deploy');
 const { getTypedMessage } = require('../helpers/eip712');
@@ -10,7 +10,7 @@ const {
   signTypedData,
   SignTypedDataVersion,
 } = require('@metamask/eth-sig-util');
-const { ZERO_ADDRESS } = require('../helpers/constants');
+const { ZERO_ADDRESS, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 const { addTakerFee } = require('../helpers/token');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
@@ -24,7 +24,7 @@ const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 describe('EndemicPrivateSale', () => {
   let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
-  let owner, user2;
+  let owner, user2, mintApprover, collectionAdministrator;
 
   const RANDOM_R_VALUE =
     '0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d';
@@ -36,26 +36,33 @@ describe('EndemicPrivateSale', () => {
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
-  async function mintERC721(recipient) {
-    await nftContract
-      .connect(owner)
-      .mint(
-        recipient,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi'
-      );
-  }
+  const mintToken = async (recipient) => {
+    return nftContract.mint(
+      recipient,
+      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
+    );
+  };
 
   async function deploy() {
-    [owner, user2] = await ethers.getSigners();
+    [owner, user2, mintApprover, collectionAdministrator] =
+      await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps();
 
     endemicExchange = result.endemicExchangeContract;
     paymentManagerContract = result.paymentManagerContract;
 
-    nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
+    nftContract = await deployInitializedCollection(
+      owner,
+      collectionAdministrator,
+      mintApprover
+    );
 
-    await mintERC721(owner.address);
+    await mintToken(owner.address);
   }
 
   const getSignedPrivateSale = async (paymentErc20TokenAddress) => {
@@ -68,7 +75,7 @@ describe('EndemicPrivateSale', () => {
       value: ethers.utils.parseEther('1650'),
     });
 
-    await mintERC721(signer.address);
+    await mintToken(signer.address);
 
     await nftContract.connect(signer).approve(endemicExchange.address, 2);
 
@@ -127,7 +134,7 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(PRIVATE_SALE_EXPIRED);
+      ).to.be.revertedWithCustomError(endemicExchange, PRIVATE_SALE_EXPIRED);
     });
 
     it('should fail with price not correct (too low provided)', async function () {
@@ -145,7 +152,10 @@ describe('EndemicPrivateSale', () => {
             value: ZERO_ONE_ETHER,
           }
         )
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should fail with invalid signature', async function () {
@@ -165,7 +175,7 @@ describe('EndemicPrivateSale', () => {
             value: priceWithFees,
           }
         )
-      ).to.be.revertedWith(INVALID_SIGNATURE);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to buy from private sale when taker fee not included', async function () {
@@ -185,7 +195,10 @@ describe('EndemicPrivateSale', () => {
             value: ONE_ETHER,
           }
         )
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should succesfully buy from private sale', async function () {
@@ -231,7 +244,7 @@ describe('EndemicPrivateSale', () => {
               value: 1,
             }
           )
-      ).to.be.revertedWith(INVALID_SIGNATURE);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
   });
 
@@ -259,7 +272,7 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(PRIVATE_SALE_EXPIRED);
+      ).to.be.revertedWithCustomError(endemicExchange, PRIVATE_SALE_EXPIRED);
     });
 
     it('should fail with Erc20 not supported', async function () {
@@ -274,7 +287,7 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
     it('should fail with price not correct (too low approved)', async function () {
@@ -289,7 +302,10 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should fail with invalid signature', async function () {
@@ -314,7 +330,7 @@ describe('EndemicPrivateSale', () => {
             RANDOM_R_VALUE,
             RANDOM_S_VALUE
           )
-      ).to.be.revertedWith(INVALID_SIGNATURE);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to buy from private sale when taker fee not included', async function () {
@@ -339,7 +355,10 @@ describe('EndemicPrivateSale', () => {
             r,
             s
           )
-      ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
     });
 
     it('should succesfully buy from private sale', async function () {
@@ -384,7 +403,7 @@ describe('EndemicPrivateSale', () => {
             r,
             s
           )
-      ).to.be.revertedWith(INVALID_SIGNATURE);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
   });
 });

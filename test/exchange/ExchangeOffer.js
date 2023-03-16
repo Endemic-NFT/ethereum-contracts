@@ -2,11 +2,16 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const {
-  deployEndemicCollectionWithFactory,
+  deployInitializedCollection,
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { FEE_RECIPIENT, ZERO_ADDRESS } = require('../helpers/constants');
+const {
+  FEE_RECIPIENT,
+  ZERO_ADDRESS,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 
 const INVALID_OFFER_ERROR = 'InvalidOffer';
 const INVALID_TOKEN_OWNER = 'InvalidTokenOwner';
@@ -28,20 +33,35 @@ describe('ExchangeOffer', function () {
     royaltiesProviderContract,
     paymentManagerContract;
 
-  let owner, user1, user2, user3, royaltiesRecipient;
+  let owner,
+    user1,
+    user2,
+    user3,
+    royaltiesRecipient,
+    collectionAdministrator,
+    mintApprover;
 
-  async function mint(recipient) {
-    await nftContract
-      .connect(owner)
-      .mint(
-        recipient,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-      );
-  }
+  const mintToken = async (recipient) => {
+    return nftContract.mint(
+      recipient,
+      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
+    );
+  };
 
   async function deploy(makerFee = 300, takerFee = 300) {
-    [owner, user1, user2, user3, royaltiesRecipient] =
-      await ethers.getSigners();
+    [
+      owner,
+      user1,
+      user2,
+      user3,
+      royaltiesRecipient,
+      collectionAdministrator,
+      mintApprover,
+    ] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
 
@@ -49,12 +69,16 @@ describe('ExchangeOffer', function () {
     endemicExchange = result.endemicExchangeContract;
     paymentManagerContract = result.paymentManagerContract;
 
-    nftContract = (await deployEndemicCollectionWithFactory()).nftContract;
+    nftContract = await deployInitializedCollection(
+      owner,
+      collectionAdministrator,
+      mintApprover
+    );
 
-    await mint(user1.address);
-    await mint(user1.address);
-    await mint(user1.address);
-    await mint(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
 
     await nftContract.connect(user1).approve(endemicExchange.address, 1);
     await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -108,7 +132,7 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeNftOffer(nftContract.address, 1, 100000, {
             value: ethers.utils.parseUnits('0.616'),
           })
-        ).to.be.revertedWith(OFFER_EXISTS);
+        ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXISTS);
 
         const activeOffer = await endemicExchange.getOffer(1);
         expect(activeOffer.bidder).to.equal(owner.address);
@@ -123,7 +147,10 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeNftOffer(nftContract.address, 1, 100000, {
             value: 0,
           })
-        ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          UNSUFFICIENT_CURRENCY_SUPPLIED
+        );
       });
 
       it('should fail to offer on token owned by bidder', async () => {
@@ -133,7 +160,7 @@ describe('ExchangeOffer', function () {
             .placeNftOffer(nftContract.address, 1, 100000, {
               value: ethers.utils.parseUnits('0.5'),
             })
-        ).to.be.revertedWith(INVALID_TOKEN_OWNER);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_TOKEN_OWNER);
       });
 
       it('should fail to offer with invalid duration', async () => {
@@ -141,7 +168,7 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeNftOffer(nftContract.address, 1, 1, {
             value: ethers.utils.parseUnits('0.5'),
           })
-        ).to.be.revertedWith(DURATION_TOO_SHORT);
+        ).to.be.revertedWithCustomError(endemicExchange, DURATION_TOO_SHORT);
       });
 
       it('should successfully create multiple offers on same token', async () => {
@@ -261,7 +288,7 @@ describe('ExchangeOffer', function () {
               1,
               100000
             )
-        ).to.be.revertedWith(OFFER_EXISTS);
+        ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXISTS);
 
         const activeOffer = await endemicExchange.getOffer(1);
         expect(activeOffer.bidder).to.equal(user3.address);
@@ -282,7 +309,10 @@ describe('ExchangeOffer', function () {
               1,
               100000
             )
-        ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          UNSUFFICIENT_CURRENCY_SUPPLIED
+        );
       });
 
       it('should fail to create offer with no supported erc20 tokens', async () => {
@@ -296,7 +326,10 @@ describe('ExchangeOffer', function () {
               1,
               100000
             )
-        ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          INVALID_PAYMENT_METHOD
+        );
       });
 
       it('should fail to offer on token owned by bidder', async () => {
@@ -319,7 +352,7 @@ describe('ExchangeOffer', function () {
               1,
               100000
             )
-        ).to.be.revertedWith(INVALID_TOKEN_OWNER);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_TOKEN_OWNER);
       });
 
       it('should fail to offer with invalid duration', async () => {
@@ -342,11 +375,11 @@ describe('ExchangeOffer', function () {
               1,
               1
             )
-        ).to.be.revertedWith(DURATION_TOO_SHORT);
+        ).to.be.revertedWithCustomError(endemicExchange, DURATION_TOO_SHORT);
       });
 
       it('should successfully create multiple offers on same token', async () => {
-        await mint(user1.address);
+        await mintToken(user1.address);
 
         await endemicToken.transfer(
           user2.address,
@@ -432,7 +465,8 @@ describe('ExchangeOffer', function () {
           ethers.utils.parseUnits('0.001') //gas fees
         );
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
       });
@@ -448,9 +482,9 @@ describe('ExchangeOffer', function () {
             value: ethers.utils.parseUnits('0.3'),
           });
 
-        await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
-          INVALID_OFFER_ERROR
-        );
+        await expect(
+          endemicExchange.cancelOffer(2)
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
 
       it('should be able to cancel offer where there are multiple offers on same token', async () => {
@@ -519,14 +553,17 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange.connect(user2).cancelOffers([1, 2, 3]);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
-        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
-        await expect(endemicExchange.getOffer(3)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(3)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
@@ -558,7 +595,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user3).cancelOffers([1, 2])
-        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
 
       it('should cancel offers when contract owner', async () => {
@@ -580,10 +617,12 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange.adminCancelOffers([1, 2]);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
-        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
@@ -613,7 +652,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).adminCancelOffers([1, 2])
-        ).to.be.revertedWith('as');
+        ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
 
@@ -656,7 +695,8 @@ describe('ExchangeOffer', function () {
           .to.emit(endemicExchange, OFFER_CANCELED)
           .withArgs(activeOffer.id, nftContract.address, 4, user2.address);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
       });
@@ -694,9 +734,9 @@ describe('ExchangeOffer', function () {
             100000
           );
 
-        await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
-          INVALID_OFFER_ERROR
-        );
+        await expect(
+          endemicExchange.cancelOffer(2)
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
 
       it('should be able to cancel offer where there are multiple offers on same token', async () => {
@@ -818,10 +858,12 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange.adminCancelOffers([1, 2]);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
-        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
@@ -877,7 +919,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).adminCancelOffers([1, 2])
-        ).to.be.revertedWith('as');
+        ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
 
@@ -984,7 +1026,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).acceptNftOffer(offer1.id)
-        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
     });
 
@@ -1230,7 +1272,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).acceptNftOffer(offer1.id)
-        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
     });
   });
@@ -1284,7 +1326,7 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeCollectionOffer(nftContract.address, 100000, {
             value: ethers.utils.parseUnits('0.616'),
           })
-        ).to.be.revertedWith(OFFER_EXISTS);
+        ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXISTS);
 
         const activeOffer = await endemicExchange.getOffer(1);
         expect(activeOffer.bidder).to.equal(owner.address);
@@ -1299,7 +1341,10 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeCollectionOffer(nftContract.address, 100000, {
             value: 0,
           })
-        ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          UNSUFFICIENT_CURRENCY_SUPPLIED
+        );
       });
 
       it('should fail to offer with invalid duration', async () => {
@@ -1307,7 +1352,7 @@ describe('ExchangeOffer', function () {
           endemicExchange.placeCollectionOffer(nftContract.address, 1, {
             value: ethers.utils.parseUnits('0.5'),
           })
-        ).to.be.revertedWith(DURATION_TOO_SHORT);
+        ).to.be.revertedWithCustomError(endemicExchange, DURATION_TOO_SHORT);
       });
 
       it('should successfully create multiple offers on same collection', async () => {
@@ -1428,7 +1473,7 @@ describe('ExchangeOffer', function () {
               ethers.utils.parseUnits('0.616'),
               100000
             )
-        ).to.be.revertedWith(OFFER_EXISTS);
+        ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXISTS);
 
         const activeOffer = await endemicExchange.getOffer(1);
         expect(activeOffer.bidder).to.equal(user3.address);
@@ -1448,7 +1493,10 @@ describe('ExchangeOffer', function () {
               ethers.utils.parseUnits('0.515'),
               100000
             )
-        ).to.be.revertedWith(UNSUFFICIENT_CURRENCY_SUPPLIED);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          UNSUFFICIENT_CURRENCY_SUPPLIED
+        );
       });
 
       it('should fail to create offer with no supported erc20 tokens', async () => {
@@ -1461,7 +1509,10 @@ describe('ExchangeOffer', function () {
               ethers.utils.parseUnits('0.515'),
               100000
             )
-        ).to.be.revertedWith(INVALID_PAYMENT_METHOD);
+        ).to.be.revertedWithCustomError(
+          endemicExchange,
+          INVALID_PAYMENT_METHOD
+        );
       });
 
       it('should fail to offer with invalid duration', async () => {
@@ -1483,11 +1534,11 @@ describe('ExchangeOffer', function () {
               ethers.utils.parseUnits('0.515'),
               1
             )
-        ).to.be.revertedWith(DURATION_TOO_SHORT);
+        ).to.be.revertedWithCustomError(endemicExchange, DURATION_TOO_SHORT);
       });
 
       it('should successfully create multiple offers on same collection', async () => {
-        await mint(user1.address);
+        await mintToken(user1.address);
 
         await endemicToken.transfer(
           user2.address,
@@ -1574,7 +1625,8 @@ describe('ExchangeOffer', function () {
           ethers.utils.parseUnits('0.001') //gas fees
         );
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
       });
@@ -1594,9 +1646,9 @@ describe('ExchangeOffer', function () {
             value: ethers.utils.parseUnits('0.3'),
           });
 
-        await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
-          INVALID_OFFER_ERROR
-        );
+        await expect(
+          endemicExchange.cancelOffer(2)
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
 
       it('should be able to cancel offer where there are multiple offers on same collection', async () => {
@@ -1665,10 +1717,12 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange.adminCancelOffers([1, 2]);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
-        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
@@ -1702,7 +1756,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).adminCancelOffers([1, 2])
-        ).to.be.revertedWith('as');
+        ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
 
@@ -1744,7 +1798,8 @@ describe('ExchangeOffer', function () {
           .to.emit(endemicExchange, OFFER_CANCELED)
           .withArgs(activeOffer.id, nftContract.address, 0, user2.address);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
       });
@@ -1780,9 +1835,9 @@ describe('ExchangeOffer', function () {
             100000
           );
 
-        await expect(endemicExchange.cancelOffer(2)).to.be.revertedWith(
-          INVALID_OFFER_ERROR
-        );
+        await expect(
+          endemicExchange.cancelOffer(2)
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
 
       it('should be able to cancel offer where there are multiple offers on same collection', async () => {
@@ -1907,10 +1962,12 @@ describe('ExchangeOffer', function () {
 
         await endemicExchange.adminCancelOffers([1, 2]);
 
-        await expect(endemicExchange.getOffer(1)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(1)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
-        await expect(endemicExchange.getOffer(2)).to.be.revertedWith(
+        await expect(endemicExchange.getOffer(2)).to.be.revertedWithCustomError(
+          endemicExchange,
           INVALID_OFFER_ERROR
         );
 
@@ -1972,7 +2029,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).adminCancelOffers([1, 2])
-        ).to.be.revertedWith('as');
+        ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
 
@@ -2085,7 +2142,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).acceptCollectionOffer(offer1.id, 4)
-        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
     });
 
@@ -2332,7 +2389,7 @@ describe('ExchangeOffer', function () {
 
         await expect(
           endemicExchange.connect(user1).acceptCollectionOffer(offer1.id, 1)
-        ).to.be.revertedWith(INVALID_OFFER_ERROR);
+        ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
       });
     });
   });

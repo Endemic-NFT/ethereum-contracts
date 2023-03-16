@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.15;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -43,20 +43,14 @@ abstract contract EndemicReserveAuction is
         _requireValidAuctionRequest(
             paymentErc20TokenAddress,
             nftContract,
-            tokenId,
-            1,
-            ERC721_ASSET_CLASS
+            tokenId
         );
 
         if (reservePrice < MIN_PRICE) {
             revert InvalidPriceConfiguration();
         }
 
-        bytes32 auctionId = _createAuctionId(
-            nftContract,
-            tokenId,
-            _msgSender()
-        );
+        bytes32 auctionId = _createAuctionId(nftContract, tokenId, msg.sender);
 
         //seller cannot recreate auction if it is already in progress
         _requireIdleAuction(auctionId);
@@ -66,15 +60,13 @@ abstract contract EndemicReserveAuction is
             id: auctionId,
             nftContract: nftContract,
             highestBidder: address(0),
-            seller: _msgSender(),
+            seller: msg.sender,
             paymentErc20TokenAddress: paymentErc20TokenAddress,
             tokenId: tokenId,
-            amount: 1,
             startingPrice: reservePrice,
             endingPrice: 0,
             startedAt: block.timestamp,
-            endingAt: 0, //timer is not started yet
-            assetClass: ERC721_ASSET_CLASS
+            endingAt: 0 //timer is not started yet
         });
 
         idToAuction[auctionId] = auction;
@@ -86,10 +78,8 @@ abstract contract EndemicReserveAuction is
             reservePrice,
             0,
             RESERVE_AUCTION_DURATION,
-            _msgSender(),
-            1,
-            paymentErc20TokenAddress,
-            ERC721_ASSET_CLASS
+            msg.sender,
+            paymentErc20TokenAddress
         );
     }
 
@@ -103,7 +93,7 @@ abstract contract EndemicReserveAuction is
 
         _requireAuctionType(auction, AuctionType.RESERVE);
 
-        _requireValidBidRequest(auction, 1);
+        _requireValidBidRequest(auction);
 
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
             auction.paymentErc20TokenAddress
@@ -128,7 +118,7 @@ abstract contract EndemicReserveAuction is
 
         emit ReserveBidPlaced(
             auction.id,
-            _msgSender(),
+            msg.sender,
             bidPrice,
             auction.endingAt
         );
@@ -139,8 +129,8 @@ abstract contract EndemicReserveAuction is
         Auction memory auction = idToAuction[id];
 
         if (
-            (auction.seller != _msgSender()) &&
-            (auction.highestBidder != _msgSender())
+            (auction.seller != msg.sender) &&
+            (auction.highestBidder != msg.sender)
         ) revert Unauthorized();
 
         if (auction.endingAt == 0) revert AuctionNotStarted();
@@ -161,13 +151,10 @@ abstract contract EndemicReserveAuction is
                 auction.endingPrice
             );
 
-        _transferNFT(
+        IERC721(auction.nftContract).transferFrom(
             auction.seller,
             auction.highestBidder,
-            auction.nftContract,
-            auction.tokenId,
-            auction.amount,
-            auction.assetClass
+            auction.tokenId
         );
 
         _distributeFunds(
@@ -185,7 +172,6 @@ abstract contract EndemicReserveAuction is
             auction.id,
             auction.endingPrice,
             auction.highestBidder,
-            auction.amount,
             totalCut
         );
     }
@@ -210,14 +196,14 @@ abstract contract EndemicReserveAuction is
         _requireSufficientErc20Allowance(
             bidPriceWithFees,
             auction.paymentErc20TokenAddress,
-            _msgSender()
+            msg.sender
         );
 
         //auction will last until 24hours from now
         auction.endingAt = block.timestamp + RESERVE_AUCTION_DURATION;
         auction.endingPrice = bidPrice;
 
-        auction.highestBidder = _msgSender();
+        auction.highestBidder = msg.sender;
     }
 
     function _outBidPreviousBidder(
@@ -227,7 +213,7 @@ abstract contract EndemicReserveAuction is
     ) internal view {
         if (auction.endingAt < block.timestamp) revert AuctionEnded();
         // Bidder cannot outbid themself
-        if (auction.highestBidder == _msgSender()) revert Unauthorized();
+        if (auction.highestBidder == msg.sender) revert Unauthorized();
 
         _requireSufficientOutBid(
             auction.paymentErc20TokenAddress,
@@ -236,7 +222,7 @@ abstract contract EndemicReserveAuction is
         );
 
         auction.endingPrice = bidPrice;
-        auction.highestBidder = _msgSender();
+        auction.highestBidder = msg.sender;
 
         // If bidder outbids another bidder in last 15min of auction extend auction by 15mins
         uint256 extendedEndingTime = block.timestamp + EXTENSION_DURATION;
@@ -260,7 +246,7 @@ abstract contract EndemicReserveAuction is
         _requireSufficientErc20Allowance(
             bidPriceWithFees,
             paymentErc20TokenAddress,
-            _msgSender()
+            msg.sender
         );
     }
 

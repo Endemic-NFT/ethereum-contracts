@@ -1,26 +1,49 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const { deployEndemicCollectionWithFactory } = require('../helpers/deploy');
+const { deployInitializedCollection } = require('../helpers/deploy');
+const { createMintApprovalSignature } = require('../helpers/sign');
+const { ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
 describe('Collection', function () {
-  let nftContract, nftFactory;
-  let owner, user, royaltiesRecipient, operator;
+  let nftContract;
+  let owner, user, mintApprover, administrator, royaltiesRecipient, operator;
 
   beforeEach(async function () {
-    [owner, user, royaltiesRecipient, operator] = await ethers.getSigners();
+    [owner, user, royaltiesRecipient, operator, mintApprover, administrator] =
+      await ethers.getSigners();
 
-    const deployResult = await deployEndemicCollectionWithFactory(owner);
-
-    nftContract = deployResult.nftContract;
-    nftFactory = deployResult.nftFactory;
+    nftContract = await deployInitializedCollection(
+      owner,
+      administrator,
+      mintApprover
+    );
   });
 
-  it('should have correct initial data', async function () {
+  const mintToken = async (caller, recipient, tokenUri) => {
+    return nftContract
+      .connect(caller)
+      .mint(recipient, tokenUri, ZERO, ZERO_BYTES32, ZERO_BYTES32, ZERO);
+  };
+
+  const createApprovalAndMint = async (caller, recipient, tokenUri, nonce) => {
+    const { v, r, s } = await createMintApprovalSignature(
+      nftContract,
+      mintApprover,
+      owner,
+      tokenUri,
+      nonce
+    );
+    return nftContract
+      .connect(caller)
+      .mint(recipient, tokenUri, v, r, s, nonce);
+  };
+
+  it('deploys with correct initial setup', async function () {
     const name = await nftContract.name();
-    expect(name).to.equal('Collection Template');
+    expect(name).to.equal('My Collection');
 
     const symbol = await nftContract.symbol();
-    expect(symbol).to.equal('CT');
+    expect(symbol).to.equal('MC');
 
     const ownerAddress = await nftContract.owner();
     expect(ownerAddress).to.equal(owner.address);
@@ -29,60 +52,23 @@ describe('Collection', function () {
     expect(baseUri).to.equal('ipfs://');
   });
 
-  describe('Initializer', function () {
-    it('should successfuly initialize collection after deployment', async function () {
-      await nftFactory.grantRole(nftFactory.MINTER_ROLE(), owner.address);
-
-      const deployContractTx = await nftFactory.createToken({
-        name: 'Endemic Collection',
-        symbol: 'EC',
-        category: 'Art',
-        royalties: 0,
-      });
-
-      const deployContractReceipt = await deployContractTx.wait();
-
-      const eventData = deployContractReceipt.events.find(
-        ({ event }) => event === 'NFTContractCreated'
-      );
-
-      const newCollectionAddress = eventData.args['nftContract'];
-
-      const Collection = await ethers.getContractFactory('Collection');
-      const newCollection = await Collection.attach(newCollectionAddress);
-
+  describe('mint', function () {
+    it('mints if the owner is a caller', async function () {
       const tokenId = 1;
-      const mintTx = await newCollection.mint(
+      const mintTx = await mintToken(
+        owner,
         user.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(mintTx)
-        .to.emit(newCollection, 'Mint')
-        .withArgs('1', owner.address);
-
-      expect(await newCollection.name()).to.equal('Endemic Collection');
-      expect(await newCollection.symbol()).to.equal('EC');
-      expect(await newCollection.ownerOf(tokenId)).to.equal(user.address);
-      expect(await newCollection.tokenURI(tokenId)).to.equal(
-        'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-      );
-    });
-  });
-
-  describe('Mint', function () {
-    it('should mint an NFT if owner', async function () {
-      const tokenId = 1;
-      const mintTx = await nftContract
-        .connect(owner)
-        .mint(
-          user.address,
+        .to.emit(nftContract, 'Minted')
+        .withArgs(
+          '1',
+          owner.address,
           'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
         );
-
-      await expect(mintTx)
-        .to.emit(nftContract, 'Mint')
-        .withArgs('1', owner.address);
 
       const nftOwnerAddress = await nftContract.ownerOf(tokenId);
       expect(nftOwnerAddress).to.equal(user.address);
@@ -93,30 +79,22 @@ describe('Collection', function () {
       );
     });
 
-    it('should mint multiple NFTs', async function () {
+    it('mints multiple tokens', async function () {
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
-          nftContract
-            .connect(owner)
-            .mint(
-              user.address,
-              `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
-            )
+          mintToken(
+            owner,
+            user.address,
+            `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`,
+            i
+          )
         );
       }
 
       await Promise.all(promises);
 
       for (let i = 0; i < 10; i++) {
-        promises.push(
-          nftContract
-            .connect(owner)
-            .mint(
-              user.address,
-              `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
-            )
-        );
         const nftOwnerAddress = await nftContract.ownerOf(i + 1);
         expect(nftOwnerAddress).to.equal(user.address);
 
@@ -127,28 +105,68 @@ describe('Collection', function () {
       }
     });
 
-    it('should not mint an NFT if not owner', async function () {
-      await expect(
-        nftContract
-          .connect(user)
-          .mint(
-            user.address,
-            'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-          )
-      ).to.be.revertedWith('CallerNotOwner');
+    it('mints if mint approval is required', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const tokenId = 1;
+      await createApprovalAndMint(
+        owner,
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
+      );
+
+      const nftOwnerAddress = await nftContract.ownerOf(tokenId);
+      expect(nftOwnerAddress).to.equal(user.address);
     });
 
-    it('should mint an NFT after burn', async function () {
-      await nftContract.mint(
+    it('reverts if mint approval is already used', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const nonce = 0;
+      await createApprovalAndMint(
+        owner,
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        nonce
+      );
+
+      await expect(
+        createApprovalAndMint(
+          owner,
+          user.address,
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          nonce
+        )
+      ).to.be.revertedWithCustomError(nftContract, 'NonceUsed');
+    });
+
+    it('reverts is minter is not the owner', async function () {
+      await expect(
+        mintToken(
+          user,
+          user.address,
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          0
+        )
+      ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('mints after burn', async function () {
+      await mintToken(
+        owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await nftContract.burn(1);
 
-      await nftContract.mint(
+      await mintToken(
+        owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        1
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(2);
@@ -161,21 +179,25 @@ describe('Collection', function () {
 
       expect(await nftContract.totalSupply()).to.equal('1');
     });
+  });
 
-    it('should mint and approve', async () => {
+  describe('mintAndApprove', () => {
+    it('mints and approves operator', async () => {
       const tokenId = 1;
 
       expect(
         await nftContract.isApprovedForAll(owner.address, operator.address)
       ).to.equal(false);
 
-      await nftContract
-        .connect(owner)
-        .mintAndApprove(
-          user.address,
-          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-          operator.address
-        );
+      await nftContract.mintAndApprove(
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        operator.address,
+        ZERO,
+        ZERO_BYTES32,
+        ZERO_BYTES32,
+        ZERO
+      );
 
       const nftOwnerAddress = await nftContract.ownerOf(tokenId);
       expect(nftOwnerAddress).to.equal(user.address);
@@ -191,25 +213,28 @@ describe('Collection', function () {
     });
   });
 
-  describe('Burn', function () {
-    it('should burn if token owner', async function () {
-      await nftContract.mint(
-        owner.address,
+  describe('burn', function () {
+    it('burns if the token owner is caller', async function () {
+      await mintToken(
+        owner,
+        user.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
 
-      await nftContract.burn(1);
+      await nftContract.connect(user).burn(1);
 
       expect(await nftContract.totalSupply()).to.equal('0');
     });
 
-    it('should burn multiple tokens', async function () {
-      await nftContract.mint(
+    it('burns multiple tokens', async function () {
+      await mintToken(
+        owner,
         owner.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
 
-      await nftContract.mint(
+      await mintToken(
+        owner,
         owner.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
@@ -221,43 +246,44 @@ describe('Collection', function () {
       expect(await nftContract.totalSupply()).to.equal('0');
     });
 
-    it('should fail to burn if not token owner', async function () {
-      await nftContract.mint(
+    it('reverts is a caller is not the token owner', async function () {
+      await mintToken(
+        owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(nftContract.connect(user).burn(1)).to.be.revertedWith(
-        'CallerNotOwner()'
+        'ERC721: caller is not token owner or approved'
       );
     });
   });
 
-  describe('Royalties', function () {
-    it('should support ERC2981 interface', async () => {
-      const ERC2981InterfaceId = 0x2a55205a;
-      expect(await nftContract.supportsInterface(ERC2981InterfaceId)).to.equal(
-        true
-      );
-    });
-    it('should be able to set royalties if owner', async () => {
+  describe('setRoyalties', function () {
+    it('sets royalties', async () => {
       await nftContract.setRoyalties(royaltiesRecipient.address, 500);
       expect(await nftContract.royaltiesRecipient()).to.equal(
         royaltiesRecipient.address
       );
       expect(await nftContract.royaltiesAmount()).to.equal('500');
     });
-    it('should not be able to set royalties if not owner', async () => {
+
+    it('reverts is a caller is not the owner', async () => {
       await expect(
         nftContract.connect(user).setRoyalties(royaltiesRecipient.address, 500)
-      ).to.be.revertedWith('CallerNotOwner');
+      ).to.be.revertedWith('Ownable: caller is not the owner');
     });
-    it('should respect royalties amount limit', async () => {
+
+    it('respects royalties amount limit', async () => {
       await expect(
         nftContract.setRoyalties(royaltiesRecipient.address, 10001)
-      ).to.be.revertedWith('RoyaltiesTooHigh');
+      ).to.be.revertedWithCustomError(nftContract, 'RoyaltiesTooHigh');
     });
-    it('should calculate royalties correctly', async () => {
+  });
+
+  describe('royaltyInfo', () => {
+    it('calculates royalties correctly', async () => {
       await nftContract.setRoyalties(royaltiesRecipient.address, 1000);
       const royaltyInfo = await nftContract.royaltyInfo(
         1,
@@ -267,6 +293,24 @@ describe('Collection', function () {
       expect(royaltyInfo.royaltyAmount).to.equal(
         ethers.utils.parseUnits('0.1')
       );
+    });
+  });
+
+  describe('interfaces', () => {
+    it('supports ERC2981 interface', async () => {
+      const ERC2981InterfaceId = 0x2a55205a;
+      expect(await nftContract.supportsInterface(ERC2981InterfaceId)).to.equal(
+        true
+      );
+    });
+    it('supports ERC721', async () => {
+      expect(await nftContract.supportsInterface('0x80ac58cd')).to.eq(true);
+    });
+    it('supports ERC165', async () => {
+      expect(await nftContract.supportsInterface('0x01ffc9a7')).to.eq(true);
+    });
+    it('supports ERC721Metadata', async () => {
+      expect(await nftContract.supportsInterface('0x5b5e139f')).to.eq(true);
     });
   });
 });
