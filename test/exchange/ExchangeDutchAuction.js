@@ -1,19 +1,23 @@
 const { expect } = require('chai');
 const { ethers, network } = require('hardhat');
-const BN = require('bignumber.js');
 const {
   deployInitializedCollection,
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
 
-const { ZERO_ADDRESS, FEE_RECIPIENT, TOO_LONG_AUCTION_DURATION } = require('../helpers/constants');
+const {
+  ZERO_ADDRESS,
+  FEE_RECIPIENT,
+  ZERO,
+  ZERO_BYTES32,
+  TOO_LONG_AUCTION_DURATION,
+} = require('../helpers/constants');
 const {
   weiToEther,
   calculateAuctionDuration,
   addTakerFee,
 } = require('../helpers/token');
-const { createMintApprovalSignature } = require('../helpers/sign');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_DURATION_ERROR = 'InvalidDuration';
@@ -42,19 +46,14 @@ describe('ExchangeDutchAuction', function () {
     collectionAdministrator,
     mintApprover;
 
-  const createApprovalAndMint = async (recipient) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi'
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 
@@ -81,8 +80,8 @@ describe('ExchangeDutchAuction', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
   }
 
   describe('Create dutch auction with Ether', function () {
@@ -281,7 +280,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create dutch auctions for multiple NFTs', async function () {
-      await createApprovalAndMint(user1.address);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -525,7 +524,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create dutch auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -980,7 +979,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should be able to create fixed auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -1208,7 +1207,6 @@ describe('ExchangeDutchAuction', function () {
           value: ethers.utils.parseUnits('0.103'),
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
-
     });
 
     it('should fail to bid on dutch auction because auction is listed as reserved', async function () {
@@ -1273,9 +1271,7 @@ describe('ExchangeDutchAuction', function () {
       // User1 should receive 0.373232 ether, 80% of auction has passed
       const user1Bal2 = await user1.getBalance();
       const user1Diff = user1Bal2.sub(user1Bal1);
-      expect(user1Diff.toString()).to.lte(
-        ethers.utils.parseUnits('0.375')
-      );
+      expect(user1Diff.toString()).to.lte(ethers.utils.parseUnits('0.375'));
 
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
@@ -1494,10 +1490,10 @@ describe('ExchangeDutchAuction', function () {
 
       await endemicToken.transfer(
         user2.address,
-        (2 * + auction1CurrentPrice).toString()
+        (2 * +auction1CurrentPrice).toString()
       );
 
-      const totalPrice = addTakerFee(auction1CurrentPrice)
+      const totalPrice = addTakerFee(auction1CurrentPrice);
 
       await endemicToken
         .connect(user2)
@@ -1717,7 +1713,7 @@ describe('ExchangeDutchAuction', function () {
   });
 
   describe('Bidding with ERC20 on fixed auction', function () {
-    let erc721AuctionId, erc1155AuctionId;
+    let erc721AuctionId;
 
     beforeEach(async function () {
       await deploy();

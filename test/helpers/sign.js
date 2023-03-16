@@ -15,16 +15,31 @@ const createMintApprovalSignature = async (
   nftContract,
   signer,
   minter,
-  tokenUri
+  tokenUri,
+  nonce
 ) => {
-  let abiEncoded = ethers.utils.defaultAbiCoder.encode(
-    ['address', 'address', 'string'],
-    [nftContract.address, minter.address, tokenUri]
+  const signature = await signer._signTypedData(
+    {
+      name: 'My Collection',
+      version: '1',
+      chainId: 31337, // Hardhat chain id
+      verifyingContract: nftContract.address,
+    },
+    {
+      MintApproval: [
+        { name: 'minter', type: 'address' },
+        { name: 'tokenCID', type: 'string' },
+        { name: 'nonce', type: 'uint256' },
+      ],
+    },
+    {
+      minter: minter.address,
+      tokenCID: tokenUri,
+      nonce,
+    }
   );
 
-  const hash = ethers.utils.keccak256(ethers.utils.arrayify(abiEncoded));
-  let sig = await sign(signer, hash);
-  return sig;
+  return ethers.utils.splitSignature(signature);
 };
 
 module.exports = {

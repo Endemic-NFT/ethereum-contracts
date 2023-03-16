@@ -5,9 +5,13 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { createMintApprovalSignature } = require('../helpers/sign');
 
-const { ZERO_ADDRESS, FEE_RECIPIENT } = require('../helpers/constants');
+const {
+  ZERO_ADDRESS,
+  FEE_RECIPIENT,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
@@ -39,19 +43,14 @@ describe('ExchangeReserveAuction', function () {
     mintApprover,
     collectionAdministrator;
 
-  const createApprovalAndMint = async (recipient) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi'
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y2anf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 
@@ -78,8 +77,8 @@ describe('ExchangeReserveAuction', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
   }
 
   async function getCurrentEvmTimestamp() {
@@ -210,7 +209,7 @@ describe('ExchangeReserveAuction', function () {
     });
 
     it('should be able to create reserve auctions for multiple NFTs with ERC20 token payment', async function () {
-      await createApprovalAndMint(user1.address);
+      await mintToken(user1.address);
 
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
       await nftContract.connect(user1).approve(endemicExchange.address, 2);

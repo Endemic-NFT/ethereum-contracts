@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { deployInitializedCollection } = require('../helpers/deploy');
 const { createMintApprovalSignature } = require('../helpers/sign');
+const { ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
 describe('Collection', function () {
   let nftContract;
@@ -18,14 +19,23 @@ describe('Collection', function () {
     );
   });
 
-  const createApprovalAndMint = async (caller, recipient, tokenUri) => {
+  const mintToken = async (caller, recipient, tokenUri) => {
+    return nftContract
+      .connect(caller)
+      .mint(recipient, tokenUri, ZERO, ZERO_BYTES32, ZERO_BYTES32, ZERO);
+  };
+
+  const createApprovalAndMint = async (caller, recipient, tokenUri, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
       mintApprover,
       owner,
-      tokenUri
+      tokenUri,
+      nonce
     );
-    return nftContract.connect(caller).mint(recipient, tokenUri, v, r, s);
+    return nftContract
+      .connect(caller)
+      .mint(recipient, tokenUri, v, r, s, nonce);
   };
 
   it('deploys with correct initial setup', async function () {
@@ -45,10 +55,11 @@ describe('Collection', function () {
   describe('mint', function () {
     it('mints if the owner is a caller', async function () {
       const tokenId = 1;
-      const mintTx = await createApprovalAndMint(
+      const mintTx = await mintToken(
         owner,
         user.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(mintTx)
@@ -72,10 +83,11 @@ describe('Collection', function () {
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
-          createApprovalAndMint(
+          mintToken(
             owner,
             user.address,
-            `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+            `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`,
+            i
           )
         );
       }
@@ -93,29 +105,68 @@ describe('Collection', function () {
       }
     });
 
-    it('reverts is minter is not the owner', async function () {
+    it('mints if mint approval is required', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const tokenId = 1;
+      await createApprovalAndMint(
+        owner,
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
+      );
+
+      const nftOwnerAddress = await nftContract.ownerOf(tokenId);
+      expect(nftOwnerAddress).to.equal(user.address);
+    });
+
+    it('reverts if mint approval is already used', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const nonce = 0;
+      await createApprovalAndMint(
+        owner,
+        user.address,
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        nonce
+      );
+
       await expect(
         createApprovalAndMint(
+          owner,
+          user.address,
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          nonce
+        )
+      ).to.be.revertedWithCustomError(nftContract, 'NonceUsed');
+    });
+
+    it('reverts is minter is not the owner', async function () {
+      await expect(
+        mintToken(
           user,
           user.address,
-          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          0
         )
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
     it('mints after burn', async function () {
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await nftContract.burn(1);
 
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        1
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(2);
@@ -138,20 +189,14 @@ describe('Collection', function () {
         await nftContract.isApprovedForAll(owner.address, operator.address)
       ).to.equal(false);
 
-      const { v, r, s } = await createMintApprovalSignature(
-        nftContract,
-        mintApprover,
-        owner,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-      );
-
       await nftContract.mintAndApprove(
         user.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
         operator.address,
-        v,
-        r,
-        s
+        ZERO,
+        ZERO_BYTES32,
+        ZERO_BYTES32,
+        ZERO
       );
 
       const nftOwnerAddress = await nftContract.ownerOf(tokenId);
@@ -170,7 +215,7 @@ describe('Collection', function () {
 
   describe('burn', function () {
     it('burns if the token owner is caller', async function () {
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         user.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
@@ -182,13 +227,13 @@ describe('Collection', function () {
     });
 
     it('burns multiple tokens', async function () {
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         owner.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
       );
 
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         owner.address,
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
@@ -202,14 +247,15 @@ describe('Collection', function () {
     });
 
     it('reverts is a caller is not the token owner', async function () {
-      await createApprovalAndMint(
+      await mintToken(
         owner,
         owner.address,
-        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        0
       );
 
       await expect(nftContract.connect(user).burn(1)).to.be.revertedWith(
-        'ERC721: caller is not token owner nor approved'
+        'ERC721: caller is not token owner or approved'
       );
     });
   });

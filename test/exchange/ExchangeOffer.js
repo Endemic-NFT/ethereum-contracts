@@ -6,8 +6,12 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { FEE_RECIPIENT, ZERO_ADDRESS } = require('../helpers/constants');
-const { createMintApprovalSignature } = require('../helpers/sign');
+const {
+  FEE_RECIPIENT,
+  ZERO_ADDRESS,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 
 const INVALID_OFFER_ERROR = 'InvalidOffer';
 const INVALID_TOKEN_OWNER = 'InvalidTokenOwner';
@@ -37,19 +41,14 @@ describe('ExchangeOffer', function () {
     collectionAdministrator,
     mintApprover;
 
-  const createApprovalAndMint = async (recipient) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 
@@ -76,10 +75,10 @@ describe('ExchangeOffer', function () {
       mintApprover
     );
 
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
-    await createApprovalAndMint(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
+    await mintToken(user1.address);
 
     await nftContract.connect(user1).approve(endemicExchange.address, 1);
     await nftContract.connect(user1).approve(endemicExchange.address, 2);
@@ -380,7 +379,7 @@ describe('ExchangeOffer', function () {
       });
 
       it('should successfully create multiple offers on same token', async () => {
-        await createApprovalAndMint(user1.address);
+        await mintToken(user1.address);
 
         await endemicToken.transfer(
           user2.address,
@@ -1539,7 +1538,7 @@ describe('ExchangeOffer', function () {
       });
 
       it('should successfully create multiple offers on same collection', async () => {
-        await createApprovalAndMint(user1.address);
+        await mintToken(user1.address);
 
         await endemicToken.transfer(
           user2.address,

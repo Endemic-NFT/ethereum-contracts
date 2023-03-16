@@ -1,15 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+
 import {AdministratedUpgradable} from "../access/AdministratedUpgradable.sol";
 
-abstract contract MintApproval is AdministratedUpgradable {
+abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
+    bool mintApprovalRequired;
+
     address public mintApprover;
+
+    mapping(uint256 nonce => bool used) private _usedNonces;
 
     event MintApproverUpdated(address indexed newMintApprover);
 
     error MintApproverCannotBeZeroAddress();
     error MintNotApproved();
+    error NonceUsed();
+
+    function toggleMintApproval() external onlyAdministrator {
+        mintApprovalRequired = !mintApprovalRequired;
+    }
 
     function updateMintApprover(address newMintApprover)
         external
@@ -29,33 +40,35 @@ abstract contract MintApproval is AdministratedUpgradable {
         string calldata tokenCID,
         uint8 v,
         bytes32 r,
-        bytes32 s
-    ) internal view {
+        bytes32 s,
+        uint256 nonce
+    ) internal {
+        if (_usedNonces[nonce]) revert NonceUsed();
+
         if (
-            _recoverSigner(_prepareMessage(minter, tokenCID), v, r, s) !=
+            ecrecover(_prepareMessage(minter, tokenCID, nonce), v, r, s) !=
             mintApprover
         ) {
             revert MintNotApproved();
         }
+
+        _usedNonces[nonce] = true;
     }
 
-    function _prepareMessage(address minter, string calldata tokenCID)
+    function _prepareMessage(address minter, string calldata tokenCID, uint256 nonce)
         private
         view
         returns (bytes32)
     {
-        return keccak256(abi.encode(address(this), minter, tokenCID));
-    }
-
-    function _recoverSigner(
-        bytes32 message,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) private pure returns (address) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-
-        bytes32 prefixedProof = keccak256(abi.encodePacked(prefix, message));
-        return ecrecover(prefixedProof, v, r, s);
+        return _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    keccak256("MintApproval(address minter,string tokenCID,uint256 nonce)"),
+                    minter,
+                    keccak256(bytes(tokenCID)),
+                    nonce
+                )
+            )
+        );
     }
 }

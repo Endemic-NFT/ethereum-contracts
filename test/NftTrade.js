@@ -1,29 +1,23 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const { ZERO_ADDRESS } = require('./helpers/constants');
+const { ZERO_ADDRESS, ZERO, ZERO_BYTES32 } = require('./helpers/constants');
 const {
   deployEndemicExchangeWithDeps,
   deployInitializedCollection,
 } = require('./helpers/deploy');
-const { createMintApprovalSignature } = require('./helpers/sign');
 
 describe('NftTrade', function () {
   let endemicExchange, nftContract;
   let owner, user1, user2, collectionAdministrator, mintApprover;
 
-  const createApprovalAndMint = async (recipient) => {
-    const { v, r, s } = await createMintApprovalSignature(
-      nftContract,
-      mintApprover,
-      owner,
-      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-    );
+  const mintToken = async (recipient) => {
     return nftContract.mint(
       recipient,
       'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
-      v,
-      r,
-      s
+      ZERO,
+      ZERO_BYTES32,
+      ZERO_BYTES32,
+      ZERO
     );
   };
 
@@ -41,7 +35,7 @@ describe('NftTrade', function () {
 
     endemicExchange = result.endemicExchangeContract;
 
-    await createApprovalAndMint(owner.address);
+    await mintToken(owner.address);
   });
 
   it('should be able to accept bid after buying NFT', async () => {
