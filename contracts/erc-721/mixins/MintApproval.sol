@@ -99,8 +99,12 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
     {
         bytes32[] memory tokenCIDHashes = new bytes32[](tokenCIDs.length);
 
-        for (uint256 i = 0; i < tokenCIDs.length; i++) {
+        for (uint256 i = 0; i < tokenCIDs.length; ) {
             tokenCIDHashes[i] = keccak256(bytes(tokenCIDs[i]));
+
+            unchecked {
+                ++i;
+            }
         }
 
         return _hashTypedDataV4(

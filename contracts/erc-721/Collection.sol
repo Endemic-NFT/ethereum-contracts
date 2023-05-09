@@ -183,15 +183,21 @@ contract Collection is
     }
 
     function _batchMintBase(address recipient, string[] calldata tokenCIDs) internal {
+        // Retrieve latest token ID
         uint256 currentTokenId = latestTokenId;
+        // Calculate start token ID for the batch
         uint256 startTokenId = currentTokenId + 1;
 
-        for (uint256 i = 0; i < tokenCIDs.length; i++) {
+        for (uint256 i = 0; i < tokenCIDs.length; ) {
             // Mint current token ID to the recipient
             _mint(recipient, ++currentTokenId);
 
             // Save token URI
             _tokenCIDs[currentTokenId] = tokenCIDs[i];
+
+            unchecked {
+                ++i;
+            }
         }
 
         // Update latest token ID
