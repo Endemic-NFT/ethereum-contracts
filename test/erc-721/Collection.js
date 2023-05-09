@@ -1,7 +1,10 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { deployInitializedCollection } = require('../helpers/deploy');
-const { createMintApprovalSignature } = require('../helpers/sign');
+const {
+  createMintApprovalSignature,
+  createBatchMintApprovalSignature,
+} = require('../helpers/sign');
 const { ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
 describe('Collection', function () {
@@ -25,6 +28,12 @@ describe('Collection', function () {
       .mint(recipient, tokenUri, ZERO, ZERO_BYTES32, ZERO_BYTES32, ZERO);
   };
 
+  const batchMintTokens = async (caller, recipient, tokenUris) => {
+    return nftContract
+      .connect(caller)
+      .batchMint(recipient, tokenUris, ZERO, ZERO_BYTES32, ZERO_BYTES32, ZERO);
+  };
+
   const createApprovalAndMint = async (caller, recipient, tokenUri, nonce) => {
     const { v, r, s } = await createMintApprovalSignature(
       nftContract,
@@ -36,6 +45,24 @@ describe('Collection', function () {
     return nftContract
       .connect(caller)
       .mint(recipient, tokenUri, v, r, s, nonce);
+  };
+
+  const createApprovalAndBatchMint = async (
+    caller,
+    recipient,
+    tokenUris,
+    nonce
+  ) => {
+    const { v, r, s } = await createBatchMintApprovalSignature(
+      nftContract,
+      mintApprover,
+      owner,
+      tokenUris,
+      nonce
+    );
+    return nftContract
+      .connect(caller)
+      .batchMint(recipient, tokenUris, v, r, s, nonce);
   };
 
   it('deploys with correct initial setup', async function () {
@@ -178,6 +205,126 @@ describe('Collection', function () {
       );
 
       expect(await nftContract.totalSupply()).to.equal('1');
+    });
+  });
+
+  describe('batchMint', () => {
+    it('mints if the owner is a caller', async function () {
+      const tokenUris = [
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      ];
+
+      const mintTx = await batchMintTokens(owner, user.address, tokenUris);
+
+      await expect(mintTx)
+        .to.emit(nftContract, 'BatchMinted')
+        .withArgs('1', '1', owner.address, tokenUris);
+
+      expect(await nftContract.ownerOf(1)).to.equal(user.address);
+      expect(await nftContract.tokenURI(1)).to.equal(
+        'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+    });
+
+    it('mints multiple tokens', async function () {
+      const tokenUris = [];
+      for (let i = 0; i < 10; i++) {
+        tokenUris.push(
+          `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+        );
+      }
+
+      const mintTx = await batchMintTokens(owner, user.address, tokenUris);
+
+      await expect(mintTx)
+        .to.emit(nftContract, 'BatchMinted')
+        .withArgs('1', '10', owner.address, tokenUris);
+
+      for (let i = 0; i < 10; i++) {
+        const nftOwnerAddress = await nftContract.ownerOf(i + 1);
+        expect(nftOwnerAddress).to.equal(user.address);
+
+        const tokenUri = await nftContract.tokenURI(i + 1);
+        expect(tokenUri).to.equal('ipfs://' + tokenUris[i]);
+      }
+      expect(await nftContract.totalSupply()).to.equal('10');
+    });
+
+    it('mints if mint approval is required', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const tokenUris = [];
+      for (let i = 0; i < 5; i++) {
+        tokenUris.push(
+          `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+        );
+      }
+
+      await createApprovalAndBatchMint(owner, user.address, tokenUris, 0);
+
+      for (let i = 0; i < 5; i++) {
+        const nftOwnerAddress = await nftContract.ownerOf(i + 1);
+        expect(nftOwnerAddress).to.equal(user.address);
+      }
+    });
+
+    it('reverts if mint approval is already used', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const nonce = 0;
+      const tokenUris = [];
+      for (let i = 0; i < 5; i++) {
+        tokenUris.push(
+          `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+        );
+      }
+
+      await createApprovalAndBatchMint(owner, user.address, tokenUris, nonce);
+
+      await expect(
+        createApprovalAndBatchMint(owner, user.address, tokenUris, nonce)
+      ).to.be.revertedWithCustomError(nftContract, 'NonceUsed');
+    });
+
+    it('reverts if wrong token URIs are provided', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
+      const approvedTokenUris = [
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        'cafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        'dafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      ];
+
+      const { v, r, s } = await createBatchMintApprovalSignature(
+        nftContract,
+        mintApprover,
+        owner,
+        approvedTokenUris,
+        155
+      );
+
+      const unapprovedTokenUris = [
+        'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        'eafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        'dafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      ];
+
+      await expect(
+        nftContract.batchMint(user.address, unapprovedTokenUris, v, r, s, 155)
+      ).to.be.revertedWithCustomError(nftContract, 'MintNotApproved');
+    });
+
+    it('reverts if minter is not the owner', async function () {
+      const tokenUris = [];
+      for (let i = 0; i < 5; i++) {
+        tokenUris.push(
+          `bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi-${i}`
+        );
+      }
+
+      await expect(
+        batchMintTokens(user, user.address, tokenUris)
+      ).to.be.revertedWith('Ownable: caller is not the owner');
     });
   });
 
