@@ -115,7 +115,7 @@ contract Collection is
             _checkBatchMintApproval(owner(), tokenCIDs, v, r, s, nonce);
         }
 
-        // Mint token to the recipient
+        // Mint tokens to the recipient
         _batchMintBase(recipient, tokenCIDs);
     }
 
@@ -187,7 +187,7 @@ contract Collection is
         uint256 startTokenId = currentTokenId + 1;
 
         for (uint256 i = 0; i < tokenCIDs.length; i++) {
-            // Mint token ID to the recipient
+            // Mint current token ID to the recipient
             _mint(recipient, ++currentTokenId);
 
             // Save token URI
@@ -197,7 +197,7 @@ contract Collection is
         // Update latest token ID
         latestTokenId = currentTokenId;
 
-        // Emit mint event
+        // Emit batch mint event
         emit BatchMinted(startTokenId, currentTokenId, owner(), tokenCIDs);
     }
 
