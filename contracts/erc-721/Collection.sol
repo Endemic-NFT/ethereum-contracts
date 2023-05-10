@@ -141,6 +141,28 @@ contract Collection is
         setApprovalForAll(operator, true);
     }
 
+    function batchMintAndApprove(
+        address recipient,
+        string[] calldata tokenCIDs,
+        address operator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        uint256 nonce
+    ) external onlyOwner {
+        // Check if mint approval is required
+        if (mintApprovalRequired) {
+            // Make sure that mint is approved
+            _checkBatchMintApproval(owner(), tokenCIDs, v, r, s, nonce);
+        }
+
+        // Mint tokens to the recipient
+        _batchMintBase(recipient, tokenCIDs);
+
+        // Approve operator to access tokens
+        setApprovalForAll(operator, true);
+    }
+
     function tokenURI(
         uint256 tokenId
     ) public view virtual override returns (string memory) {
