@@ -44,6 +44,20 @@ contract Collection is
         string indexed tokenCID
     );
 
+    /**
+     * @notice Emitted when batch of NFTs is minted
+     * @param startTokenId The tokenId of the first minted NFT in the batch
+     * @param endTokenId The tokenId of the last minted NFT in the batch
+     * @param artistId The address of the creator
+     * @param tokenCIDs Token CIDs
+     */
+    event BatchMinted(
+        uint256 indexed startTokenId,
+        uint256 indexed endTokenId,
+        address indexed artistId,
+        string[] tokenCIDs
+    );
+
     error CallerNotTokenOwner();
     error URIQueryForNonexistentToken();
 
@@ -85,6 +99,24 @@ contract Collection is
 
         // Mint token to the recipient
         _mintBase(recipient, tokenCID);
+    }
+
+    function batchMint(
+        address recipient,
+        string[] calldata tokenCIDs,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        uint256 nonce
+    ) external onlyOwner {
+        // Check if mint approval is required
+        if (mintApprovalRequired) {
+            // Make sure that mint is approved
+            _checkBatchMintApproval(owner(), tokenCIDs, v, r, s, nonce);
+        }
+
+        // Mint tokens to the recipient
+        _batchMintBase(recipient, tokenCIDs);
     }
 
     function mintAndApprove(
@@ -148,6 +180,31 @@ contract Collection is
 
         // Emit mint event
         emit Minted(tokenId, owner(), tokenCID);
+    }
+
+    function _batchMintBase(address recipient, string[] calldata tokenCIDs) internal {
+        // Retrieve latest token ID
+        uint256 currentTokenId = latestTokenId;
+        // Calculate start token ID for the batch
+        uint256 startTokenId = currentTokenId + 1;
+
+        for (uint256 i = 0; i < tokenCIDs.length; ) {
+            // Mint current token ID to the recipient
+            _mint(recipient, ++currentTokenId);
+
+            // Save token URI
+            _tokenCIDs[currentTokenId] = tokenCIDs[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Update latest token ID
+        latestTokenId = currentTokenId;
+
+        // Emit batch mint event
+        emit BatchMinted(startTokenId, currentTokenId, owner(), tokenCIDs);
     }
 
     function _burn(

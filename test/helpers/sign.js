@@ -42,8 +42,45 @@ const createMintApprovalSignature = async (
   return ethers.utils.splitSignature(signature);
 };
 
+const createBatchMintApprovalSignature = async (
+  nftContract,
+  signer,
+  minter,
+  tokenCIDs,
+  nonce
+) => {
+  // Convert tokenCIDs to an array of keccak256 hashes
+  const tokenCIDHashes = tokenCIDs.map((tokenCID) =>
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes(tokenCID))
+  );
+
+  const signature = await signer._signTypedData(
+    {
+      name: 'My Collection',
+      version: '1',
+      chainId: 31337, // Hardhat chain id
+      verifyingContract: nftContract.address,
+    },
+    {
+      BatchMintApproval: [
+        { name: 'minter', type: 'address' },
+        { name: 'tokenCIDHashes', type: 'bytes32[]' },
+        { name: 'nonce', type: 'uint256' },
+      ],
+    },
+    {
+      minter: minter.address,
+      tokenCIDHashes,
+      nonce,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
 module.exports = {
   hashAndSign,
   sign,
   createMintApprovalSignature,
+  createBatchMintApprovalSignature,
 };
