@@ -360,6 +360,43 @@ describe('Collection', function () {
     });
   });
 
+  describe('batchMintAndApprove', () => {
+    it('mints and approves operator', async () => {
+      expect(
+        await nftContract.isApprovedForAll(owner.address, operator.address)
+      ).to.equal(false);
+
+      await nftContract.batchMintAndApprove(
+        user.address,
+        [
+          'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+          'cafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        ],
+        operator.address,
+        ZERO,
+        ZERO_BYTES32,
+        ZERO_BYTES32,
+        ZERO
+      );
+
+      expect(await nftContract.ownerOf(1)).to.equal(user.address);
+      expect(await nftContract.ownerOf(2)).to.equal(user.address);
+
+      expect(await nftContract.tokenURI(1)).to.equal(
+        'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+      expect(await nftContract.tokenURI(2)).to.equal(
+        'ipfs://cafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+      );
+
+      expect(await nftContract.totalSupply()).to.equal('2');
+
+      expect(
+        await nftContract.isApprovedForAll(owner.address, operator.address)
+      ).to.equal(true);
+    });
+  });
+
   describe('burn', function () {
     it('burns if the token owner is caller', async function () {
       await mintToken(
