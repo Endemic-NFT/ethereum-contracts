@@ -46,7 +46,7 @@ const getTypedMessage = ({
       seller: seller,
       buyer: buyer,
       price: price.toString(),
-      deadline: 1678968943,
+      deadline: 2000994705,
     },
   };
 };
