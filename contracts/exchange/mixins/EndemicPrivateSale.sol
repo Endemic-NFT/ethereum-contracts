@@ -82,6 +82,72 @@ abstract contract EndemicPrivateSale is
 
         uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
 
+        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
+        _requireSufficientCurrencySupplied(
+            price + takerCut,
+            paymentErc20TokenAddress,
+            msg.sender
+        );
+
+        address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
+
+        if (
+            privateSaleInvalidated[nftContract][tokenId][seller][address(0)][price][
+                deadline
+            ]
+        ) {
+            revert InvalidPrivateSale();
+        }
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        PRIVATE_SALE_TYPEHASH,
+                        nftContract,
+                        tokenId,
+                        paymentErc20TokenAddress,
+                        seller,
+                        address(0),
+                        price,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        if (ecrecover(digest, v, r, s) != seller) {
+            revert InvalidSignature();
+        }
+
+        _finalizePrivateSale(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            price,
+            deadline
+        );
+    }
+
+    function buyFromReservedPrivateSale(
+        address paymentErc20TokenAddress,
+        address nftContract,
+        uint256 tokenId,
+        uint256 price,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external payable nonReentrant {
+        if (deadline < block.timestamp) {
+            revert PrivateSaleExpired();
+        }
+
+        uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
+
         address buyer = msg.sender;
 
         _requireSupportedPaymentMethod(paymentErc20TokenAddress);
