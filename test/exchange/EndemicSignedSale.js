@@ -65,7 +65,7 @@ describe('EndemicSignedSale', () => {
     await mintToken(owner.address);
   }
 
-  const getSignedSignedSale = async (paymentErc20TokenAddress, buyer) => {
+  const getSignedSale = async (paymentErc20TokenAddress, buyer) => {
     const wallet = ethers.Wallet.createRandom();
 
     const signer = wallet.connect(endemicExchange.provider);
@@ -100,12 +100,12 @@ describe('EndemicSignedSale', () => {
     paymentErc20TokenAddress = ZERO_ADDRESS,
     buyer = ZERO_ADDRESS,
   }) => {
-    const signedSignedSale = await getSignedSignedSale(
+    const signedSale = await getSignedSale(
       paymentErc20TokenAddress,
       buyer
     );
 
-    const signature = signedSignedSale.substring(2);
+    const signature = signedSale.substring(2);
     const r = '0x' + signature.substring(0, 64);
     const s = '0x' + signature.substring(64, 128);
     const v = parseInt(signature.substring(128, 130), 16);
