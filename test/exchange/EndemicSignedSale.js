@@ -16,12 +16,12 @@ const { addTakerFee } = require('../helpers/token');
 const INVALID_SIGNATURE = 'InvalidSignature';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 
-const PRIVATE_SALE_EXPIRED = 'PrivateSaleExpired';
-const PRIVATE_SALE_SUCCESS = 'PrivateSaleSuccess';
+const SIGNED_SALE_EXPIRED = 'SignedSaleExpired';
+const SIGNED_SALE_SUCCESS = 'SignedSaleSuccess';
 
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
-describe('EndemicPrivateSale', () => {
+describe('EndemicSignedSale', () => {
   let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
   let owner, user2, mintApprover, collectionAdministrator;
@@ -65,7 +65,7 @@ describe('EndemicPrivateSale', () => {
     await mintToken(owner.address);
   }
 
-  const getSignedPrivateSale = async (paymentErc20TokenAddress, buyer) => {
+  const getSignedSignedSale = async (paymentErc20TokenAddress, buyer) => {
     const wallet = ethers.Wallet.createRandom();
 
     const signer = wallet.connect(endemicExchange.provider);
@@ -96,16 +96,16 @@ describe('EndemicPrivateSale', () => {
     });
   };
 
-  const getPrivateSaleSignature = async ({
+  const getSignedSaleSignature = async ({
     paymentErc20TokenAddress = ZERO_ADDRESS,
     buyer = ZERO_ADDRESS,
   }) => {
-    const signedPrivateSale = await getSignedPrivateSale(
+    const signedSignedSale = await getSignedSignedSale(
       paymentErc20TokenAddress,
       buyer
     );
 
-    const signature = signedPrivateSale.substring(2);
+    const signature = signedSignedSale.substring(2);
     const r = '0x' + signature.substring(0, 64);
     const s = '0x' + signature.substring(64, 128);
     const v = parseInt(signature.substring(128, 130), 16);
@@ -121,12 +121,12 @@ describe('EndemicPrivateSale', () => {
     });
   });
 
-  describe('Buy from private sale with Ether', function () {
+  describe('Buy from signed sale with Ether', function () {
     beforeEach(deploy);
 
-    it('should fail with private sale expired', async function () {
+    it('should fail with signed sale expired', async function () {
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           ZERO_ADDRESS,
           nftContract.address,
           1,
@@ -136,12 +136,12 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWithCustomError(endemicExchange, PRIVATE_SALE_EXPIRED);
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNED_SALE_EXPIRED);
     });
 
     it('should fail with price not correct (too low provided)', async function () {
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           ZERO_ADDRESS,
           nftContract.address,
           1,
@@ -164,7 +164,7 @@ describe('EndemicPrivateSale', () => {
       const priceWithFees = addTakerFee(ONE_ETHER);
 
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           ZERO_ADDRESS,
           nftContract.address,
           1,
@@ -180,11 +180,11 @@ describe('EndemicPrivateSale', () => {
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
-    it('should fail to buy from private sale when taker fee not included', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({ buyer: owner });
+    it('should fail to buy from signed sale when taker fee not included', async function () {
+      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
 
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           ZERO_ADDRESS,
           nftContract.address,
           2,
@@ -203,13 +203,13 @@ describe('EndemicPrivateSale', () => {
       );
     });
 
-    it('should succesfully buy from private sale', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({ buyer: owner });
+    it('should succesfully buy from signed sale', async function () {
+      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
 
       const priceWithFees = addTakerFee(ONE_ETHER);
 
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           ZERO_ADDRESS,
           nftContract.address,
           2,
@@ -222,18 +222,18 @@ describe('EndemicPrivateSale', () => {
             value: priceWithFees,
           }
         )
-      ).to.emit(endemicExchange, PRIVATE_SALE_SUCCESS);
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
 
       expect(await nftContract.ownerOf(2)).to.equal(owner.address);
     });
 
     it('should fail to buy with valid signature and invalid buyer', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({ buyer: owner });
+      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
 
       await expect(
         endemicExchange
           .connect(user2)
-          .buyFromReservedPrivateSale(
+          .buyFromReservedSignedSale(
             ZERO_ADDRESS,
             nftContract.address,
             2,
@@ -250,7 +250,7 @@ describe('EndemicPrivateSale', () => {
     });
   });
 
-  describe('Buy from private sale with ERC20', function () {
+  describe('Buy from signed sale with ERC20', function () {
     beforeEach(async function () {
       await deploy();
 
@@ -262,9 +262,9 @@ describe('EndemicPrivateSale', () => {
       );
     });
 
-    it('should fail with private sale expired', async function () {
+    it('should fail with signed sale expired', async function () {
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           endemicToken.address,
           nftContract.address,
           1,
@@ -274,12 +274,12 @@ describe('EndemicPrivateSale', () => {
           RANDOM_R_VALUE,
           RANDOM_S_VALUE
         )
-      ).to.be.revertedWithCustomError(endemicExchange, PRIVATE_SALE_EXPIRED);
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNED_SALE_EXPIRED);
     });
 
     it('should fail with Erc20 not supported', async function () {
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           '0x0000000000000000000000000000000000000001',
           nftContract.address,
           1,
@@ -294,7 +294,7 @@ describe('EndemicPrivateSale', () => {
 
     it('should fail with price not correct (too low approved)', async function () {
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           endemicToken.address,
           nftContract.address,
           1,
@@ -322,7 +322,7 @@ describe('EndemicPrivateSale', () => {
       await expect(
         endemicExchange
           .connect(user2)
-          .buyFromReservedPrivateSale(
+          .buyFromReservedSignedSale(
             endemicToken.address,
             nftContract.address,
             1,
@@ -335,8 +335,8 @@ describe('EndemicPrivateSale', () => {
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
-    it('should fail to buy from private sale when taker fee not included', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({ buyer: owner });
+    it('should fail to buy from signed sale when taker fee not included', async function () {
+      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
 
       await endemicToken.transfer(user2.address, ONE_ETHER);
 
@@ -347,7 +347,7 @@ describe('EndemicPrivateSale', () => {
       await expect(
         endemicExchange
           .connect(user2)
-          .buyFromReservedPrivateSale(
+          .buyFromReservedSignedSale(
             endemicToken.address,
             nftContract.address,
             2,
@@ -363,8 +363,8 @@ describe('EndemicPrivateSale', () => {
       );
     });
 
-    it('should succesfully buy from private sale', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({
+    it('should succesfully buy from signed sale', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
         paymentErc20TokenAddress: endemicToken.address,
         buyer: owner,
       });
@@ -374,7 +374,7 @@ describe('EndemicPrivateSale', () => {
       await endemicToken.approve(endemicExchange.address, priceWithFees);
 
       await expect(
-        endemicExchange.buyFromReservedPrivateSale(
+        endemicExchange.buyFromReservedSignedSale(
           endemicToken.address,
           nftContract.address,
           2,
@@ -384,13 +384,13 @@ describe('EndemicPrivateSale', () => {
           r,
           s
         )
-      ).to.emit(endemicExchange, PRIVATE_SALE_SUCCESS);
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
 
       expect(await nftContract.ownerOf(2)).to.equal(owner.address);
     });
 
     it('should fail to buy with valid signature and invalid buyer', async function () {
-      const { r, s, v } = await getPrivateSaleSignature({
+      const { r, s, v } = await getSignedSaleSignature({
         paymentErc20TokenAddress: endemicToken.address,
         buyer: owner,
       });
@@ -401,7 +401,7 @@ describe('EndemicPrivateSale', () => {
       await expect(
         endemicExchange
           .connect(user2)
-          .buyFromReservedPrivateSale(
+          .buyFromReservedSignedSale(
             endemicToken.address,
             nftContract.address,
             2,
