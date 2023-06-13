@@ -15,6 +15,7 @@ const { addTakerFee } = require('../helpers/token');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
+const INVALID_SIGNED_SALE = 'InvalidSignedSale';
 
 const SIGNED_SALE_EXPIRED = 'SignedSaleExpired';
 const SIGNED_SALE_SUCCESS = 'SignedSaleSuccess';
@@ -72,19 +73,21 @@ describe('EndemicSignedSale', () => {
 
     await owner.sendTransaction({
       to: signer.address,
-      value: ethers.utils.parseEther('1650'),
+      value: ethers.utils.parseEther('10'),
     });
 
     await mintToken(signer.address);
 
-    await nftContract.connect(signer).approve(endemicExchange.address, 2);
+    await nftContract
+      .connect(signer)
+      .setApprovalForAll(endemicExchange.address, true);
 
     const data = getTypedMessage({
       chainId: network.config.chainId,
       verifierContract: endemicExchange.address,
       nftContract: nftContract.address,
       seller: signer.address,
-      buyer: buyer.address,
+      buyer,
       paymentErc20TokenAddress,
       price: ONE_ETHER,
     });
@@ -100,10 +103,7 @@ describe('EndemicSignedSale', () => {
     paymentErc20TokenAddress = ZERO_ADDRESS,
     buyer = ZERO_ADDRESS,
   }) => {
-    const signedSale = await getSignedSale(
-      paymentErc20TokenAddress,
-      buyer
-    );
+    const signedSale = await getSignedSale(paymentErc20TokenAddress, buyer);
 
     const signature = signedSale.substring(2);
     const r = '0x' + signature.substring(0, 64);
@@ -122,6 +122,341 @@ describe('EndemicSignedSale', () => {
   });
 
   describe('Buy from signed sale with Ether', function () {
+    beforeEach(deploy);
+
+    it('should fail with signed sale expired', async function () {
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          1,
+          ZERO_ONE_ETHER,
+          LAST_YEAR_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNED_SALE_EXPIRED);
+    });
+
+    it('should fail with price not correct (too low provided)', async function () {
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          1,
+          ONE_ETHER,
+          RANDOM_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE,
+          {
+            value: ZERO_ONE_ETHER,
+          }
+        )
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
+    });
+
+    it('should fail with invalid signature', async function () {
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          1,
+          ONE_ETHER,
+          RANDOM_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE,
+          {
+            value: priceWithFees,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
+    });
+
+    it('should fail to buy from signed sale when taker fee not included', async function () {
+      const { r, s, v } = await getSignedSaleSignature({});
+
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s,
+          {
+            value: ONE_ETHER,
+          }
+        )
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
+    });
+
+    it('should succesfully buy from signed sale', async function () {
+      const { r, s, v } = await getSignedSaleSignature({});
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await expect(
+        endemicExchange
+          .connect(user2)
+          .buyFromSignedSale(
+            ZERO_ADDRESS,
+            nftContract.address,
+            2,
+            ONE_ETHER,
+            2000994705,
+            v,
+            r,
+            s,
+            {
+              value: priceWithFees,
+            }
+          )
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
+
+      expect(await nftContract.ownerOf(2)).to.equal(user2.address);
+    });
+
+    it('should fail to buy from same signed sale twice', async function () {
+      const { r, s, v } = await getSignedSaleSignature({});
+
+      const signerAddress = await nftContract.ownerOf(2);
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicExchange
+        .connect(user2)
+        .buyFromSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s,
+          {
+            value: priceWithFees,
+          }
+        );
+
+      await nftContract
+        .connect(user2)
+        .transferFrom(user2.address, signerAddress, 2);
+
+      await expect(
+        endemicExchange
+          .connect(user2)
+          .buyFromSignedSale(
+            ZERO_ADDRESS,
+            nftContract.address,
+            2,
+            ONE_ETHER,
+            2000994705,
+            v,
+            r,
+            s,
+            {
+              value: priceWithFees,
+            }
+          )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNED_SALE);
+    });
+  });
+
+  describe('Buy from signed sale with ERC20', function () {
+    beforeEach(async function () {
+      await deploy();
+
+      endemicToken = await deployEndemicToken(owner);
+
+      await paymentManagerContract.updateSupportedPaymentMethod(
+        endemicToken.address,
+        true
+      );
+    });
+
+    it('should fail with signed sale expired', async function () {
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          1,
+          ZERO_ONE_ETHER,
+          LAST_YEAR_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNED_SALE_EXPIRED);
+    });
+
+    it('should fail with Erc20 not supported', async function () {
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          '0x0000000000000000000000000000000000000001',
+          nftContract.address,
+          1,
+          ONE_ETHER,
+          RANDOM_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
+    });
+
+    it('should fail with price not correct (too low approved)', async function () {
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          1,
+          ONE_ETHER,
+          RANDOM_TIMESTAMP,
+          RANDOM_V_VALUE,
+          RANDOM_R_VALUE,
+          RANDOM_S_VALUE
+        )
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
+    });
+
+    it('should fail with invalid signature', async function () {
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicToken.transfer(user2.address, priceWithFees);
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, priceWithFees);
+
+      await expect(
+        endemicExchange
+          .connect(user2)
+          .buyFromSignedSale(
+            endemicToken.address,
+            nftContract.address,
+            1,
+            ONE_ETHER,
+            RANDOM_TIMESTAMP,
+            RANDOM_V_VALUE,
+            RANDOM_R_VALUE,
+            RANDOM_S_VALUE
+          )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
+    });
+
+    it('should fail to buy from signed sale when taker fee not included', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
+        paymentErc20TokenAddress: endemicToken.address,
+      });
+
+      await endemicToken.transfer(user2.address, ONE_ETHER);
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ONE_ETHER);
+
+      await expect(
+        endemicExchange
+          .connect(user2)
+          .buyFromSignedSale(
+            endemicToken.address,
+            nftContract.address,
+            2,
+            ONE_ETHER,
+            2000994705,
+            v,
+            r,
+            s
+          )
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
+    });
+
+    it('should succesfully buy from signed sale', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
+        paymentErc20TokenAddress: endemicToken.address,
+      });
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicToken.approve(endemicExchange.address, priceWithFees);
+
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s
+        )
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
+
+      expect(await nftContract.ownerOf(2)).to.equal(owner.address);
+    });
+
+    it('should fail to buy from same signed sale twice', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
+        paymentErc20TokenAddress: endemicToken.address,
+      });
+
+      const signerAddress = await nftContract.ownerOf(2);
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicToken.approve(endemicExchange.address, priceWithFees);
+
+      await endemicExchange.buyFromSignedSale(
+        endemicToken.address,
+        nftContract.address,
+        2,
+        ONE_ETHER,
+        2000994705,
+        v,
+        r,
+        s
+      );
+
+      await nftContract.transferFrom(owner.address, signerAddress, 2);
+      await endemicToken.approve(endemicExchange.address, priceWithFees);
+
+      await expect(
+        endemicExchange.buyFromSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNED_SALE);
+    });
+  });
+
+  describe('Buy from reserved signed sale with Ether', function () {
     beforeEach(deploy);
 
     it('should fail with signed sale expired', async function () {
@@ -181,7 +516,9 @@ describe('EndemicSignedSale', () => {
     });
 
     it('should fail to buy from signed sale when taker fee not included', async function () {
-      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
+      const { r, s, v } = await getSignedSaleSignature({
+        buyer: owner.address,
+      });
 
       await expect(
         endemicExchange.buyFromReservedSignedSale(
@@ -204,7 +541,9 @@ describe('EndemicSignedSale', () => {
     });
 
     it('should succesfully buy from signed sale', async function () {
-      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
+      const { r, s, v } = await getSignedSaleSignature({
+        buyer: owner.address,
+      });
 
       const priceWithFees = addTakerFee(ONE_ETHER);
 
@@ -228,7 +567,11 @@ describe('EndemicSignedSale', () => {
     });
 
     it('should fail to buy with valid signature and invalid buyer', async function () {
-      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
+      const { r, s, v } = await getSignedSaleSignature({
+        buyer: owner.address,
+      });
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
 
       await expect(
         endemicExchange
@@ -237,20 +580,64 @@ describe('EndemicSignedSale', () => {
             ZERO_ADDRESS,
             nftContract.address,
             2,
-            1,
+            ONE_ETHER,
             2000994705,
             v,
             r,
             s,
             {
-              value: 1,
+              value: priceWithFees,
             }
           )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
+
+    it('should fail to buy from same signed sale twice', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
+        buyer: owner.address,
+      });
+
+      const signerAddress = await nftContract.ownerOf(2);
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await expect(
+        endemicExchange.buyFromReservedSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s,
+          {
+            value: priceWithFees,
+          }
+        )
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
+
+      await nftContract.transferFrom(owner.address, signerAddress, 2);
+
+      await expect(
+        endemicExchange.buyFromReservedSignedSale(
+          ZERO_ADDRESS,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s,
+          {
+            value: priceWithFees,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNED_SALE);
+    });
   });
 
-  describe('Buy from signed sale with ERC20', function () {
+  describe('Buy from reserved signed sale with ERC20', function () {
     beforeEach(async function () {
       await deploy();
 
@@ -336,7 +723,10 @@ describe('EndemicSignedSale', () => {
     });
 
     it('should fail to buy from signed sale when taker fee not included', async function () {
-      const { r, s, v } = await getSignedSaleSignature({ buyer: owner });
+      const { r, s, v } = await getSignedSaleSignature({
+        paymentErc20TokenAddress: endemicToken.address,
+        buyer: owner.address,
+      });
 
       await endemicToken.transfer(user2.address, ONE_ETHER);
 
@@ -366,7 +756,7 @@ describe('EndemicSignedSale', () => {
     it('should succesfully buy from signed sale', async function () {
       const { r, s, v } = await getSignedSaleSignature({
         paymentErc20TokenAddress: endemicToken.address,
-        buyer: owner,
+        buyer: owner.address,
       });
 
       const priceWithFees = addTakerFee(ONE_ETHER);
@@ -392,11 +782,15 @@ describe('EndemicSignedSale', () => {
     it('should fail to buy with valid signature and invalid buyer', async function () {
       const { r, s, v } = await getSignedSaleSignature({
         paymentErc20TokenAddress: endemicToken.address,
-        buyer: owner,
+        buyer: owner.address,
       });
 
-      await endemicToken.transfer(user2.address, 1);
-      await endemicToken.connect(user2).approve(endemicExchange.address, 1);
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicToken.transfer(user2.address, priceWithFees);
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, priceWithFees);
 
       await expect(
         endemicExchange
@@ -405,13 +799,55 @@ describe('EndemicSignedSale', () => {
             endemicToken.address,
             nftContract.address,
             2,
-            1,
+            ONE_ETHER,
             2000994705,
             v,
             r,
             s
           )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
+    });
+
+    it('should fail to buy from same signed sale twice', async function () {
+      const { r, s, v } = await getSignedSaleSignature({
+        paymentErc20TokenAddress: endemicToken.address,
+        buyer: owner.address,
+      });
+
+      const signerAddress = await nftContract.ownerOf(2);
+
+      const priceWithFees = addTakerFee(ONE_ETHER);
+
+      await endemicToken.approve(endemicExchange.address, priceWithFees);
+
+      await expect(
+        endemicExchange.buyFromReservedSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s
+        )
+      ).to.emit(endemicExchange, SIGNED_SALE_SUCCESS);
+
+      await nftContract.transferFrom(owner.address, signerAddress, 2);
+      await endemicToken.approve(endemicExchange.address, priceWithFees);
+
+      await expect(
+        endemicExchange.buyFromReservedSignedSale(
+          endemicToken.address,
+          nftContract.address,
+          2,
+          ONE_ETHER,
+          2000994705,
+          v,
+          r,
+          s
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNED_SALE);
     });
   });
 });
