@@ -99,28 +99,18 @@ abstract contract EndemicSignedSale is
             revert InvalidSignedSale();
         }
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        SIGNED_SALE_TYPEHASH,
-                        nftContract,
-                        tokenId,
-                        paymentErc20TokenAddress,
-                        seller,
-                        address(0),
-                        price,
-                        deadline
-                    )
-                )
-            )
+        _verifySignature(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            address(0),
+            price,
+            deadline,
+            v,
+            r,
+            s
         );
-
-        if (ecrecover(digest, v, r, s) != seller) {
-            revert InvalidSignature();
-        }
 
         signedSaleInvalidated[nftContract][tokenId][seller][address(0)][price][
             deadline
@@ -170,28 +160,18 @@ abstract contract EndemicSignedSale is
             revert InvalidSignedSale();
         }
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        SIGNED_SALE_TYPEHASH,
-                        nftContract,
-                        tokenId,
-                        paymentErc20TokenAddress,
-                        seller,
-                        buyer,
-                        price,
-                        deadline
-                    )
-                )
-            )
+        _verifySignature(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            buyer,
+            price,
+            deadline,
+            v,
+            r,
+            s
         );
-
-        if (ecrecover(digest, v, r, s) != seller) {
-            revert InvalidSignature();
-        }
 
         signedSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
             deadline
@@ -248,6 +228,42 @@ abstract contract EndemicSignedSale is
             totalCut,
             paymentErc20TokenAddress
         );
+    }
+
+    function _verifySignature(
+        address nftContract,
+        uint256 tokenId,
+        address paymentErc20TokenAddress,
+        address seller,
+        address buyer,
+        uint256 price,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        SIGNED_SALE_TYPEHASH,
+                        nftContract,
+                        tokenId,
+                        paymentErc20TokenAddress,
+                        seller,
+                        buyer,
+                        price,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        if (ecrecover(digest, v, r, s) != seller) {
+            revert InvalidSignature();
+        }
     }
 
     /**
