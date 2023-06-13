@@ -9,11 +9,11 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 
-error PrivateSaleExpired();
+error SignedSaleExpired();
 error InvalidSignature();
-error InvalidPrivateSale();
+error InvalidSignedSale();
 
-abstract contract EndemicPrivateSale is
+abstract contract EndemicSignedSale is
     ContextUpgradeable,
     ReentrancyGuardUpgradeable,
     EndemicFundsDistributor,
@@ -21,10 +21,10 @@ abstract contract EndemicPrivateSale is
 {
     using AddressUpgradeable for address;
 
-    bytes32 private constant PRIVATE_SALE_TYPEHASH =
+    bytes32 private constant SIGNED_SALE_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "PrivateSale(address nftContract,uint256 tokenId,address paymentErc20TokenAddress,address seller,address buyer,uint256 price,uint256 deadline)"
+            "SignedSale(address nftContract,uint256 tokenId,address paymentErc20TokenAddress,address seller,address buyer,uint256 price,uint256 deadline)"
         );
 
     bytes32 private constant EIP712_DOMAIN_TYPEHASH =
@@ -41,9 +41,9 @@ abstract contract EndemicPrivateSale is
     // Maps nftContract -> tokenId -> seller -> buyer -> price -> deadline -> invalidated.
     // solhint-disable-next-line max-line-length
     mapping(address => mapping(uint256 => mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => bool))))))
-        private privateSaleInvalidated;
+        private signedSaleInvalidated;
 
-    event PrivateSaleSuccess(
+    event SignedSaleSuccess(
         address indexed nftContract,
         uint256 indexed tokenId,
         address indexed seller,
@@ -53,7 +53,7 @@ abstract contract EndemicPrivateSale is
         address paymentErc20TokenAddress
     );
 
-    function __EndemicPrivateSale___init_unchained() internal {
+    function __EndemicSignedSale___init_unchained() internal {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
@@ -66,7 +66,7 @@ abstract contract EndemicPrivateSale is
         );
     }
 
-    function buyFromPrivateSale(
+    function buyFromSignedSale(
         address paymentErc20TokenAddress,
         address nftContract,
         uint256 tokenId,
@@ -77,7 +77,66 @@ abstract contract EndemicPrivateSale is
         bytes32 s
     ) external payable nonReentrant {
         if (deadline < block.timestamp) {
-            revert PrivateSaleExpired();
+            revert SignedSaleExpired();
+        }
+
+        uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
+
+        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
+        _requireSufficientCurrencySupplied(
+            price + takerCut,
+            paymentErc20TokenAddress,
+            msg.sender
+        );
+
+        address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
+
+        if (
+            signedSaleInvalidated[nftContract][tokenId][seller][address(0)][price][
+                deadline
+            ]
+        ) {
+            revert InvalidSignedSale();
+        }
+
+        _verifySignature(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            address(0),
+            price,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        signedSaleInvalidated[nftContract][tokenId][seller][address(0)][price][
+            deadline
+        ] = true;
+
+        _finalizeSignedSale(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            price
+        );
+    }
+
+    function buyFromReservedSignedSale(
+        address paymentErc20TokenAddress,
+        address nftContract,
+        uint256 tokenId,
+        uint256 price,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external payable nonReentrant {
+        if (deadline < block.timestamp) {
+            revert SignedSaleExpired();
         }
 
         uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
@@ -94,58 +153,46 @@ abstract contract EndemicPrivateSale is
         address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
 
         if (
-            privateSaleInvalidated[nftContract][tokenId][seller][buyer][price][
+            signedSaleInvalidated[nftContract][tokenId][seller][buyer][price][
                 deadline
             ]
         ) {
-            revert InvalidPrivateSale();
+            revert InvalidSignedSale();
         }
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        PRIVATE_SALE_TYPEHASH,
-                        nftContract,
-                        tokenId,
-                        paymentErc20TokenAddress,
-                        seller,
-                        buyer,
-                        price,
-                        deadline
-                    )
-                )
-            )
-        );
-
-        if (ecrecover(digest, v, r, s) != seller) {
-            revert InvalidSignature();
-        }
-
-        _finalizePrivateSale(
+        _verifySignature(
             nftContract,
             tokenId,
             paymentErc20TokenAddress,
             seller,
+            buyer,
             price,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        signedSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
             deadline
+        ] = true;
+
+        _finalizeSignedSale(
+            nftContract,
+            tokenId,
+            paymentErc20TokenAddress,
+            seller,
+            price
         );
     }
 
-    function _finalizePrivateSale(
+    function _finalizeSignedSale(
         address nftContract,
         uint256 tokenId,
         address paymentErc20TokenAddress,
         address payable seller,
-        uint256 price,
-        uint256 deadline
+        uint256 price
     ) internal {
-        privateSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
-            deadline
-        ] = true;
-
         (
             uint256 makerCut,
             ,
@@ -172,7 +219,7 @@ abstract contract EndemicPrivateSale is
             paymentErc20TokenAddress
         );
 
-        emit PrivateSaleSuccess(
+        emit SignedSaleSuccess(
             nftContract,
             tokenId,
             seller,
@@ -181,6 +228,42 @@ abstract contract EndemicPrivateSale is
             totalCut,
             paymentErc20TokenAddress
         );
+    }
+
+    function _verifySignature(
+        address nftContract,
+        uint256 tokenId,
+        address paymentErc20TokenAddress,
+        address seller,
+        address buyer,
+        uint256 price,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        SIGNED_SALE_TYPEHASH,
+                        nftContract,
+                        tokenId,
+                        paymentErc20TokenAddress,
+                        seller,
+                        buyer,
+                        price,
+                        deadline
+                    )
+                )
+            )
+        );
+
+        if (ecrecover(digest, v, r, s) != seller) {
+            revert InvalidSignature();
+        }
     }
 
     /**

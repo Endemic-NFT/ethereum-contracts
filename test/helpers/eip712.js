@@ -21,7 +21,7 @@ const getTypedMessage = ({
         { name: 'verifyingContract', type: 'address' },
         { name: 'salt', type: 'bytes32' },
       ],
-      PrivateSale: [
+      SignedSale: [
         { name: 'nftContract', type: 'address' },
         { name: 'tokenId', type: 'uint256' },
         { name: 'paymentErc20TokenAddress', type: 'address' },
@@ -31,7 +31,7 @@ const getTypedMessage = ({
         { name: 'deadline', type: 'uint256' },
       ],
     },
-    primaryType: 'PrivateSale',
+    primaryType: 'SignedSale',
     domain: {
       name: 'Endemic Exchange',
       version: '1',
