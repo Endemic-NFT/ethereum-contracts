@@ -122,13 +122,16 @@ abstract contract EndemicSignedSale is
             revert InvalidSignature();
         }
 
+        signedSaleInvalidated[nftContract][tokenId][seller][address(0)][price][
+            deadline
+        ] = true;
+
         _finalizeSignedSale(
             nftContract,
             tokenId,
             paymentErc20TokenAddress,
             seller,
-            price,
-            deadline
+            price
         );
     }
 
@@ -190,13 +193,16 @@ abstract contract EndemicSignedSale is
             revert InvalidSignature();
         }
 
+        signedSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
+            deadline
+        ] = true;
+
         _finalizeSignedSale(
             nftContract,
             tokenId,
             paymentErc20TokenAddress,
             seller,
-            price,
-            deadline
+            price
         );
     }
 
@@ -205,13 +211,8 @@ abstract contract EndemicSignedSale is
         uint256 tokenId,
         address paymentErc20TokenAddress,
         address payable seller,
-        uint256 price,
-        uint256 deadline
+        uint256 price
     ) internal {
-        signedSaleInvalidated[nftContract][tokenId][seller][msg.sender][price][
-            deadline
-        ] = true;
-
         (
             uint256 makerCut,
             ,
