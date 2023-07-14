@@ -8,6 +8,8 @@ import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 
 error InvalidOffer();
+error InvalidSignature();
+error SignatureUsed();
 
 abstract contract EndemicOfferV2 is
     ReentrancyGuardUpgradeable,
@@ -67,6 +69,7 @@ abstract contract EndemicOfferV2 is
         );
     }
 
+    /// @notice Accept an offer for NFT
     function acceptNftOffer(
         uint8 v,
         bytes32 r,
@@ -83,9 +86,16 @@ abstract contract EndemicOfferV2 is
 
         _verifySignature(v, r, s, offer);
 
-        _acceptOffer(offer, offer.tokenId);
+        _acceptOffer(
+            offer.bidder,
+            offer.nftContract,
+            offer.paymentErc20TokenAddress,
+            offer.price,
+            offer.tokenId
+        );
     }
 
+    /// @notice Accept a collection offer
     function acceptCollectionOffer(
         uint8 v,
         bytes32 r,
@@ -103,7 +113,13 @@ abstract contract EndemicOfferV2 is
 
         _verifySignature(v, r, s, offer);
 
-        _acceptOffer(offer, tokenId);
+        _acceptOffer(
+            offer.bidder,
+            offer.nftContract,
+            offer.paymentErc20TokenAddress,
+            offer.price,
+            tokenId
+        );
     }
 
     function _verifySignature(
@@ -131,27 +147,30 @@ abstract contract EndemicOfferV2 is
         );
 
         if (digest.recover(v, r, s) != offer.bidder) {
-            revert();
+            revert InvalidSignature();
         }
 
         bytes32 signature = keccak256(abi.encodePacked(v, r, s));
 
         if (_usedSignatures[signature]) {
-            revert();
+            revert SignatureUsed();
         }
 
         _usedSignatures[signature] = true;
     }
 
     function _acceptOffer(
-        Offer calldata offer,
+        address bidder,
+        address nftContract,
+        address paymentErc20TokenAddress,
+        uint256 price,
         uint256 tokenId
     ) internal {
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
-            offer.paymentErc20TokenAddress
+            paymentErc20TokenAddress
         );
 
-        uint256 priceWithTakerFeeDeducted = (offer.price * MAX_FEE) / (takerFee + MAX_FEE);
+        uint256 priceWithTakerFeeDeducted = (price * MAX_FEE) / (takerFee + MAX_FEE);
 
         (
             uint256 makerCut,
@@ -160,18 +179,14 @@ abstract contract EndemicOfferV2 is
             uint256 royaltiesFee,
             uint256 totalCut
         ) = _calculateFees(
-            offer.paymentErc20TokenAddress,
-            offer.nftContract,
-            tokenId,
-            priceWithTakerFeeDeducted
-        );
+                paymentErc20TokenAddress,
+                nftContract,
+                tokenId,
+                priceWithTakerFeeDeducted
+            );
 
         // Transfer token to bidder
-        IERC721(offer.nftContract).transferFrom(
-            msg.sender,
-            offer.bidder,
-            tokenId
-        );
+        IERC721(nftContract).transferFrom(msg.sender, bidder, tokenId);
 
         _distributeFunds(
             priceWithTakerFeeDeducted,
@@ -180,14 +195,14 @@ abstract contract EndemicOfferV2 is
             royaltiesFee,
             royaltiesRecipient,
             msg.sender,
-            offer.bidder,
-            offer.paymentErc20TokenAddress
+            bidder,
+            paymentErc20TokenAddress
         );
 
         emit OfferAccepted(
-            offer.nftContract,
+            nftContract,
             tokenId,
-            offer.bidder,
+            bidder,
             msg.sender,
             priceWithTakerFeeDeducted,
             totalCut
