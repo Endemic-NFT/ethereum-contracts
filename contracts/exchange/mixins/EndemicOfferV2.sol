@@ -77,85 +77,13 @@ abstract contract EndemicOfferV2 is
         nonReentrant
         onlySupportedERC20Payments(offer.paymentErc20TokenAddress)
     {
-        if (offer.isForCollection) revert InvalidOffer();
-
-        if (block.timestamp > offer.expiresAt) revert InvalidOffer();
-
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(
-                    abi.encode(
-                        OFFER_TYPEHASH,
-                        offer.nftContract,
-                        offer.tokenId,
-                        offer.paymentErc20TokenAddress,
-                        offer.price,
-                        offer.expiresAt,
-                        false
-                    )
-                )
-            )
-        );
-
-        if (digest.recover(v, r, s) != offer.bidder) {
-            revert();
+        if (block.timestamp > offer.expiresAt || offer.isForCollection) {
+            revert InvalidOffer();
         }
 
-        bytes32 signature = keccak256(abi.encodePacked(v, r, s));
+        _verifySignature(v, r, s, offer);
 
-        if (_usedSignatures[signature]) {
-            revert();
-        }
-
-        _usedSignatures[signature] = true;
-
-        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
-            offer.paymentErc20TokenAddress
-        );
-
-        uint256 priceWithTakerFeeDeducted = (offer.price * MAX_FEE) / (takerFee + MAX_FEE);
-
-        (
-            uint256 makerCut,
-            ,
-            address royaltiesRecipient,
-            uint256 royaltiesFee,
-            uint256 totalCut
-        ) = _calculateFees(
-            offer.paymentErc20TokenAddress,
-            offer.nftContract,
-            offer.tokenId,
-            priceWithTakerFeeDeducted
-        );
-
-        // Transfer token to bidder
-        IERC721(offer.nftContract).transferFrom(
-            msg.sender,
-            offer.bidder,
-            offer.tokenId
-        );
-
-        _distributeFunds(
-            priceWithTakerFeeDeducted,
-            makerCut,
-            totalCut,
-            royaltiesFee,
-            royaltiesRecipient,
-            msg.sender,
-            offer.bidder,
-            offer.paymentErc20TokenAddress
-        );
-
-        emit OfferAccepted(
-            offer.nftContract,
-            offer.tokenId,
-            offer.bidder,
-            msg.sender,
-            priceWithTakerFeeDeducted,
-            totalCut
-        );
+        _acceptOffer(offer, offer.tokenId);
     }
 
     function acceptCollectionOffer(
@@ -169,10 +97,21 @@ abstract contract EndemicOfferV2 is
         nonReentrant
         onlySupportedERC20Payments(offer.paymentErc20TokenAddress)
     {
-        if (!offer.isForCollection) revert InvalidOffer();
+        if (block.timestamp > offer.expiresAt || !offer.isForCollection) {
+            revert InvalidOffer();
+        }
 
-        if (block.timestamp > offer.expiresAt) revert InvalidOffer();
+        _verifySignature(v, r, s, offer);
 
+        _acceptOffer(offer, tokenId);
+    }
+
+    function _verifySignature(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        Offer calldata offer
+    ) internal {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -185,7 +124,7 @@ abstract contract EndemicOfferV2 is
                         offer.paymentErc20TokenAddress,
                         offer.price,
                         offer.expiresAt,
-                        true
+                        offer.isForCollection
                     )
                 )
             )
@@ -202,7 +141,12 @@ abstract contract EndemicOfferV2 is
         }
 
         _usedSignatures[signature] = true;
+    }
 
+    function _acceptOffer(
+        Offer calldata offer,
+        uint256 tokenId
+    ) internal {
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
             offer.paymentErc20TokenAddress
         );
