@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
+import "./EndemicEIP712.sol";
 
 error SignedSaleExpired();
 error InvalidSignature();
@@ -17,7 +18,8 @@ abstract contract EndemicSignedSale is
     ContextUpgradeable,
     ReentrancyGuardUpgradeable,
     EndemicFundsDistributor,
-    EndemicExchangeCore
+    EndemicExchangeCore,
+    EndemicEIP712
 {
     using AddressUpgradeable for address;
 
@@ -26,17 +28,6 @@ abstract contract EndemicSignedSale is
             // solhint-disable-next-line max-line-length
             "SignedSale(address nftContract,uint256 tokenId,address paymentErc20TokenAddress,address seller,address buyer,uint256 price,uint256 deadline)"
         );
-
-    bytes32 private constant EIP712_DOMAIN_TYPEHASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
-        );
-
-    bytes32 private constant SALT_HASH = keccak256("Endemic Exchange Salt");
-
-    string private constant DOMAIN_NAME = "Endemic Exchange";
-
-    bytes32 public DOMAIN_SEPARATOR;
 
     // Maps nftContract -> tokenId -> seller -> buyer -> price -> deadline -> invalidated.
     // solhint-disable-next-line max-line-length
@@ -52,19 +43,6 @@ abstract contract EndemicSignedSale is
         uint256 totalFees,
         address paymentErc20TokenAddress
     );
-
-    function __EndemicSignedSale___init_unchained() internal {
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                EIP712_DOMAIN_TYPEHASH,
-                keccak256(bytes(DOMAIN_NAME)),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this),
-                SALT_HASH
-            )
-        );
-    }
 
     function buyFromSignedSale(
         address paymentErc20TokenAddress,

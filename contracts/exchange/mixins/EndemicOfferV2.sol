@@ -6,15 +6,13 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
-
-error InvalidOffer();
-error InvalidSignature();
-error SignatureUsed();
+import "./EndemicEIP712.sol";
 
 abstract contract EndemicOfferV2 is
     ReentrancyGuardUpgradeable,
     EndemicFundsDistributor,
-    EndemicExchangeCore
+    EndemicExchangeCore,
+    EndemicEIP712
 {
     using ECDSA for bytes32;
 
@@ -22,17 +20,6 @@ abstract contract EndemicOfferV2 is
         keccak256(
             "Offer(address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 expiresAt,bool isForCollection)"
         );
-
-    bytes32 private constant EIP712_DOMAIN_TYPEHASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
-        );
-
-    bytes32 private constant SALT_HASH = keccak256("Endemic Exchange Salt");
-
-    string private constant DOMAIN_NAME = "Endemic Exchange";
-
-    bytes32 public DOMAIN_SEPARATOR;
 
     mapping(bytes32 signature => bool used) private _usedSignatures;
 
@@ -56,18 +43,9 @@ abstract contract EndemicOfferV2 is
         uint256 totalFees
     );
 
-    function __EndemicOffer___init_unchained() internal {
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                EIP712_DOMAIN_TYPEHASH,
-                keccak256(bytes(DOMAIN_NAME)),
-                keccak256(bytes("1")),
-                block.chainid,
-                address(this),
-                SALT_HASH
-            )
-        );
-    }
+    error InvalidOffer();
+    error InvalidSignature();
+    error SignatureUsed();
 
     /// @notice Accept an offer for NFT
     function acceptNftOffer(
