@@ -51,4 +51,45 @@ const getTypedMessage = ({
   };
 };
 
-module.exports = { getTypedMessage, keccak256 };
+const getTypedMessage_offer = ({
+  chainId,
+  verifierContract,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  price,
+  expiresAt,
+  isForCollection,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    Offer: [
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'price', type: 'uint256' },
+      { name: 'expiresAt', type: 'uint256' },
+      { name: 'isForCollection', type: 'bool' },
+    ],
+  };
+
+  const values = {
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    price: price.toString(),
+    expiresAt: expiresAt,
+    isForCollection: isForCollection,
+  };
+
+  return { domain, types, values };
+};
+
+module.exports = { getTypedMessage, getTypedMessage_offer, keccak256 };

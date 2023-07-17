@@ -8,6 +8,10 @@ import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 import "./EndemicEIP712.sol";
 
+error InvalidOffer();
+error InvalidOfferSignature();
+error SignatureUsed();
+
 abstract contract EndemicOfferV2 is
     ReentrancyGuardUpgradeable,
     EndemicFundsDistributor,
@@ -42,10 +46,6 @@ abstract contract EndemicOfferV2 is
         uint256 price,
         uint256 totalFees
     );
-
-    error InvalidOffer();
-    error InvalidSignature();
-    error SignatureUsed();
 
     /// @notice Accept an offer for NFT
     function acceptNftOffer(
@@ -113,7 +113,7 @@ abstract contract EndemicOfferV2 is
         );
 
         if (digest.recover(v, r, s) != offer.bidder) {
-            revert InvalidSignature();
+            revert InvalidOfferSignature();
         }
 
         bytes32 signature = keccak256(abi.encodePacked(v, r, s));
