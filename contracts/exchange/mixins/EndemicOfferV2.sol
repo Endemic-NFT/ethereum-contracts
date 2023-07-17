@@ -64,13 +64,7 @@ abstract contract EndemicOfferV2 is
 
         _verifySignature(v, r, s, offer);
 
-        _acceptOffer(
-            offer.bidder,
-            offer.nftContract,
-            offer.paymentErc20TokenAddress,
-            offer.price,
-            offer.tokenId
-        );
+        _acceptOffer(offer, offer.tokenId);
     }
 
     /// @notice Accept a collection offer
@@ -91,13 +85,7 @@ abstract contract EndemicOfferV2 is
 
         _verifySignature(v, r, s, offer);
 
-        _acceptOffer(
-            offer.bidder,
-            offer.nftContract,
-            offer.paymentErc20TokenAddress,
-            offer.price,
-            tokenId
-        );
+        _acceptOffer(offer, tokenId);
     }
 
     function _verifySignature(
@@ -137,18 +125,13 @@ abstract contract EndemicOfferV2 is
         _usedSignatures[signature] = true;
     }
 
-    function _acceptOffer(
-        address bidder,
-        address nftContract,
-        address paymentErc20TokenAddress,
-        uint256 price,
-        uint256 tokenId
-    ) internal {
+    function _acceptOffer(Offer calldata offer, uint256 tokenId) internal {
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
-            paymentErc20TokenAddress
+            offer.paymentErc20TokenAddress
         );
 
-        uint256 priceWithTakerFeeDeducted = (price * MAX_FEE) / (takerFee + MAX_FEE);
+        uint256 priceWithTakerFeeDeducted = (offer.price * MAX_FEE) /
+            (takerFee + MAX_FEE);
 
         (
             uint256 makerCut,
@@ -157,14 +140,18 @@ abstract contract EndemicOfferV2 is
             uint256 royaltiesFee,
             uint256 totalCut
         ) = _calculateFees(
-                paymentErc20TokenAddress,
-                nftContract,
+                offer.paymentErc20TokenAddress,
+                offer.nftContract,
                 tokenId,
                 priceWithTakerFeeDeducted
             );
 
         // Transfer token to bidder
-        IERC721(nftContract).transferFrom(msg.sender, bidder, tokenId);
+        IERC721(offer.nftContract).transferFrom(
+            msg.sender,
+            offer.bidder,
+            tokenId
+        );
 
         _distributeFunds(
             priceWithTakerFeeDeducted,
@@ -173,14 +160,14 @@ abstract contract EndemicOfferV2 is
             royaltiesFee,
             royaltiesRecipient,
             msg.sender,
-            bidder,
-            paymentErc20TokenAddress
+            offer.bidder,
+            offer.paymentErc20TokenAddress
         );
 
         emit OfferAccepted(
-            nftContract,
+            offer.nftContract,
             tokenId,
-            bidder,
+            offer.bidder,
             msg.sender,
             priceWithTakerFeeDeducted,
             totalCut
