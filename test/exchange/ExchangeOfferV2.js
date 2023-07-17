@@ -6,16 +6,13 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const {
-  FEE_RECIPIENT,
-  ZERO_ADDRESS,
-  ZERO,
-  ZERO_BYTES32,
-} = require('../helpers/constants');
-
+const { FEE_RECIPIENT, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 const { getTypedMessage_offer } = require('../helpers/eip712');
 
-const INVALID_OFFER_ERROR = 'InvalidOffer';
+const INVALID_OFFER = 'InvalidOffer';
+const INVALID_OFFER_SIGNATURE = 'InvalidOfferSignature';
+const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
+const SIGNATURE_USED = 'SignatureUsed';
 
 const OFFER_ACCEPTED = 'OfferAccepted';
 
@@ -29,7 +26,6 @@ describe('ExchangeOfferV2', function () {
   let owner,
     user1,
     user2,
-    user3,
     royaltiesRecipient,
     collectionAdministrator,
     mintApprover;
@@ -82,7 +78,7 @@ describe('ExchangeOfferV2', function () {
       owner,
       user1,
       user2,
-      user3,
+      user2,
       royaltiesRecipient,
       collectionAdministrator,
       mintApprover,
@@ -144,16 +140,16 @@ describe('ExchangeOfferV2', function () {
       const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
 
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.515')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         4,
         ethers.utils.parseUnits('0.515'),
         2000994705,
@@ -165,7 +161,7 @@ describe('ExchangeOfferV2', function () {
       const acceptOfferTx = await endemicExchange
         .connect(user1)
         .acceptNftOffer(v, r, s, {
-          bidder: user3.address,
+          bidder: user2.address,
           nftContract: nftContract.address,
           tokenId: 4,
           paymentErc20TokenAddress: endemicToken.address,
@@ -179,13 +175,13 @@ describe('ExchangeOfferV2', function () {
         .withArgs(
           nftContract.address,
           4,
-          user3.address,
+          user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.030')
         );
 
-      expect(await nftContract.ownerOf(4)).to.equal(user3.address);
+      expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
       expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
@@ -227,16 +223,16 @@ describe('ExchangeOfferV2', function () {
       const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
 
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.525')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.525'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         4,
         ethers.utils.parseUnits('0.525'),
         2000994705,
@@ -248,7 +244,7 @@ describe('ExchangeOfferV2', function () {
       const acceptOfferTx = await endemicExchange
         .connect(user1)
         .acceptNftOffer(v, r, s, {
-          bidder: user3.address,
+          bidder: user2.address,
           nftContract: nftContract.address,
           tokenId: 4,
           paymentErc20TokenAddress: endemicToken.address,
@@ -262,13 +258,13 @@ describe('ExchangeOfferV2', function () {
         .withArgs(
           nftContract.address,
           4,
-          user3.address,
+          user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.05')
         );
 
-      expect(await nftContract.ownerOf(4)).to.equal(user3.address);
+      expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
       expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
@@ -291,16 +287,16 @@ describe('ExchangeOfferV2', function () {
 
     it('should fail to accept offer that is for collection', async () => {
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.515')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         1,
         ethers.utils.parseUnits('0.515'),
         2000994705,
@@ -309,7 +305,7 @@ describe('ExchangeOfferV2', function () {
 
       await expect(
         endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
-          bidder: user3.address,
+          bidder: user2.address,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
@@ -317,7 +313,109 @@ describe('ExchangeOfferV2', function () {
           expiresAt: 2000994705,
           isForCollection: true,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that is expired', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        4,
+        ethers.utils.parseUnits('0.515'),
+        1658060224,
+        false
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
+          bidder: user2.address,
+          nftContract: nftContract.address,
+          tokenId: 4,
+          paymentErc20TokenAddress: endemicToken.address,
+          price: ethers.utils.parseUnits('0.515'),
+          expiresAt: 1658060224,
+          isForCollection: false,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that uses unsupported payment method', async () => {
+      await expect(
+        endemicExchange
+          .connect(user1)
+          .acceptNftOffer(0, ZERO_BYTES32, ZERO_BYTES32, {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 4,
+            paymentErc20TokenAddress:
+              '0x000000000000000000000000000000000000beef',
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: false,
+          })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
+    });
+
+    it('should fail to accept offer that is already accepted', async () => {
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.515')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
+
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        4,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        false
+      );
+
+      await endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
+        bidder: user2.address,
+        nftContract: nftContract.address,
+        tokenId: 4,
+        paymentErc20TokenAddress: endemicToken.address,
+        price: ethers.utils.parseUnits('0.515'),
+        expiresAt: 2000994705,
+        isForCollection: false,
+      });
+
+      await expect(
+        endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
+          bidder: user2.address,
+          nftContract: nftContract.address,
+          tokenId: 4,
+          paymentErc20TokenAddress: endemicToken.address,
+          price: ethers.utils.parseUnits('0.515'),
+          expiresAt: 2000994705,
+          isForCollection: false,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNATURE_USED);
+    });
+
+    it('should fail to accept offer that is not signed by bidder', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        4,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        false
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
+          bidder: user2.address,
+          nftContract: nftContract.address,
+          tokenId: 4,
+          paymentErc20TokenAddress: endemicToken.address,
+          price: ethers.utils.parseUnits('0.715'), // price is changed
+          expiresAt: 2000994705,
+          isForCollection: false,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_SIGNATURE);
     });
   });
 
@@ -354,16 +452,16 @@ describe('ExchangeOfferV2', function () {
       const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
 
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.515')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         0,
         ethers.utils.parseUnits('0.515'),
         2000994705,
@@ -379,7 +477,7 @@ describe('ExchangeOfferV2', function () {
           r,
           s,
           {
-            bidder: user3.address,
+            bidder: user2.address,
             nftContract: nftContract.address,
             tokenId: 0,
             paymentErc20TokenAddress: endemicToken.address,
@@ -395,13 +493,13 @@ describe('ExchangeOfferV2', function () {
         .withArgs(
           nftContract.address,
           4,
-          user3.address,
+          user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.030')
         );
 
-      expect(await nftContract.ownerOf(4)).to.equal(user3.address);
+      expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
       expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
@@ -443,16 +541,16 @@ describe('ExchangeOfferV2', function () {
       const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
 
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.525')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.525'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         0,
         ethers.utils.parseUnits('0.525'),
         2000994705,
@@ -468,7 +566,7 @@ describe('ExchangeOfferV2', function () {
           r,
           s,
           {
-            bidder: user3.address,
+            bidder: user2.address,
             nftContract: nftContract.address,
             tokenId: 0,
             paymentErc20TokenAddress: endemicToken.address,
@@ -484,13 +582,13 @@ describe('ExchangeOfferV2', function () {
         .withArgs(
           nftContract.address,
           4,
-          user3.address,
+          user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
           ethers.utils.parseUnits('0.05')
         );
 
-      expect(await nftContract.ownerOf(4)).to.equal(user3.address);
+      expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
       expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
@@ -513,16 +611,16 @@ describe('ExchangeOfferV2', function () {
 
     it('should fail to accept offer that is for nft', async () => {
       await endemicToken.transfer(
-        user3.address,
+        user2.address,
         ethers.utils.parseUnits('0.515')
       );
 
       await endemicToken
-        .connect(user3)
+        .connect(user2)
         .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
 
       const { v, r, s } = await getOfferSignature(
-        user3,
+        user2,
         1,
         ethers.utils.parseUnits('0.515'),
         2000994705,
@@ -535,7 +633,7 @@ describe('ExchangeOfferV2', function () {
           r,
           s,
           {
-            bidder: user3.address,
+            bidder: user2.address,
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
@@ -545,7 +643,137 @@ describe('ExchangeOfferV2', function () {
           },
           1
         )
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that is expired', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        0,
+        ethers.utils.parseUnits('0.515'),
+        1658060224,
+        true
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          v,
+          r,
+          s,
+          {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 1658060224,
+            isForCollection: true,
+          },
+          4
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that uses unsupported payment method', async () => {
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          0,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
+          {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress:
+              '0x000000000000000000000000000000000000beef',
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: true,
+          },
+          4
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
+    });
+
+    it('should fail to accept offer that is already accepted', async () => {
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.515')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.515'));
+
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        0,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        true
+      );
+
+      await endemicExchange.connect(user1).acceptCollectionOffer(
+        v,
+        r,
+        s,
+        {
+          bidder: user2.address,
+          nftContract: nftContract.address,
+          tokenId: 0,
+          paymentErc20TokenAddress: endemicToken.address,
+          price: ethers.utils.parseUnits('0.515'),
+          expiresAt: 2000994705,
+          isForCollection: true,
+        },
+        4
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          v,
+          r,
+          s,
+          {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: true,
+          },
+          3
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, SIGNATURE_USED);
+    });
+
+    it('should fail to accept offer that is not signed by bidder', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user2,
+        0,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        true
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          v,
+          r,
+          s,
+          {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.715'), // price is changed
+            expiresAt: 2000994705,
+            isForCollection: true,
+          },
+          4
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_SIGNATURE);
     });
   });
 });
