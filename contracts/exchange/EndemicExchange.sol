@@ -2,10 +2,10 @@
 pragma solidity 0.8.18;
 
 import "./mixins/auction/EndemicAuction.sol";
-import "./mixins/EndemicOfferV2.sol";
+import "./mixins/EndemicOffer.sol";
 import "./mixins/EndemicSignedSale.sol";
 
-contract EndemicExchange is EndemicAuction, EndemicOfferV2, EndemicSignedSale {
+contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSignedSale {
     /**
      * @notice Initialized Endemic exchange contract
      * @dev Only called once
