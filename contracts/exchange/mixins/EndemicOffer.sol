@@ -29,12 +29,19 @@ abstract contract EndemicOffer is
     mapping(bytes32 signature => bool used) private _usedSignatures;
 
     struct Offer {
+        /// @notice The address of the offer bidder
         address bidder;
+        /// @notice The address of the smart contract
         address nftContract;
+        /// @notice The ID of the NFT
         uint256 tokenId;
+        /// @notice The address of the supported ERC20 smart contract used for payments
         address paymentErc20TokenAddress;
+         /// @notice Amount bidded
         uint256 price;
+        /// @notice Timestamp when offer expires
         uint256 expiresAt;
+        /// @notice Flag if offer is for collection or for an NFT
         bool isForCollection;
     }
 
