@@ -11,6 +11,7 @@ import "./EndemicEIP712.sol";
 error InvalidOffer();
 error InvalidOfferSignature();
 error SignatureUsed();
+error AcceptFromSelf();
 
 abstract contract EndemicOfferV2 is
     ReentrancyGuardUpgradeable,
@@ -62,6 +63,8 @@ abstract contract EndemicOfferV2 is
             revert InvalidOffer();
         }
 
+        if (offer.bidder == msg.sender) revert AcceptFromSelf();
+
         _verifySignature(v, r, s, offer);
 
         _acceptOffer(offer, offer.tokenId);
@@ -82,6 +85,8 @@ abstract contract EndemicOfferV2 is
         if (block.timestamp > offer.expiresAt || !offer.isForCollection) {
             revert InvalidOffer();
         }
+
+        if (offer.bidder == msg.sender) revert AcceptFromSelf();
 
         _verifySignature(v, r, s, offer);
 

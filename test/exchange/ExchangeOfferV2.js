@@ -13,6 +13,7 @@ const INVALID_OFFER = 'InvalidOffer';
 const INVALID_OFFER_SIGNATURE = 'InvalidOfferSignature';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const SIGNATURE_USED = 'SignatureUsed';
+const ACCEPT_FROM_SELF = 'AcceptFromSelf';
 
 const OFFER_ACCEPTED = 'OfferAccepted';
 
@@ -417,6 +418,28 @@ describe('ExchangeOfferV2', function () {
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_SIGNATURE);
     });
+
+    it('should fail to accept offer if caller is same as bidder', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user1,
+        4,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        false
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptNftOffer(v, r, s, {
+          bidder: user1.address,
+          nftContract: nftContract.address,
+          tokenId: 4,
+          paymentErc20TokenAddress: endemicToken.address,
+          price: ethers.utils.parseUnits('0.515'),
+          expiresAt: 2000994705,
+          isForCollection: false,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, ACCEPT_FROM_SELF);
+    });
   });
 
   describe('Accept collection offer', () => {
@@ -774,6 +797,34 @@ describe('ExchangeOfferV2', function () {
           4
         )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER_SIGNATURE);
+    });
+
+    it('should fail to accept offer if caller is same as bidder', async () => {
+      const { v, r, s } = await getOfferSignature(
+        user1,
+        0,
+        ethers.utils.parseUnits('0.515'),
+        2000994705,
+        true
+      );
+
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          v,
+          r,
+          s,
+          {
+            bidder: user1.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: true,
+          },
+          4
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, ACCEPT_FROM_SELF);
     });
   });
 });
