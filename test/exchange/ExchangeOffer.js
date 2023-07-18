@@ -185,9 +185,8 @@ describe('ExchangeOffer', function () {
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
-      expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.435'),
-        ethers.utils.parseUnits('0.001') //gas
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseUnits('0.435')
       );
 
       const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
@@ -268,9 +267,8 @@ describe('ExchangeOffer', function () {
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
-      expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.425'),
-        ethers.utils.parseUnits('0.001') //gas
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseUnits('0.425')
       );
 
       const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
@@ -525,9 +523,8 @@ describe('ExchangeOffer', function () {
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
-      expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.435'),
-        ethers.utils.parseUnits('0.001') //gas
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseUnits('0.435')
       );
 
       const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
@@ -614,9 +611,8 @@ describe('ExchangeOffer', function () {
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
 
       const user1Balance2 = await endemicToken.balanceOf(user1.address);
-      expect(user1Balance2.sub(user1Balance1)).to.be.closeTo(
-        ethers.utils.parseUnits('0.425'),
-        ethers.utils.parseUnits('0.001') //gas
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseUnits('0.425')
       );
 
       const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
