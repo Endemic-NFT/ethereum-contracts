@@ -21,8 +21,6 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSignedSale {
         __Context_init_unchained();
         __Ownable_init_unchained();
 
-        __EndemicEIP712___init_unchained();
-
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
     }

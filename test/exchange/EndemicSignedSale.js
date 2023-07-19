@@ -113,14 +113,6 @@ describe('EndemicSignedSale', () => {
     return { r, s, v };
   };
 
-  describe('Initial State', function () {
-    it('should set domain separator', async function () {
-      await deploy();
-
-      expect(await endemicExchange.DOMAIN_SEPARATOR()).to.exist;
-    });
-  });
-
   describe('Buy from signed sale with Ether', function () {
     beforeEach(deploy);
 

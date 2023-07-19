@@ -109,7 +109,7 @@ abstract contract EndemicOffer is
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                DOMAIN_SEPARATOR,
+                _buildDomainSeparator(),
                 keccak256(
                     abi.encode(
                         OFFER_TYPEHASH,

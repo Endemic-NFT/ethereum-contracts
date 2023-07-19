@@ -11,10 +11,8 @@ abstract contract EndemicEIP712 {
 
     string private constant DOMAIN_NAME = "Endemic Exchange";
 
-    bytes32 public DOMAIN_SEPARATOR;
-
-    function __EndemicEIP712___init_unchained() internal {
-        DOMAIN_SEPARATOR = keccak256(
+    function _buildDomainSeparator() internal view returns (bytes32) {
+        return keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(DOMAIN_NAME)),
