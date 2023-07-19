@@ -138,23 +138,17 @@ abstract contract EndemicOffer is
     }
 
     function _acceptOffer(Offer calldata offer, uint256 tokenId) internal {
-        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
-            offer.paymentErc20TokenAddress
-        );
-
-        uint256 listingPrice = (offer.price * MAX_FEE) / (takerFee + MAX_FEE);
-
         (
             uint256 makerCut,
-            ,
             address royaltiesRecipient,
             uint256 royaltiesFee,
-            uint256 totalCut
-        ) = _calculateFees(
+            uint256 totalCut,
+            uint256 listingPrice
+        ) = _calculateOfferFees(
                 offer.paymentErc20TokenAddress,
                 offer.nftContract,
                 tokenId,
-                listingPrice
+                offer.price
             );
 
         // Transfer token to bidder

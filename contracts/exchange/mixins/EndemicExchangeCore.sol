@@ -59,6 +59,36 @@ abstract contract EndemicExchangeCore {
         totalCut = takerCut + makerCut;
     }
 
+    function _calculateOfferFees(
+        address paymentMethodAddress,
+        address nftContract,
+        uint256 tokenId,
+        uint256 price
+    )
+        internal
+        view
+        returns (
+            uint256 makerCut,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalCut,
+            uint256 listingPrice
+        )
+    {
+        (uint256 takerFee, uint256 makerFee) = paymentManager
+            .getPaymentMethodFees(paymentMethodAddress);
+
+        listingPrice = (price * MAX_FEE) / (takerFee + MAX_FEE);
+
+        uint256 takerCut = price - listingPrice;
+        makerCut = _calculateCut(makerFee, listingPrice);
+
+        (royaltiesRecipient, royaltieFee) = royaltiesProvider
+            .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, listingPrice);
+
+        totalCut = takerCut + makerCut;
+    }
+
     function _calculateTakerCut(address paymentErc20TokenAddress, uint256 price)
         internal
         view
