@@ -37,7 +37,7 @@ abstract contract EndemicOffer is
         uint256 tokenId;
         /// @notice The address of the supported ERC20 smart contract used for payments
         address paymentErc20TokenAddress;
-         /// @notice Amount bidded
+        /// @notice Amount bidded including fees
         uint256 price;
         /// @notice Timestamp when offer expires
         uint256 expiresAt;
@@ -142,8 +142,7 @@ abstract contract EndemicOffer is
             offer.paymentErc20TokenAddress
         );
 
-        uint256 priceWithTakerFeeDeducted = (offer.price * MAX_FEE) /
-            (takerFee + MAX_FEE);
+        uint256 listingPrice = (offer.price * MAX_FEE) / (takerFee + MAX_FEE);
 
         (
             uint256 makerCut,
@@ -155,7 +154,7 @@ abstract contract EndemicOffer is
                 offer.paymentErc20TokenAddress,
                 offer.nftContract,
                 tokenId,
-                priceWithTakerFeeDeducted
+                listingPrice
             );
 
         // Transfer token to bidder
@@ -166,7 +165,7 @@ abstract contract EndemicOffer is
         );
 
         _distributeFunds(
-            priceWithTakerFeeDeducted,
+            listingPrice,
             makerCut,
             totalCut,
             royaltiesFee,
@@ -181,7 +180,7 @@ abstract contract EndemicOffer is
             tokenId,
             offer.bidder,
             msg.sender,
-            priceWithTakerFeeDeducted,
+            listingPrice,
             totalCut
         );
     }
