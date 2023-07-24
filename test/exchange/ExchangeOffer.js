@@ -6,7 +6,12 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { FEE_RECIPIENT, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
+const {
+  FEE_RECIPIENT,
+  ZERO,
+  ZERO_BYTES32,
+  ZERO_ADDRESS,
+} = require('../helpers/constants');
 const { getTypedMessage_offer } = require('../helpers/eip712');
 
 const INVALID_OFFER = 'InvalidOffer';
@@ -335,6 +340,22 @@ describe('ExchangeOffer', function () {
           isForCollection: false,
         })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that uses ether as payment method', async () => {
+      await expect(
+        endemicExchange
+          .connect(user1)
+          .acceptNftOffer(0, ZERO_BYTES32, ZERO_BYTES32, {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 4,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: false,
+          })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
     it('should fail to accept offer that uses unsupported payment method', async () => {
@@ -691,6 +712,26 @@ describe('ExchangeOffer', function () {
           4
         )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+    });
+
+    it('should fail to accept offer that uses ether as payment method', async () => {
+      await expect(
+        endemicExchange.connect(user1).acceptCollectionOffer(
+          0,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
+          {
+            bidder: user2.address,
+            nftContract: nftContract.address,
+            tokenId: 0,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            price: ethers.utils.parseUnits('0.515'),
+            expiresAt: 2000994705,
+            isForCollection: true,
+          },
+          4
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
     it('should fail to accept offer that uses unsupported payment method', async () => {
