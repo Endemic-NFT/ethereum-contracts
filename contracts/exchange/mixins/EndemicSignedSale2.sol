@@ -10,7 +10,7 @@ import "./EndemicEIP712.sol";
 import "./EndemicNonceManager.sol";
 
 error SignedSaleExpired();
-error InvalidSignedSale();
+error InvalidCaller();
 
 abstract contract EndemicSignedSale2 is
     ReentrancyGuardUpgradeable,
@@ -21,9 +21,19 @@ abstract contract EndemicSignedSale2 is
 {
     bytes32 private constant SIGNED_SALE_TYPEHASH =
         keccak256(
-            // solhint-disable-next-line max-line-length
-            "SignedSale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,address seller,address buyer,uint256 price,uint256 deadline)"
+            "SignedSale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,int256 price,address buyer,uint256 expiresAt)"
         );
+
+    struct SignedSale {
+        address seller;
+        uint256 orderNonce;
+        address nftContract;
+        uint256 tokenId;
+        address paymentErc20TokenAddress;
+        uint256 price;
+        address buyer;
+        uint256 expiresAt;
+    }
 
     event SignedSaleSuccess(
         address indexed nftContract,
@@ -36,103 +46,41 @@ abstract contract EndemicSignedSale2 is
     );
 
     function buyFromSignedSale(
-        uint256 orderNonce,
-        address paymentErc20TokenAddress,
-        address nftContract,
-        uint256 tokenId,
-        uint256 price,
-        uint256 deadline,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        SignedSale calldata sale
     ) external payable nonReentrant {
-        if (deadline < block.timestamp) {
+        if (sale.expiresAt < block.timestamp) {
             revert SignedSaleExpired();
         }
 
-        address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
+        if (sale.buyer != address(0) && sale.buyer != msg.sender) {
+            revert InvalidCaller();
+        }
 
-        _verifySignature(
-            nftContract,
-            tokenId,
-            paymentErc20TokenAddress,
-            seller,
-            address(0),
-            price,
-            deadline,
-            v,
-            r,
-            s
+        _verifySignature(v, r, s, sale);
+
+        uint256 takerCut = _calculateTakerCut(
+            sale.paymentErc20TokenAddress,
+            sale.price
         );
 
-        uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
-
-        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
+        _requireSupportedPaymentMethod(sale.paymentErc20TokenAddress);
         _requireSufficientCurrencySupplied(
-            price + takerCut,
-            paymentErc20TokenAddress,
+            sale.price + takerCut,
+            sale.paymentErc20TokenAddress,
             msg.sender
         );
 
-        _invalidateNonce(seller, orderNonce);
+        _invalidateNonce(sale.seller, sale.orderNonce);
 
         _finalizeSignedSale(
-            nftContract,
-            tokenId,
-            paymentErc20TokenAddress,
-            seller,
-            price
-        );
-    }
-
-    function buyFromReservedSignedSale(
-        uint256 orderNonce,
-        address paymentErc20TokenAddress,
-        address nftContract,
-        uint256 tokenId,
-        uint256 price,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external payable nonReentrant {
-        if (deadline < block.timestamp) {
-            revert SignedSaleExpired();
-        }
-
-        address payable seller = payable(IERC721(nftContract).ownerOf(tokenId));
-        address buyer = msg.sender;
-
-        _verifySignature(
-            nftContract,
-            tokenId,
-            paymentErc20TokenAddress,
-            seller,
-            buyer,
-            price,
-            deadline,
-            v,
-            r,
-            s
-        );
-
-        uint256 takerCut = _calculateTakerCut(paymentErc20TokenAddress, price);
-
-        _requireSupportedPaymentMethod(paymentErc20TokenAddress);
-        _requireSufficientCurrencySupplied(
-            price + takerCut,
-            paymentErc20TokenAddress,
-            buyer
-        );
-
-        _invalidateNonce(seller, orderNonce);
-
-        _finalizeSignedSale(
-            nftContract,
-            tokenId,
-            paymentErc20TokenAddress,
-            seller,
-            price
+            sale.nftContract,
+            sale.tokenId,
+            sale.paymentErc20TokenAddress,
+            sale.seller,
+            sale.price
         );
     }
 
@@ -140,7 +88,7 @@ abstract contract EndemicSignedSale2 is
         address nftContract,
         uint256 tokenId,
         address paymentErc20TokenAddress,
-        address payable seller,
+        address seller,
         uint256 price
     ) internal {
         (
@@ -181,16 +129,10 @@ abstract contract EndemicSignedSale2 is
     }
 
     function _verifySignature(
-        address nftContract,
-        uint256 tokenId,
-        address paymentErc20TokenAddress,
-        address seller,
-        address buyer,
-        uint256 price,
-        uint256 deadline,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        SignedSale calldata sale
     ) internal view {
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -199,19 +141,19 @@ abstract contract EndemicSignedSale2 is
                 keccak256(
                     abi.encode(
                         SIGNED_SALE_TYPEHASH,
-                        nftContract,
-                        tokenId,
-                        paymentErc20TokenAddress,
-                        seller,
-                        buyer,
-                        price,
-                        deadline
+                        sale.orderNonce,
+                        sale.nftContract,
+                        sale.tokenId,
+                        sale.paymentErc20TokenAddress,
+                        sale.price,
+                        sale.buyer,
+                        sale.expiresAt
                     )
                 )
             )
         );
 
-        if (ecrecover(digest, v, r, s) != seller) {
+        if (ecrecover(digest, v, r, s) != sale.seller) {
             revert InvalidSignature();
         }
     }
