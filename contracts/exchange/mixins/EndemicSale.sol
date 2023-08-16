@@ -3,28 +3,28 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./EndemicFundsDistributor.sol";
 import "./EndemicExchangeCore.sol";
 import "./EndemicEIP712.sol";
 import "./EndemicNonceManager.sol";
 
-error SignedSaleExpired();
-error InvalidCaller();
-
-abstract contract EndemicSignedSale2 is
+abstract contract EndemicSale is
     ReentrancyGuardUpgradeable,
     EndemicFundsDistributor,
     EndemicExchangeCore,
     EndemicEIP712,
     EndemicNonceManager
 {
-    bytes32 private constant SIGNED_SALE_TYPEHASH =
+    using ECDSA for bytes32;
+
+    bytes32 private constant SALE_TYPEHASH =
         keccak256(
-            "SignedSale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,int256 price,address buyer,uint256 expiresAt)"
+            "Sale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,address buyer,uint256 expiresAt)"
         );
 
-    struct SignedSale {
+    struct Sale {
         address seller;
         uint256 orderNonce;
         address nftContract;
@@ -35,7 +35,7 @@ abstract contract EndemicSignedSale2 is
         uint256 expiresAt;
     }
 
-    event SignedSaleSuccess(
+    event SaleSuccess(
         address indexed nftContract,
         uint256 indexed tokenId,
         address indexed seller,
@@ -45,17 +45,20 @@ abstract contract EndemicSignedSale2 is
         address paymentErc20TokenAddress
     );
 
-    function buyFromSignedSale(
+    error SaleExpired();
+
+    function buyFromSale(
         uint8 v,
         bytes32 r,
         bytes32 s,
-        SignedSale calldata sale
+        Sale calldata sale
     ) external payable nonReentrant {
-        if (sale.expiresAt < block.timestamp) {
-            revert SignedSaleExpired();
-        }
+        if (sale.expiresAt < block.timestamp) revert SaleExpired();
 
-        if (sale.buyer != address(0) && sale.buyer != msg.sender) {
+        if (
+            (sale.buyer != address(0) && sale.buyer != msg.sender) ||
+            sale.seller == msg.sender
+        ) {
             revert InvalidCaller();
         }
 
@@ -75,7 +78,7 @@ abstract contract EndemicSignedSale2 is
 
         _invalidateNonce(sale.seller, sale.orderNonce);
 
-        _finalizeSignedSale(
+        _finalizeSale(
             sale.nftContract,
             sale.tokenId,
             sale.paymentErc20TokenAddress,
@@ -84,7 +87,7 @@ abstract contract EndemicSignedSale2 is
         );
     }
 
-    function _finalizeSignedSale(
+    function _finalizeSale(
         address nftContract,
         uint256 tokenId,
         address paymentErc20TokenAddress,
@@ -117,7 +120,7 @@ abstract contract EndemicSignedSale2 is
             paymentErc20TokenAddress
         );
 
-        emit SignedSaleSuccess(
+        emit SaleSuccess(
             nftContract,
             tokenId,
             seller,
@@ -132,7 +135,7 @@ abstract contract EndemicSignedSale2 is
         uint8 v,
         bytes32 r,
         bytes32 s,
-        SignedSale calldata sale
+        Sale calldata sale
     ) internal view {
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -140,7 +143,7 @@ abstract contract EndemicSignedSale2 is
                 _buildDomainSeparator(),
                 keccak256(
                     abi.encode(
-                        SIGNED_SALE_TYPEHASH,
+                        SALE_TYPEHASH,
                         sale.orderNonce,
                         sale.nftContract,
                         sale.tokenId,
@@ -153,7 +156,7 @@ abstract contract EndemicSignedSale2 is
             )
         );
 
-        if (ecrecover(digest, v, r, s) != sale.seller) {
+        if (digest.recover(v, r, s) != sale.seller) {
             revert InvalidSignature();
         }
     }
