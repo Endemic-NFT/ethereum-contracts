@@ -146,6 +146,80 @@ describe('ExchangeDutchAuction', function () {
       );
     });
 
+    it("should fail to bid if auction didn't start yet", async function () {
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: ZERO_ADDRESS,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.01'),
+          startingAt: defaultTimestamp + 50,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
+    });
+
+    it('should fail to bid if auction has wrong price configuration', async function () {
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: ZERO_ADDRESS,
+          startingPrice: ethers.utils.parseUnits('0.01'),
+          endingPrice: ethers.utils.parseUnits('0.1'),
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidPrice');
+    });
+
+    it('should fail to bid if caller is auction creator', async function () {
+      await expect(
+        endemicExchange.connect(user1).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: ZERO_ADDRESS,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.01'),
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
+    });
+
+    it('should fail to bid if caller uses wrong signature', async function () {
+      const { v, r, s } = await getDutchAuctionSignature(
+        user1,
+        1,
+        ZERO_ADDRESS,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.01'),
+        defaultTimestamp,
+        120
+      );
+
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: ZERO_ADDRESS,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+    });
+
     it('should fail to bid with insufficient value', async function () {
       await expect(
         endemicExchange.connect(user2).bidForDutchAuction(
@@ -385,6 +459,80 @@ describe('ExchangeDutchAuction', function () {
         defaultTimestamp,
         duration
       );
+    });
+
+    it("should fail to bid if auction didn't start yet", async function () {
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.01'),
+          startingAt: defaultTimestamp + 50,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
+    });
+
+    it('should fail to bid if auction has wrong price configuration', async function () {
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('0.01'),
+          endingPrice: ethers.utils.parseUnits('0.1'),
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidPrice');
+    });
+
+    it('should fail to bid if caller is auction creator', async function () {
+      await expect(
+        endemicExchange.connect(user1).bidForDutchAuction(sig.v, sig.r, sig.s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.01'),
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
+    });
+
+    it('should fail to bid if caller uses wrong signature', async function () {
+      const { v, r, s } = await getDutchAuctionSignature(
+        user1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.01'),
+        defaultTimestamp,
+        120
+      );
+
+      await expect(
+        endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('0.1'),
+          endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
+          startingAt: defaultTimestamp,
+          duration: 120,
+        })
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
     });
 
     it('should fail to bid with insufficient value', async function () {

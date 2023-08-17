@@ -40,7 +40,7 @@ abstract contract EndemicDutchAuction is
         DutchAuction calldata auction
     ) external payable nonReentrant {
         if (block.timestamp < auction.startingAt) revert InvalidAuction();
-        if (auction.startingPrice <= auction.endingPrice) revert InvalidAuction();
+        if (auction.startingPrice <= auction.endingPrice) revert InvalidPrice();
         if (auction.seller == msg.sender) revert InvalidCaller();
 
         _verifySignature(auction, v, r, s);
@@ -56,7 +56,7 @@ abstract contract EndemicDutchAuction is
             auction.duration
         );
 
-        if (currentPrice == 0) revert();
+        if (currentPrice == 0) revert InvalidPrice();
 
         (
             uint256 makerCut,
