@@ -53,7 +53,7 @@ abstract contract EndemicSale is
         bytes32 s,
         Sale calldata sale
     ) external payable nonReentrant {
-        if (sale.expiresAt < block.timestamp) revert SaleExpired();
+        if (block.timestamp > sale.expiresAt) revert SaleExpired();
 
         if (
             (sale.buyer != address(0) && sale.buyer != msg.sender) ||

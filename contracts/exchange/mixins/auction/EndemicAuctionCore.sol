@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import "../EndemicExchangeCore.sol";
@@ -79,7 +78,6 @@ abstract contract EndemicAuctionCore is
 
     /// @notice Fired when auction is sucessfuly complated
     event AuctionSuccessful(
-        bytes32 indexed id,
         uint256 indexed totalPrice,
         address winner,
         uint256 totalFees

@@ -88,4 +88,56 @@ const getTypedMessage_offer = ({
   return { domain, types, values };
 };
 
-module.exports = { getTypedMessage_sale, getTypedMessage_offer, keccak256 };
+const getTypedMessage_dutch = ({
+  chainId,
+  verifierContract,
+  orderNonce,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  startingPrice,
+  endingPrice,
+  startingAt,
+  duration,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    DutchAuction: [
+      { name: 'orderNonce', type: 'uint256' },
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'startingPrice', type: 'uint256' },
+      { name: 'endingPrice', type: 'uint256' },
+      { name: 'startingAt', type: 'uint256' },
+      { name: 'duration', type: 'uint256' },
+    ],
+  };
+
+  const values = {
+    orderNonce: orderNonce,
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    startingPrice: startingPrice.toString(),
+    endingPrice: endingPrice.toString(),
+    startingAt: startingAt,
+    duration: duration,
+  };
+
+  return { domain, types, values };
+};
+
+module.exports = {
+  getTypedMessage_sale,
+  getTypedMessage_offer,
+  getTypedMessage_dutch,
+  keccak256,
+};

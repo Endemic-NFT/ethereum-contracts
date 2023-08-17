@@ -3,9 +3,9 @@ pragma solidity 0.8.18;
 
 import "./mixins/auction/EndemicAuction.sol";
 import "./mixins/EndemicOffer.sol";
-import "./mixins/EndemicSignedSale.sol";
+import "./mixins/EndemicSale.sol";
 
-contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSignedSale {
+contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSale {
     /**
      * @notice Initialized Endemic exchange contract
      * @dev Only called once
@@ -20,8 +20,6 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSignedSale {
     ) external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
-
-        __EndemicSignedSale___init_unchained();
 
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
