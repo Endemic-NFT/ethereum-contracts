@@ -16,13 +16,15 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSale {
     function __EndemicExchange_init(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress
+        address _feeRecipientAddress,
+        address _approvedSettler
     ) external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
 
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
+        _updateApprovedSettler(_approvedSettler);
     }
 
     /**
@@ -38,5 +40,6 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSale {
     ) external onlyOwner {
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
+        _updateApprovedSettler(address(0));
     }
 }

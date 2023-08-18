@@ -135,9 +135,51 @@ const getTypedMessage_dutch = ({
   return { domain, types, values };
 };
 
+const getTypedMessage_reserve = ({
+  chainId,
+  verifierContract,
+  orderNonce,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  price,
+  isBid,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    ReserveAuction: [
+      { name: 'orderNonce', type: 'uint256' },
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'price', type: 'uint256' },
+      { name: 'isBid', type: 'bool' },
+    ],
+  };
+
+  const values = {
+    orderNonce: orderNonce,
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    price: price.toString(),
+    isBid: isBid,
+  };
+
+  return { domain, types, values };
+};
+
 module.exports = {
   getTypedMessage_sale,
   getTypedMessage_offer,
   getTypedMessage_dutch,
+  getTypedMessage_reserve,
   keccak256,
 };
