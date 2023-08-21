@@ -64,9 +64,9 @@ abstract contract EndemicReserveAuction is
         _verifySignature(auction);
         _verifySignature(bid);
 
-        AuctionFees memory data = _calculateAuctionFees(auction, bid);
+        AuctionFees memory auctionFees = _calculateAuctionFees(auction, bid);
 
-        if (auction.price + data.takerCut > bid.price) {
+        if (auction.price + auctionFees.takerCut > bid.price) {
             revert UnsufficientCurrencySupplied();
         }
 
@@ -80,17 +80,21 @@ abstract contract EndemicReserveAuction is
         );
 
         _distributeFunds(
-            data.bidPrice,
-            data.makerCut,
-            data.totalCut,
-            data.royaltieFee,
-            data.royaltiesRecipient,
+            auctionFees.bidPrice,
+            auctionFees.makerCut,
+            auctionFees.totalCut,
+            auctionFees.royaltieFee,
+            auctionFees.royaltiesRecipient,
             auction.signer,
             bid.signer,
             auction.paymentErc20TokenAddress
         );
 
-        emit AuctionSuccessful(data.bidPrice, bid.signer, data.totalCut);
+        emit AuctionSuccessful(
+            auctionFees.bidPrice,
+            bid.signer,
+            auctionFees.totalCut
+        );
     }
 
     function _updateApprovedSettler(address _approvedSettler) internal {
