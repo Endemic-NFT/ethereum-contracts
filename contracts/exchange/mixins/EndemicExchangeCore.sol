@@ -7,13 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../royalties/interfaces/IRoyaltiesProvider.sol";
 import "../../manager/interfaces/IPaymentManager.sol";
 
-error InvalidAddress();
-error InvalidInterface();
-error SellerNotAssetOwner();
-error UnsufficientCurrencySupplied();
-error InvalidPaymentMethod();
-error InvalidCaller();
-
 abstract contract EndemicExchangeCore {
     IRoyaltiesProvider public royaltiesProvider;
     IPaymentManager public paymentManager;
@@ -21,6 +14,23 @@ abstract contract EndemicExchangeCore {
     uint256 internal constant MAX_FEE = 10000;
     uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
+
+    error InvalidAddress();
+    error InvalidInterface();
+    error SellerNotAssetOwner();
+    error UnsufficientCurrencySupplied();
+    error InvalidPaymentMethod();
+    error InvalidCaller();
+    error InvalidPrice();
+    error InvalidConfiguration();
+    error AuctionNotStarted();
+
+    /// @notice Fired when auction is successfully completed
+    event AuctionSuccessful(
+        uint256 indexed totalPrice,
+        address winner,
+        uint256 totalFees
+    );
 
     modifier onlySupportedERC20Payments(address paymentErc20TokenAddress) {
         if (

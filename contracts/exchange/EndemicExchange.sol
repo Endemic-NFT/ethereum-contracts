@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "./mixins/auction/EndemicAuction.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+import "./mixins/auction/EndemicDutchAuction.sol";
+import "./mixins/auction/EndemicReserveAuction.sol";
 import "./mixins/EndemicOffer.sol";
 import "./mixins/EndemicSale.sol";
 
-contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSale {
+contract EndemicExchange is
+    EndemicDutchAuction,
+    EndemicReserveAuction,
+    EndemicOffer,
+    EndemicSale,
+    OwnableUpgradeable
+{
     /**
      * @notice Initialized Endemic exchange contract
      * @dev Only called once
@@ -36,10 +45,11 @@ contract EndemicExchange is EndemicAuction, EndemicOffer, EndemicSale {
     function updateConfiguration(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress
+        address _feeRecipientAddress,
+        address _approvedSettler
     ) external onlyOwner {
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
-        _updateApprovedSettler(address(0));
+        _updateApprovedSettler(_approvedSettler);
     }
 }

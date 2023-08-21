@@ -4,13 +4,15 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "./EndemicAuctionCore.sol";
+import "../EndemicExchangeCore.sol";
+import "../EndemicFundsDistributor.sol";
 import "../EndemicEIP712.sol";
 import "../EndemicNonceManager.sol";
 
 abstract contract EndemicDutchAuction is
     ReentrancyGuardUpgradeable,
-    EndemicAuctionCore,
+    EndemicFundsDistributor,
+    EndemicExchangeCore,
     EndemicEIP712,
     EndemicNonceManager
 {

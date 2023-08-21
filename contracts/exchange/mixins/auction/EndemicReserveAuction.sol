@@ -3,12 +3,14 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "./EndemicAuctionCore.sol";
+import "../EndemicExchangeCore.sol";
+import "../EndemicFundsDistributor.sol";
 import "../EndemicEIP712.sol";
 import "../EndemicNonceManager.sol";
 
 abstract contract EndemicReserveAuction is
-    EndemicAuctionCore,
+    EndemicFundsDistributor,
+    EndemicExchangeCore,
     EndemicEIP712,
     EndemicNonceManager
 {

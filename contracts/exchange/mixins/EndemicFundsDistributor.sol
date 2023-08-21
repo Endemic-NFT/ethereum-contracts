@@ -3,12 +3,12 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-error FeeTransferFailed();
-error RoyaltiesTransferFailed();
-error FundsTransferFailed();
-
 abstract contract EndemicFundsDistributor {
     address public feeRecipientAddress;
+
+    error FeeTransferFailed();
+    error RoyaltiesTransferFailed();
+    error FundsTransferFailed();
 
     function _distributeFunds(
         uint256 price,
