@@ -16,13 +16,9 @@ const {
 } = require('../helpers/constants');
 const {
   weiToEther,
-  calculateAuctionDuration,
   addTakerFee,
 } = require('../helpers/token');
 
-const INVALID_AUCTION_ERROR = 'InvalidAuction';
-const INVALID_DURATION_ERROR = 'InvalidDuration';
-const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const INVALID_CONFIGURATION = 'InvalidConfiguration';
 const INVALID_CALLER = 'InvalidCaller';
 const INVALID_SIGNATURE = 'InvalidSignature';
@@ -32,9 +28,6 @@ const AUCTION_SUCCESFUL = 'AuctionSuccessful';
 const AUCTION_NOT_STARTED = 'AuctionNotStarted';
 
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
-
-const UNAUTHORIZED_ERROR = 'Unauthorized';
-const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
 
 describe('ExchangeDutchAuction', function () {
   let endemicExchange,

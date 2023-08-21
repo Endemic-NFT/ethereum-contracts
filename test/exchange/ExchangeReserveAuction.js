@@ -7,27 +7,10 @@ const {
 } = require('../helpers/deploy');
 const { getTypedMessage_reserve } = require('../helpers/eip712');
 
-const {
-  ZERO_ADDRESS,
-  FEE_RECIPIENT,
-  ZERO,
-  ZERO_BYTES32,
-} = require('../helpers/constants');
+const { FEE_RECIPIENT, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
-const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
-const INVALID_PRICE_CONFIGURATION = 'InvalidPriceConfiguration';
-
-const AUCTION_CANCELED = 'AuctionCancelled';
-const RESERVE_BID_PLACED = 'ReserveBidPlaced';
-
-const UNAUTHORIZED_ERROR = 'Unauthorized';
-const SELLER_NOT_ASSET_OWNER = 'SellerNotAssetOwner';
-
-const INSUFFICIENT_BID = 'InsufficientBid';
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
-
-const ONE_DAY = 86400;
 
 describe('ExchangeReserveAuction', function () {
   let endemicExchange,
