@@ -13,7 +13,6 @@ const {
   FEE_RECIPIENT,
   ZERO,
   ZERO_BYTES32,
-  TOO_LONG_AUCTION_DURATION,
 } = require('../helpers/constants');
 const {
   weiToEther,
@@ -24,9 +23,13 @@ const {
 const INVALID_AUCTION_ERROR = 'InvalidAuction';
 const INVALID_DURATION_ERROR = 'InvalidDuration';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
+const INVALID_CONFIGURATION = 'InvalidConfiguration';
+const INVALID_CALLER = 'InvalidCaller';
+const INVALID_SIGNATURE = 'InvalidSignature';
+const NONCE_USED = 'NonceUsed';
 
 const AUCTION_SUCCESFUL = 'AuctionSuccessful';
-const AUCTION_CANCELED = 'AuctionCancelled';
+const AUCTION_NOT_STARTED = 'AuctionNotStarted';
 
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
@@ -159,7 +162,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp + 50,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, AUCTION_NOT_STARTED);
     });
 
     it('should fail to bid if auction has wrong price configuration', async function () {
@@ -175,7 +178,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidPrice');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_CONFIGURATION);
     });
 
     it('should fail to bid if caller is auction creator', async function () {
@@ -191,7 +194,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_CALLER);
     });
 
     it('should fail to bid if caller uses wrong signature', async function () {
@@ -217,7 +220,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to bid with insufficient value', async function () {
@@ -281,7 +284,7 @@ describe('ExchangeDutchAuction', function () {
             value: totalPrice,
           }
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should be able to bid on dutch ERC721 auction', async function () {
@@ -474,7 +477,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp + 50,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_AUCTION_ERROR);
+      ).to.be.revertedWithCustomError(endemicExchange, AUCTION_NOT_STARTED);
     });
 
     it('should fail to bid if auction has wrong price configuration', async function () {
@@ -490,7 +493,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidPrice');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_CONFIGURATION);
     });
 
     it('should fail to bid if caller is auction creator', async function () {
@@ -506,7 +509,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_CALLER);
     });
 
     it('should fail to bid if caller uses wrong signature', async function () {
@@ -532,7 +535,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to bid with insufficient value', async function () {
@@ -589,7 +592,7 @@ describe('ExchangeDutchAuction', function () {
           startingAt: defaultTimestamp,
           duration: 120,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should be able to bid on dutch ERC721 auction', async function () {

@@ -23,6 +23,7 @@ abstract contract EndemicAuctionCore is
     error InvalidPrice();
     error InvalidDuration();
     error InvalidPriceConfiguration();
+    error InvalidConfiguration();
     error InvalidAmount();
 
     error AuctionNotStarted();

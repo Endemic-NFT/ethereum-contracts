@@ -88,14 +88,6 @@ describe('ExchangeReserveAuction', function () {
     await mintToken(user1.address);
   }
 
-  async function getCurrentEvmTimestamp() {
-    const blockNumBefore = await ethers.provider.getBlockNumber();
-
-    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-
-    return blockBefore.timestamp;
-  }
-
   const getReserveAuctionSignature = async (
     signer,
     orderNonce,
@@ -129,7 +121,7 @@ describe('ExchangeReserveAuction', function () {
     return { v, r, s };
   };
 
-  describe('Bidding with ERC20', function () {
+  describe('Finalize reserve auction', function () {
     let sig;
 
     beforeEach(async function () {
@@ -211,6 +203,503 @@ describe('ExchangeReserveAuction', function () {
       // Bidder should own NFT
       const tokenOwner = await nftContract.ownerOf(1);
       expect(tokenOwner).to.equal(user2.address);
+    });
+
+    it('should fail to finalize if payment method is not supported', async function () {
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress:
+              '0x000000000000000000000000000000000000beef',
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress:
+              '0x000000000000000000000000000000000000beef',
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress:
+              '0x0000000000000000000000000000000000000000', // ether
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress:
+              '0x0000000000000000000000000000000000000000', // ether
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
+    });
+
+    it('should fail to finalize is caller is not approved settler', async function () {
+      await expect(
+        endemicExchange.connect(user1).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
+    });
+
+    it('should fail to finalize if auction or bid has wrong configuration', async function () {
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: true, // wrong
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: false, // wrong
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+    });
+
+    it('should fail to finalize if auction and bid mismatch', async function () {
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: '0x000000000000000000000000000000000000beef', // mismatch
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address, // mismatch
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 2, // mismatch
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1, // mismatch
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address, // mismatch
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress:
+              '0x000000000000000000000000000000000000beef', // mismatch
+            price: 100,
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address, // mismatch
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user1.address, // mismatch
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: 100,
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+    });
+
+    it('should fail to finalize if signature is invalid', async function () {
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        true
+      );
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.09'), // changed price
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.104'), // changed price
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+    });
+
+    it('should fail to finalize if bid has insufficient value', async function () {
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.102')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.102'));
+
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.102'),
+        true
+      );
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.102'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(
+        endemicExchange,
+        UNSUFFICIENT_CURRENCY_SUPPLIED
+      );
+    });
+
+    it('should fail to finalize if auction is cancelled', async function () {
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.103')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
+
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        true
+      );
+
+      await endemicExchange.connect(user1).cancelNonce(1);
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+    });
+
+    it('should fail to finalize if bid is cancelled', async function () {
+      await endemicToken.transfer(
+        user2.address,
+        ethers.utils.parseUnits('0.103')
+      );
+
+      await endemicToken
+        .connect(user2)
+        .approve(endemicExchange.address, ethers.utils.parseUnits('0.103'));
+
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        true
+      );
+
+      await endemicExchange.connect(user2).cancelNonce(1);
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.1'),
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
     });
   });
 

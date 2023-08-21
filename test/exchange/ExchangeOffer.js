@@ -17,8 +17,10 @@ const { getTypedMessage_offer } = require('../helpers/eip712');
 const INVALID_OFFER = 'InvalidOffer';
 const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const INVALID_CALLER = 'InvalidCaller';
-
+const OFFER_EXPIRED = 'OfferExpired';
 const OFFER_ACCEPTED = 'OfferAccepted';
+const NONCE_USED = 'NonceUsed';
+const INVALID_SIGNATURE = 'InvalidSignature';
 
 describe('ExchangeOffer', function () {
   let endemicExchange,
@@ -342,7 +344,7 @@ describe('ExchangeOffer', function () {
           expiresAt: 1658060224,
           isForCollection: false,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+      ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXPIRED);
     });
 
     it('should fail to accept offer that is cancelled', async () => {
@@ -367,7 +369,7 @@ describe('ExchangeOffer', function () {
           expiresAt: 2000994705,
           isForCollection: false,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail to accept offer that uses ether as payment method', async () => {
@@ -445,7 +447,7 @@ describe('ExchangeOffer', function () {
           expiresAt: 2000994705,
           isForCollection: false,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail to accept offer that is not signed by bidder', async () => {
@@ -468,7 +470,7 @@ describe('ExchangeOffer', function () {
           expiresAt: 2000994705,
           isForCollection: false,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to accept offer if caller is same as bidder', async () => {
@@ -749,7 +751,7 @@ describe('ExchangeOffer', function () {
           },
           4
         )
-      ).to.be.revertedWithCustomError(endemicExchange, INVALID_OFFER);
+      ).to.be.revertedWithCustomError(endemicExchange, OFFER_EXPIRED);
     });
 
     it('should fail to accept offer that is cancelled', async () => {
@@ -780,7 +782,7 @@ describe('ExchangeOffer', function () {
           },
           4
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail to accept offer that uses ether as payment method', async () => {
@@ -878,7 +880,7 @@ describe('ExchangeOffer', function () {
           },
           3
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail to accept offer that is not signed by bidder', async () => {
@@ -907,7 +909,7 @@ describe('ExchangeOffer', function () {
           },
           4
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+      ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to accept offer if caller is same as bidder', async () => {

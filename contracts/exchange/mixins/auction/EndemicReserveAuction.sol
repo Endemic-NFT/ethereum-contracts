@@ -48,24 +48,25 @@ abstract contract EndemicReserveAuction is
         ReserveAuction calldata auction,
         ReserveAuction calldata bid
     ) external onlySupportedERC20Payments(auction.paymentErc20TokenAddress) {
-        if (msg.sender != approvedSettler) revert();
+        if (msg.sender != approvedSettler) revert InvalidCaller();
 
         if (
             auction.isBid ||
             !bid.isBid ||
             auction.nftContract != bid.nftContract ||
             auction.tokenId != bid.tokenId ||
-            auction.paymentErc20TokenAddress != bid.paymentErc20TokenAddress
-        ) revert();
-
-        if (auction.signer == bid.signer) revert();
+            auction.paymentErc20TokenAddress != bid.paymentErc20TokenAddress ||
+            auction.signer == bid.signer
+        ) revert InvalidConfiguration();
 
         _verifySignature(auction);
         _verifySignature(bid);
 
         AuctionFees memory data = _calculateAuctionFees(auction, bid);
 
-        if (auction.price + data.takerCut > bid.price) revert();
+        if (auction.price + data.takerCut > bid.price) {
+            revert UnsufficientCurrencySupplied();
+        }
 
         _invalidateNonce(auction.signer, auction.orderNonce);
         _invalidateNonce(bid.signer, bid.orderNonce);

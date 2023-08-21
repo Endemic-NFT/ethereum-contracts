@@ -15,6 +15,7 @@ const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const SALE_EXPIRED = 'SaleExpired';
 const SALE_SUCCESS = 'SaleSuccess';
 const INVALID_CALLER = 'InvalidCaller';
+const NONCE_USED = 'NonceUsed';
 
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
@@ -141,7 +142,7 @@ describe('EndemicSale', () => {
             value: priceWithFees,
           }
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail if caller is same as seller', async function () {
@@ -321,7 +322,7 @@ describe('EndemicSale', () => {
             value: priceWithFees,
           }
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
   });
 
@@ -378,7 +379,7 @@ describe('EndemicSale', () => {
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
     it('should fail if caller is same as seller', async function () {
@@ -547,7 +548,7 @@ describe('EndemicSale', () => {
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
-      ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
+      ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
   });
 

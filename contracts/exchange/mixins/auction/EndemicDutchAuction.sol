@@ -39,9 +39,11 @@ abstract contract EndemicDutchAuction is
         bytes32 s,
         DutchAuction calldata auction
     ) external payable nonReentrant {
-        if (block.timestamp < auction.startingAt) revert InvalidAuction();
-        if (auction.startingPrice <= auction.endingPrice) revert InvalidPrice();
+        if (block.timestamp < auction.startingAt) revert AuctionNotStarted();
         if (auction.seller == msg.sender) revert InvalidCaller();
+        if (auction.startingPrice <= auction.endingPrice) {
+            revert InvalidConfiguration();
+        }
 
         _verifySignature(auction, v, r, s);
 

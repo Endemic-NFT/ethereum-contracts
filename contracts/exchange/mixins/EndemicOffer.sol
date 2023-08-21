@@ -45,6 +45,7 @@ abstract contract EndemicOffer is
     );
 
     error InvalidOffer();
+    error OfferExpired();
 
     function acceptNftOffer(
         uint8 v,
@@ -56,10 +57,8 @@ abstract contract EndemicOffer is
         nonReentrant
         onlySupportedERC20Payments(offer.paymentErc20TokenAddress)
     {
-        if (block.timestamp > offer.expiresAt || offer.isForCollection) {
-            revert InvalidOffer();
-        }
-
+        if (offer.isForCollection) revert InvalidOffer();
+        if (block.timestamp > offer.expiresAt) revert OfferExpired();
         if (offer.bidder == msg.sender) revert InvalidCaller();
 
         _verifySignature(v, r, s, offer);
@@ -80,10 +79,8 @@ abstract contract EndemicOffer is
         nonReentrant
         onlySupportedERC20Payments(offer.paymentErc20TokenAddress)
     {
-        if (block.timestamp > offer.expiresAt || !offer.isForCollection) {
-            revert InvalidOffer();
-        }
-
+        if (!offer.isForCollection) revert InvalidOffer();
+        if (block.timestamp > offer.expiresAt) revert OfferExpired();
         if (offer.bidder == msg.sender) revert InvalidCaller();
 
         _verifySignature(v, r, s, offer);
