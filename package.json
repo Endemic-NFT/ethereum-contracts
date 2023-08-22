@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "^2.2.0",
     "chai": "^4.3.7",
     "eslint": "^8.25.0",
@@ -30,8 +31,8 @@
     "hardhat-gas-reporter": "^1.0.9",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "^1.0.0-beta.24",
-    "solhint": "^3.3.7",
-    "solidity-coverage": "^0.8.2"
+    "solhint": "^3.6.2",
+    "solidity-coverage": "^0.8.4"
   },
   "compilers": {
     "solc": {

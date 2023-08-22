@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../royalties/interfaces/IRoyaltiesProvider.sol";
 import "../../manager/interfaces/IPaymentManager.sol";
-
-error InvalidAddress();
-error InvalidInterface();
-error SellerNotAssetOwner();
-error UnsufficientCurrencySupplied();
-error InvalidPaymentMethod();
 
 abstract contract EndemicExchangeCore {
     IRoyaltiesProvider public royaltiesProvider;
@@ -21,6 +14,23 @@ abstract contract EndemicExchangeCore {
     uint256 internal constant MAX_FEE = 10000;
     uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
+
+    error InvalidAddress();
+    error InvalidInterface();
+    error SellerNotAssetOwner();
+    error UnsufficientCurrencySupplied();
+    error InvalidPaymentMethod();
+    error InvalidCaller();
+    error InvalidPrice();
+    error InvalidConfiguration();
+    error AuctionNotStarted();
+
+    /// @notice Fired when auction is successfully completed
+    event AuctionSuccessful(
+        uint256 indexed totalPrice,
+        address winner,
+        uint256 totalFees
+    );
 
     modifier onlySupportedERC20Payments(address paymentErc20TokenAddress) {
         if (
@@ -55,6 +65,36 @@ abstract contract EndemicExchangeCore {
 
         (royaltiesRecipient, royaltieFee) = royaltiesProvider
             .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, price);
+
+        totalCut = takerCut + makerCut;
+    }
+
+    function _calculateOfferFees(
+        address paymentMethodAddress,
+        address nftContract,
+        uint256 tokenId,
+        uint256 price
+    )
+        internal
+        view
+        returns (
+            uint256 makerCut,
+            address royaltiesRecipient,
+            uint256 royaltieFee,
+            uint256 totalCut,
+            uint256 listingPrice
+        )
+    {
+        (uint256 takerFee, uint256 makerFee) = paymentManager
+            .getPaymentMethodFees(paymentMethodAddress);
+
+        listingPrice = (price * MAX_FEE) / (takerFee + MAX_FEE);
+
+        uint256 takerCut = price - listingPrice;
+        makerCut = _calculateCut(makerFee, listingPrice);
+
+        (royaltiesRecipient, royaltieFee) = royaltiesProvider
+            .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, listingPrice);
 
         totalCut = takerCut + makerCut;
     }

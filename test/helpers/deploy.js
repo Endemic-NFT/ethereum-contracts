@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require('hardhat');
-const { FEE_RECIPIENT } = require('./constants');
+const { FEE_RECIPIENT, ZERO_ADDRESS } = require('./constants');
 
 const deployEndemicToken = async (deployer) => {
   const EndemicToken = await ethers.getContractFactory('EndemicToken');
@@ -80,12 +80,13 @@ const deployInitializedCollection = async (
 
 const deployEndemicExchange = async (
   royaltiesProviderAddress,
-  paymentManagerAddress
+  paymentManagerAddress,
+  settler
 ) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [royaltiesProviderAddress, paymentManagerAddress, FEE_RECIPIENT],
+    [royaltiesProviderAddress, paymentManagerAddress, FEE_RECIPIENT, settler],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -96,7 +97,8 @@ const deployEndemicExchange = async (
 
 const deployEndemicExchangeWithDeps = async (
   makerFee = 250,
-  takerFee = 300
+  takerFee = 300,
+  settler = ZERO_ADDRESS
 ) => {
   const royaltiesProviderContract = await deployRoyaltiesProvider();
 
@@ -104,7 +106,8 @@ const deployEndemicExchangeWithDeps = async (
 
   const endemicExchangeContract = await deployEndemicExchange(
     royaltiesProviderContract.address,
-    paymentManagerContract.address
+    paymentManagerContract.address,
+    settler
   );
 
   return {

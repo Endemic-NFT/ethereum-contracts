@@ -1,79 +1,64 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "./EndemicAuctionCore.sol";
+import "../EndemicExchangeCore.sol";
+import "../EndemicFundsDistributor.sol";
+import "../EndemicEIP712.sol";
+import "../EndemicNonceManager.sol";
 
 abstract contract EndemicDutchAuction is
-    ContextUpgradeable,
     ReentrancyGuardUpgradeable,
-    EndemicAuctionCore
+    EndemicFundsDistributor,
+    EndemicExchangeCore,
+    EndemicEIP712,
+    EndemicNonceManager
 {
-    using AddressUpgradeable for address;
+    using ECDSA for bytes32;
 
-    /**
-     * @notice Creates fixed auction for an NFT
-     * Fixed auction is variant of dutch auction where startingPrice is equal to endingPrice
-     */
-    function createFixedDutchAuction(
-        address nftContract,
-        uint256 tokenId,
-        uint256 price,
-        address paymentErc20TokenAddress
-    ) external nonReentrant {
-        _createAuction(
-            nftContract,
-            tokenId,
-            price,
-            price,
-            0,
-            paymentErc20TokenAddress
+    bytes32 private constant AUCTION_TYPEHASH =
+        keccak256(
+            "DutchAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 startingPrice,uint256 endingPrice,uint256 startingAt,uint256 duration)"
         );
+
+    struct DutchAuction {
+        address seller;
+        uint256 orderNonce;
+        address nftContract;
+        uint256 tokenId;
+        address paymentErc20TokenAddress;
+        uint256 startingPrice;
+        uint256 endingPrice;
+        uint256 startingAt;
+        uint256 duration;
     }
 
-    /**
-     * @notice Creates dutch auction for an NFT
-     * Dutch auction is auction where price of NFT lineary drops from startingPrice to endingPrice
-     */
-    function createDutchAuction(
-        address nftContract,
-        uint256 tokenId,
-        uint256 startingPrice,
-        uint256 endingPrice,
-        uint256 duration,
-        address paymentErc20TokenAddress
-    ) external nonReentrant {
-        if (duration < MIN_DURATION || duration > MAX_DURATION)
-            revert InvalidDuration();
+    function bidForDutchAuction(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        DutchAuction calldata auction
+    ) external payable nonReentrant {
+        if (block.timestamp < auction.startingAt) revert AuctionNotStarted();
+        if (auction.seller == msg.sender) revert InvalidCaller();
+        if (auction.startingPrice <= auction.endingPrice) {
+            revert InvalidConfiguration();
+        }
 
-        if (startingPrice <= endingPrice) revert InvalidPriceConfiguration();
+        _verifySignature(auction, v, r, s);
 
-        _createAuction(
-            nftContract,
-            tokenId,
-            startingPrice,
-            endingPrice,
-            duration,
-            paymentErc20TokenAddress
+        _requireSupportedPaymentMethod(auction.paymentErc20TokenAddress);
+
+        _invalidateNonce(auction.seller, auction.orderNonce);
+
+        uint256 currentPrice = _calculateCurrentPrice(
+            auction.startingPrice,
+            auction.endingPrice,
+            auction.startingAt,
+            auction.duration
         );
-    }
-
-    /**
-     * @notice Purchase auction
-     */
-    function bidForDutchAuction(bytes32 id) external payable nonReentrant {
-        Auction memory auction = idToAuction[id];
-
-        _requireAuctionType(auction, AuctionType.DUTCH);
-
-        _requireValidBidRequest(auction);
-
-        _removeAuction(auction.id);
-
-        uint256 currentPrice = _calculateCurrentPrice(auction);
 
         if (currentPrice == 0) revert InvalidPrice();
 
@@ -119,96 +104,23 @@ abstract contract EndemicDutchAuction is
             auction.paymentErc20TokenAddress
         );
 
-        emit AuctionSuccessful(auction.id, currentPrice, msg.sender, totalCut);
+        emit AuctionSuccessful(currentPrice, msg.sender, totalCut);
     }
 
-    /**
-     * @notice Calculates current price for the auction
-     */
-    function getCurrentPrice(bytes32 id) external view returns (uint256) {
-        Auction memory auction = idToAuction[id];
-
-        if (
-            !_isActiveAuction(auction) ||
-            !_isAuctionType(auction, AuctionType.DUTCH)
-        ) revert InvalidAuction();
-
-        return _calculateCurrentPrice(auction);
-    }
-
-    /**
-     * @notice Creates auction for an NFT
-     */
-    function _createAuction(
-        address nftContract,
-        uint256 tokenId,
+    function getCurrentPrice(
         uint256 startingPrice,
         uint256 endingPrice,
-        uint256 duration,
-        address paymentErc20TokenAddress
-    ) internal {
-        if (startingPrice < MIN_PRICE || endingPrice < MIN_PRICE)
-            revert InvalidPriceConfiguration();
-
-        _requireValidAuctionRequest(
-            paymentErc20TokenAddress,
-            nftContract,
-            tokenId
-        );
-
-        bytes32 auctionId = _createAuctionId(nftContract, tokenId, msg.sender);
-
-        // Seller cannot recreate auction
-        // if it is already listed as reserve auction that is in progress or ended
-        _requireIdleAuction(auctionId);
-
-        uint256 endingAt = block.timestamp + duration;
-
-        Auction memory auction = Auction({
-            auctionType: AuctionType.DUTCH,
-            id: auctionId,
-            nftContract: nftContract,
-            seller: msg.sender,
-            highestBidder: address(0),
-            paymentErc20TokenAddress: paymentErc20TokenAddress,
-            tokenId: tokenId,
-            startingPrice: startingPrice,
-            endingPrice: endingPrice,
-            startedAt: block.timestamp,
-            endingAt: endingAt
-        });
-
-        idToAuction[auctionId] = auction;
-
-        emit AuctionCreated(
-            nftContract,
-            tokenId,
-            auctionId,
+        uint256 startingAt,
+        uint256 duration
+    ) external view returns (uint256) {
+        return _calculateCurrentPrice(
             startingPrice,
             endingPrice,
-            endingAt,
-            msg.sender,
-            paymentErc20TokenAddress
+            startingAt,
+            duration
         );
     }
 
-    /**
-     * @notice Determines auction price by payment method
-     * @dev Because of the nature of dutch auction we precalculate auction price in moment of rendering it on UI.
-     * When the user bids we calculate the price again at the moment of method execution.
-     * This price will be slightly smaller than one rendered on UI, which results in retaining a small amount of ether.
-     * Which is the difference between precalculated price and the price calculated in the moment of method execution.
-     * This is not the problem in the case of ERC20 payments because the difference will not retain on the contract
-     * due to the token allowance technique.
-     *
-     * With this method in case of ether payments we forward all supplied ethers with the check
-     * that it's not supplied less than @param currentPriceWithoutFees.
-     * Difference that would retain on the contract is forwarded to the seller, retaining zero ether on this contract.
-     *
-     * @param paymentErc20TokenAddress - determines payment method for the auction
-     * @param currentPriceWithoutFees - auction price calculated in moment of method execution without buyer fees
-     * @param takerCut - buyer fees calculated for @param currentPriceWithoutFees
-     */
     function _determinePriceByPaymentMethod(
         address paymentErc20TokenAddress,
         uint256 currentPriceWithoutFees,
@@ -230,19 +142,16 @@ abstract contract EndemicDutchAuction is
         return suppliedEtherWithoutFees;
     }
 
-    /**
-     * @notice Calculates current price depending on block timestamp
-     */
-    function _calculateCurrentPrice(Auction memory auction)
-        internal
-        view
-        returns (uint256)
-    {
+    function _calculateCurrentPrice(
+        uint256 startingPrice,
+        uint256 endingPrice,
+        uint256 startingAt,
+        uint256 duration
+    ) internal view returns (uint256) {
         uint256 secondsPassed = 0;
-        uint256 duration = auction.endingAt - auction.startedAt;
 
-        if (block.timestamp > auction.startedAt) {
-            secondsPassed = block.timestamp - auction.startedAt;
+        if (block.timestamp > startingAt) {
+            secondsPassed = block.timestamp - startingAt;
         }
 
         // NOTE: We don't use SafeMath (or similar) in this function because
@@ -253,12 +162,12 @@ abstract contract EndemicDutchAuction is
         if (secondsPassed >= duration) {
             // We've reached the end of the dynamic pricing portion
             // of the auction, just return the end price.
-            return auction.endingPrice;
+            return endingPrice;
         } else {
             // Starting price can be higher than ending price (and often is!), so
             // this delta can be negative.
-            int256 totalPriceChange = int256(auction.endingPrice) -
-                int256(auction.startingPrice);
+            int256 totalPriceChange = int256(endingPrice) -
+                int256(startingPrice);
 
             // This multiplication can't overflow, _secondsPassed will easily fit within
             // 64-bits, and totalPriceChange will easily fit within 128-bits, their product
@@ -268,7 +177,38 @@ abstract contract EndemicDutchAuction is
 
             // currentPriceChange can be negative, but if so, will have a magnitude
             // less that _startingPrice. Thus, this result will always end up positive.
-            return uint256(int256(auction.startingPrice) + currentPriceChange);
+            return uint256(int256(startingPrice) + currentPriceChange);
+        }
+    }
+
+    function _verifySignature(
+        DutchAuction calldata auction,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                _buildDomainSeparator(),
+                keccak256(
+                    abi.encode(
+                        AUCTION_TYPEHASH,
+                        auction.orderNonce,
+                        auction.nftContract,
+                        auction.tokenId,
+                        auction.paymentErc20TokenAddress,
+                        auction.startingPrice,
+                        auction.endingPrice,
+                        auction.startingAt,
+                        auction.duration
+                    )
+                )
+            )
+        );
+
+        if (digest.recover(v, r, s) != auction.seller) {
+            revert InvalidSignature();
         }
     }
 
