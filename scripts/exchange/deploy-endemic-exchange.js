@@ -16,6 +16,7 @@ async function main() {
       royaltiesProviderProxy,
       paymentManagerProxy,
       '0x813201fe76De0622223492D2467fF5Fd38cF2320',
+      '0x3D77a01EF9265F8Af731367abF5b467641764191',
     ],
     {
       deployer,

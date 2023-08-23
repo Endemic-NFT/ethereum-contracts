@@ -35,11 +35,20 @@ const mainnet = {
   endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
 };
 
+const sepolia = {
+  royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
+  endemicErc721Factory: '0x4b8312305d25330E73b0b5778Fb9193a183C5c22',
+  endemicErc721: '0x3B7A2D4bfA13378f275146D7AE05518F42241BcD',
+  paymentManagerProxy: '0xBE45e76c9Db68e23148392400452114be019e5EC',
+  endemicExchangeProxy: '0x8243A166c489B902640991710241eb91cCc78Cc5',
+};
+
 const networks = {
   aurora,
   mainnet,
   goerli,
   arbitrum_goerli,
+  sepolia,
 };
 
 const getForNetwork = (network) => networks[network];
