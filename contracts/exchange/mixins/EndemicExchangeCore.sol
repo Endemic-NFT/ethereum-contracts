@@ -11,7 +11,7 @@ abstract contract EndemicExchangeCore {
     IRoyaltiesProvider public royaltiesProvider;
     IPaymentManager public paymentManager;
 
-    uint256 internal constant MAX_FEE = 10000;
+    uint16 internal constant MAX_FEE = 10000;
     uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
 
@@ -24,6 +24,7 @@ abstract contract EndemicExchangeCore {
     error InvalidPrice();
     error InvalidConfiguration();
     error AuctionNotStarted();
+    error InvalidDuration();
 
     /// @notice Fired when auction is successfully completed
     event AuctionSuccessful(
@@ -94,7 +95,11 @@ abstract contract EndemicExchangeCore {
         makerCut = _calculateCut(makerFee, listingPrice);
 
         (royaltiesRecipient, royaltieFee) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, listingPrice);
+            .calculateRoyaltiesAndGetRecipient(
+                nftContract,
+                tokenId,
+                listingPrice
+            );
 
         totalCut = takerCut + makerCut;
     }
@@ -138,7 +143,7 @@ abstract contract EndemicExchangeCore {
         if (paymentMethodAddress == ZERO_ADDRESS) {
             _requireSufficientEtherSupplied(sufficientAmount);
         } else {
-            _requireSufficientErc20Allowance(
+            _requireSufficientErc20AmountAvailable(
                 sufficientAmount,
                 paymentMethodAddress,
                 buyer
@@ -155,7 +160,7 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _requireSufficientErc20Allowance(
+    function _requireSufficientErc20AmountAvailable(
         uint256 sufficientAmount,
         address paymentMethodAddress,
         address buyer
@@ -166,8 +171,12 @@ abstract contract EndemicExchangeCore {
             buyer,
             address(this)
         );
-
         if (contractAllowance < sufficientAmount) {
+            revert UnsufficientCurrencySupplied();
+        }
+
+        uint256 buyerBalance = ERC20PaymentToken.balanceOf(buyer);
+        if (buyerBalance < sufficientAmount) {
             revert UnsufficientCurrencySupplied();
         }
     }

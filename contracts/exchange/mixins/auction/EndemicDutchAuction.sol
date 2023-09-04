@@ -46,6 +46,9 @@ abstract contract EndemicDutchAuction is
         if (auction.startingPrice <= auction.endingPrice) {
             revert InvalidConfiguration();
         }
+        if (auction.duration == 0) {
+            revert InvalidDuration();
+        }
 
         _verifySignature(auction, v, r, s);
 
@@ -113,12 +116,13 @@ abstract contract EndemicDutchAuction is
         uint256 startingAt,
         uint256 duration
     ) external view returns (uint256) {
-        return _calculateCurrentPrice(
-            startingPrice,
-            endingPrice,
-            startingAt,
-            duration
-        );
+        return
+            _calculateCurrentPrice(
+                startingPrice,
+                endingPrice,
+                startingAt,
+                duration
+            );
     }
 
     function _determinePriceByPaymentMethod(

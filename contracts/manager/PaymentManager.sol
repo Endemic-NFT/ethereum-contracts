@@ -8,7 +8,7 @@ error InvalidFees();
 
 contract PaymentManager is OwnableUpgradeable {
     address internal constant ZERO_ADDRESS = address(0);
-    uint256 internal constant MAX_FEE = 10000;
+    uint16 internal constant MAX_FEE = 10000;
 
     mapping(address paymentMethod=> bool enabled) public supportedPaymentMethods;
 
