@@ -14,10 +14,7 @@ const {
   ZERO,
   ZERO_BYTES32,
 } = require('../helpers/constants');
-const {
-  weiToEther,
-  addTakerFee,
-} = require('../helpers/token');
+const { weiToEther, addTakerFee } = require('../helpers/token');
 
 const INVALID_CONFIGURATION = 'InvalidConfiguration';
 const INVALID_CALLER = 'InvalidCaller';
@@ -423,6 +420,54 @@ describe('ExchangeDutchAuction', function () {
           user2.address,
           ethers.utils.parseUnits('0.0029775')
         );
+    });
+
+    it('should fail to transfer approved NFT with forged signature', async function () {
+      const timestamp = await helpers.time.latest();
+
+      const { r, s, v } = await getDutchAuctionSignature(
+        user2,
+        1,
+        ZERO_ADDRESS,
+        ethers.utils.parseUnits('0.2'),
+        ethers.utils.parseUnits('0.1'),
+        timestamp,
+        1000
+      );
+
+      await helpers.time.increase(800);
+
+      const auctionCurrentPrice = await endemicExchange.getCurrentPrice(
+        ethers.utils.parseUnits('0.2'),
+        ethers.utils.parseUnits('0.1'),
+        timestamp,
+        1000
+      );
+
+      const fee = ethers.utils.parseUnits('0.0132');
+      const totalPrice = +weiToEther(auctionCurrentPrice) + +weiToEther(fee);
+
+      await expect(
+        endemicExchange.connect(user3).bidForDutchAuction(
+          v,
+          r,
+          s,
+          {
+            seller: user2.address,
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            startingPrice: ethers.utils.parseUnits('0.2'),
+            endingPrice: ethers.utils.parseUnits('0.1'),
+            startingAt: timestamp,
+            duration: 1000,
+          },
+          {
+            value: ethers.utils.parseUnits(totalPrice.toString()),
+          }
+        )
+      ).to.be.revertedWith('ERC721: transfer from incorrect owner');
     });
   });
 
