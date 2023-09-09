@@ -8,8 +8,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interfaces/ICollectionInitializer.sol";
 
-import "./Collection.sol";
-
 contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
     using AddressUpgradeable for address;
     using ClonesUpgradeable for address;
@@ -142,9 +140,4 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
             royalties
         );
     }
-
-    /**
-     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[1000] private __gap;
 }

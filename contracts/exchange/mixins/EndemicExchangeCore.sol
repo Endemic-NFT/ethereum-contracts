@@ -12,7 +12,6 @@ abstract contract EndemicExchangeCore {
     IPaymentManager public paymentManager;
 
     uint16 internal constant MAX_FEE = 10000;
-    uint256 internal constant MIN_PRICE = 0.0001 ether;
     address internal constant ZERO_ADDRESS = address(0);
 
     error InvalidAddress();
