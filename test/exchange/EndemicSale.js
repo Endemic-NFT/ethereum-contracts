@@ -60,6 +60,8 @@ describe('EndemicSale', () => {
       mintApprover
     );
 
+    await nftContract.connect(collectionAdministrator).toggleMintApproval();
+
     await mintToken(owner.address);
   }
 

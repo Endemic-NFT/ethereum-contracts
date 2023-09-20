@@ -1,5 +1,5 @@
 const { ethers, upgrades } = require('hardhat');
-const { FEE_RECIPIENT, ZERO_ADDRESS } = require('./constants');
+const { FEE_RECIPIENT } = require('./constants');
 
 const deployEndemicToken = async (deployer) => {
   const EndemicToken = await ethers.getContractFactory('EndemicToken');
@@ -50,8 +50,9 @@ const deployInitializedCollection = async (
   mintApprover
 ) => {
   const { nftFactory } = await deployEndemicCollectionWithFactory();
-  await nftFactory.updateCollectionAdministrator(
-    collectionAdministrator.address
+  await nftFactory.updateConfiguration(
+    collectionAdministrator.address,
+    mintApprover.address
   );
 
   const tx = await nftFactory.createTokenForOwner({
@@ -69,24 +70,19 @@ const deployInitializedCollection = async (
   const [newAddress] = eventData.args;
 
   const Collection = await ethers.getContractFactory('Collection');
-  const collection = await Collection.attach(newAddress);
-
-  await collection
-    .connect(collectionAdministrator)
-    .updateMintApprover(mintApprover.address);
+  const collection = Collection.attach(newAddress);
 
   return collection;
 };
 
 const deployEndemicExchange = async (
   royaltiesProviderAddress,
-  paymentManagerAddress,
-  settler
+  paymentManagerAddress
 ) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [royaltiesProviderAddress, paymentManagerAddress, FEE_RECIPIENT, settler],
+    [royaltiesProviderAddress, paymentManagerAddress, FEE_RECIPIENT],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -97,8 +93,7 @@ const deployEndemicExchange = async (
 
 const deployEndemicExchangeWithDeps = async (
   makerFee = 250,
-  takerFee = 300,
-  settler = ZERO_ADDRESS
+  takerFee = 300
 ) => {
   const royaltiesProviderContract = await deployRoyaltiesProvider();
 
@@ -106,8 +101,7 @@ const deployEndemicExchangeWithDeps = async (
 
   const endemicExchangeContract = await deployEndemicExchange(
     royaltiesProviderContract.address,
-    paymentManagerContract.address,
-    settler
+    paymentManagerContract.address
   );
 
   return {

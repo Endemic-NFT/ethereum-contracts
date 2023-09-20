@@ -16,8 +16,6 @@ abstract contract EndemicReserveAuction is
 {
     using ECDSA for bytes32;
 
-    address public approvedSettler;
-
     bytes32 private constant RESERVE_AUCTION_TYPEHASH =
         keccak256(
             "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,bool isBid)"
@@ -50,8 +48,6 @@ abstract contract EndemicReserveAuction is
         ReserveAuction calldata auction,
         ReserveAuction calldata bid
     ) external onlySupportedERC20Payments(auction.paymentErc20TokenAddress) {
-        if (msg.sender != approvedSettler) revert InvalidCaller();
-
         if (
             auction.isBid ||
             !bid.isBid ||
@@ -91,14 +87,12 @@ abstract contract EndemicReserveAuction is
         );
 
         emit AuctionSuccessful(
+            auction.nftContract,
+            auction.tokenId,
             auctionFees.bidPrice,
             bid.signer,
             auctionFees.totalCut
         );
-    }
-
-    function _updateApprovedSettler(address _approvedSettler) internal {
-        approvedSettler = _approvedSettler;
     }
 
     function _calculateAuctionFees(

@@ -67,6 +67,8 @@ describe('ExchangeReserveAuction', function () {
       mintApprover
     );
 
+    await nftContract.connect(collectionAdministrator).toggleMintApproval();
+
     await mintToken(user1.address);
     await mintToken(user1.address);
   }
@@ -250,37 +252,6 @@ describe('ExchangeReserveAuction', function () {
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
-    });
-
-    it('should fail to finalize is caller is not approved settler', async function () {
-      await expect(
-        endemicExchange.connect(user1).finalizeReserveAuction(
-          {
-            signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
-          },
-          {
-            signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
-          }
-        )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidCaller');
     });
 
     it('should fail to finalize if auction or bid has wrong configuration', async function () {

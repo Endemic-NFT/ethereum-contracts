@@ -22,6 +22,11 @@ async function main() {
   );
   await endemicERC721FactoryProxy.deployed();
 
+  await endemicERC721FactoryProxy.updateConfiguration(
+    '0x3D77a01EF9265F8Af731367abF5b467641764191',
+    '0x3D77a01EF9265F8Af731367abF5b467641764191'
+  );
+
   console.log(
     'Deployed EndemicCollectionFactory proxy to:',
     endemicERC721FactoryProxy.address

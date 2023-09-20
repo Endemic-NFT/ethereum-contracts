@@ -74,12 +74,14 @@ contract Collection is
         string memory name,
         string memory symbol,
         uint256 royalties,
-        address administrator
+        address administrator,
+        address approver
     ) external onlyCollectionFactory initializer {
         _transferOwnership(creator);
         __ERC721_init_unchained(name, symbol);
         __EIP712_init_unchained(name, "1");
         __Administrated_init(administrator);
+        __MintApproval_init(approver);
         __CollectionRoyalties_init(creator, royalties);
     }
 
@@ -204,7 +206,10 @@ contract Collection is
         emit Minted(tokenId, owner(), tokenCID);
     }
 
-    function _batchMintBase(address recipient, string[] calldata tokenCIDs) internal {
+    function _batchMintBase(
+        address recipient,
+        string[] calldata tokenCIDs
+    ) internal {
         // Retrieve latest token ID
         uint256 currentTokenId = latestTokenId;
         // Calculate start token ID for the batch

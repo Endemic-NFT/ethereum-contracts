@@ -81,6 +81,8 @@ describe('Collection', function () {
 
   describe('mint', function () {
     it('mints if the owner is a caller', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       const tokenId = 1;
       const mintTx = await mintToken(
         owner,
@@ -107,6 +109,8 @@ describe('Collection', function () {
     });
 
     it('mints multiple tokens', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
@@ -133,8 +137,6 @@ describe('Collection', function () {
     });
 
     it('mints if mint approval is required', async function () {
-      await nftContract.connect(administrator).toggleMintApproval();
-
       const tokenId = 1;
       await createApprovalAndMint(
         owner,
@@ -148,8 +150,6 @@ describe('Collection', function () {
     });
 
     it('reverts if mint approval is already used', async function () {
-      await nftContract.connect(administrator).toggleMintApproval();
-
       const nonce = 0;
       await createApprovalAndMint(
         owner,
@@ -180,6 +180,8 @@ describe('Collection', function () {
     });
 
     it('mints after burn', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       await mintToken(
         owner,
         owner.address,
@@ -210,6 +212,8 @@ describe('Collection', function () {
 
   describe('batchMint', () => {
     it('mints if the owner is a caller', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       const tokenUris = [
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
       ];
@@ -227,6 +231,8 @@ describe('Collection', function () {
     });
 
     it('mints multiple tokens', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       const tokenUris = [];
       for (let i = 0; i < 10; i++) {
         tokenUris.push(
@@ -251,8 +257,6 @@ describe('Collection', function () {
     });
 
     it('mints if mint approval is required', async function () {
-      await nftContract.connect(administrator).toggleMintApproval();
-
       const tokenUris = [];
       for (let i = 0; i < 5; i++) {
         tokenUris.push(
@@ -269,8 +273,6 @@ describe('Collection', function () {
     });
 
     it('reverts if mint approval is already used', async function () {
-      await nftContract.connect(administrator).toggleMintApproval();
-
       const nonce = 0;
       const tokenUris = [];
       for (let i = 0; i < 5; i++) {
@@ -287,8 +289,6 @@ describe('Collection', function () {
     });
 
     it('reverts if wrong token URIs are provided', async function () {
-      await nftContract.connect(administrator).toggleMintApproval();
-
       const approvedTokenUris = [
         'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
         'cafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
@@ -330,6 +330,8 @@ describe('Collection', function () {
 
   describe('mintAndApprove', () => {
     it('mints and approves operator', async () => {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       const tokenId = 1;
 
       expect(
@@ -362,6 +364,8 @@ describe('Collection', function () {
 
   describe('batchMintAndApprove', () => {
     it('mints and approves operator', async () => {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       expect(
         await nftContract.isApprovedForAll(owner.address, operator.address)
       ).to.equal(false);
@@ -399,6 +403,8 @@ describe('Collection', function () {
 
   describe('burn', function () {
     it('burns if the token owner is caller', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       await mintToken(
         owner,
         user.address,
@@ -411,6 +417,8 @@ describe('Collection', function () {
     });
 
     it('burns multiple tokens', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       await mintToken(
         owner,
         owner.address,
@@ -431,6 +439,8 @@ describe('Collection', function () {
     });
 
     it('reverts is a caller is not the token owner', async function () {
+      await nftContract.connect(administrator).toggleMintApproval();
+
       await mintToken(
         owner,
         owner.address,

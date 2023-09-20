@@ -38,6 +38,10 @@ deployAndUpdateErc721Implementation:
 updatePaymentManager:
 	npx hardhat run scripts/utils/update-payment-manager.js --network ${network}
 
+.PHONY: upgradeErc721Factory
+upgradeErc721Factory:
+	npx hardhat run scripts/erc-721/upgrade-erc721-factory-proxy.js --network ${network}
+
 .PHONY: verify
 verify:
 	npx hardhat verify --network ${network} "${address}"
