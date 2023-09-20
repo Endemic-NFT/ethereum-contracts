@@ -18,14 +18,18 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
     error MintNotApproved();
     error NonceUsed();
 
+    function __MintApproval_init(address approver) internal onlyInitializing {
+        mintApprover = approver;
+        mintApprovalRequired = true;
+    }
+
     function toggleMintApproval() external onlyAdministrator {
         mintApprovalRequired = !mintApprovalRequired;
     }
 
-    function updateMintApprover(address newMintApprover)
-        external
-        onlyAdministrator
-    {
+    function updateMintApprover(
+        address newMintApprover
+    ) external onlyAdministrator {
         if (newMintApprover == address(0)) {
             revert MintApproverCannotBeZeroAddress();
         }
@@ -66,8 +70,12 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
         if (_usedNonces[nonce]) revert NonceUsed();
 
         if (
-            ecrecover(_prepareBatchMessage(minter, tokenCIDs, nonce), v, r, s) !=
-            mintApprover
+            ecrecover(
+                _prepareBatchMessage(minter, tokenCIDs, nonce),
+                v,
+                r,
+                s
+            ) != mintApprover
         ) {
             revert MintNotApproved();
         }
@@ -75,28 +83,31 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
         _usedNonces[nonce] = true;
     }
 
-    function _prepareMessage(address minter, string calldata tokenCID, uint256 nonce)
-        private
-        view
-        returns (bytes32)
-    {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    keccak256("MintApproval(address minter,string tokenCID,uint256 nonce)"),
-                    minter,
-                    keccak256(bytes(tokenCID)),
-                    nonce
+    function _prepareMessage(
+        address minter,
+        string calldata tokenCID,
+        uint256 nonce
+    ) private view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "MintApproval(address minter,string tokenCID,uint256 nonce)"
+                        ),
+                        minter,
+                        keccak256(bytes(tokenCID)),
+                        nonce
+                    )
                 )
-            )
-        );
+            );
     }
 
-    function _prepareBatchMessage(address minter, string[] calldata tokenCIDs, uint256 nonce)
-        private
-        view
-        returns (bytes32)
-    {
+    function _prepareBatchMessage(
+        address minter,
+        string[] calldata tokenCIDs,
+        uint256 nonce
+    ) private view returns (bytes32) {
         bytes32[] memory tokenCIDHashes = new bytes32[](tokenCIDs.length);
 
         for (uint256 i = 0; i < tokenCIDs.length; ) {
@@ -107,15 +118,18 @@ abstract contract MintApproval is EIP712Upgradeable, AdministratedUpgradable {
             }
         }
 
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    keccak256("BatchMintApproval(address minter,bytes32[] tokenCIDHashes,uint256 nonce)"),
-                    minter,
-                    keccak256(abi.encodePacked(tokenCIDHashes)),
-                    nonce
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "BatchMintApproval(address minter,bytes32[] tokenCIDHashes,uint256 nonce)"
+                        ),
+                        minter,
+                        keccak256(abi.encodePacked(tokenCIDHashes)),
+                        nonce
+                    )
                 )
-            )
-        );
+            );
     }
 }

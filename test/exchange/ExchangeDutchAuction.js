@@ -75,6 +75,8 @@ describe('ExchangeDutchAuction', function () {
       mintApprover
     );
 
+    await nftContract.connect(collectionAdministrator).toggleMintApproval();
+
     await mintToken(user1.address);
     await mintToken(user1.address);
   }
@@ -416,6 +418,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bid1)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.1000225'),
           user2.address,
           ethers.utils.parseUnits('0.0029775')
@@ -779,6 +783,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bid1)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.09775'),
           user2.address,
           ethers.utils.parseUnits('0.0029325')
@@ -849,6 +855,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.4400359'),
           user2.address,
           ethers.utils.parseUnits('0.024134')
@@ -993,6 +1001,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.5255125'),
           user3.address,
           ethers.utils.parseUnits('0.028852083333333333')
@@ -1096,6 +1106,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.4364'),
           user2.address,
           ethers.utils.parseUnits('0.024002')
@@ -1322,6 +1334,8 @@ describe('ExchangeDutchAuction', function () {
       await expect(bidTx)
         .to.emit(endemicExchange, AUCTION_SUCCESFUL)
         .withArgs(
+          nftContract.address,
+          1,
           ethers.utils.parseUnits('0.53'),
           user3.address,
           ethers.utils.parseUnits('0.02915')

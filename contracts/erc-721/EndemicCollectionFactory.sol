@@ -15,6 +15,7 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     address public implementation;
     address public collectionAdministrator;
+    address public mintApprover;
 
     event NFTContractCreated(
         address indexed nftContract,
@@ -27,8 +28,9 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
 
     event ImplementationUpdated(address indexed newImplementation);
     event CollectionAdministratorUpdated(address indexed newAdministrator);
+    event MintApproverUpdated(address indexed newApprover);
 
-    error CollectionAdministratorCannotBeZeroAddress();
+    error AddressCannotBeZeroAddress();
 
     struct DeployParams {
         string name;
@@ -57,10 +59,9 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function createToken(DeployParams calldata params)
-        external
-        onlyRole(MINTER_ROLE)
-    {
+    function createToken(
+        DeployParams calldata params
+    ) external onlyRole(MINTER_ROLE) {
         _deployContract(
             msg.sender,
             params.name,
@@ -70,10 +71,9 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
         );
     }
 
-    function createTokenForOwner(OwnedDeployParams calldata params)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function createTokenForOwner(
+        OwnedDeployParams calldata params
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _deployContract(
             params.owner,
             params.name,
@@ -83,11 +83,9 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
         );
     }
 
-    function updateImplementation(address newImplementation)
-        external
-        onlyContract(newImplementation)
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function updateImplementation(
+        address newImplementation
+    ) external onlyContract(newImplementation) onlyRole(DEFAULT_ADMIN_ROLE) {
         implementation = newImplementation;
 
         ICollectionInitializer(implementation).initialize(
@@ -95,23 +93,50 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
             "Collection Template",
             "CT",
             1000,
-            collectionAdministrator
+            collectionAdministrator,
+            mintApprover
         );
 
         emit ImplementationUpdated(newImplementation);
     }
 
-    function updateCollectionAdministrator(address newCollectionAdministrator)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function updateCollectionAdministrator(
+        address newCollectionAdministrator
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (newCollectionAdministrator == address(0)) {
-            revert CollectionAdministratorCannotBeZeroAddress();
+            revert AddressCannotBeZeroAddress();
         }
 
         collectionAdministrator = newCollectionAdministrator;
 
         emit CollectionAdministratorUpdated(newCollectionAdministrator);
+    }
+
+    function updateMintApprover(
+        address newMintApprover
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newMintApprover == address(0)) {
+            revert AddressCannotBeZeroAddress();
+        }
+
+        mintApprover = newMintApprover;
+
+        emit MintApproverUpdated(newMintApprover);
+    }
+
+    function updateConfiguration(
+        address newCollectionAdministrator,
+        address newMintApprover
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (
+            newCollectionAdministrator == address(0) ||
+            newMintApprover == address(0)
+        ) {
+            revert AddressCannotBeZeroAddress();
+        }
+
+        collectionAdministrator = newCollectionAdministrator;
+        mintApprover = newMintApprover;
     }
 
     function _deployContract(
@@ -128,7 +153,8 @@ contract EndemicCollectionFactory is Initializable, AccessControlUpgradeable {
             name,
             symbol,
             royalties,
-            collectionAdministrator
+            collectionAdministrator,
+            mintApprover
         );
 
         emit NFTContractCreated(

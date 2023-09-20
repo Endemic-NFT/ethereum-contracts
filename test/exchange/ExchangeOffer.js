@@ -103,6 +103,8 @@ describe('ExchangeOffer', function () {
       mintApprover
     );
 
+    await nftContract.connect(collectionAdministrator).toggleMintApproval();
+
     await mintToken(user1.address);
     await mintToken(user1.address);
     await mintToken(user1.address);

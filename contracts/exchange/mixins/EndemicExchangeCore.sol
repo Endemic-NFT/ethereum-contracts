@@ -27,6 +27,8 @@ abstract contract EndemicExchangeCore {
 
     /// @notice Fired when auction is successfully completed
     event AuctionSuccessful(
+        address indexed nftContract,
+        uint256 indexed tokenId,
         uint256 indexed totalPrice,
         address winner,
         uint256 totalFees
@@ -103,11 +105,10 @@ abstract contract EndemicExchangeCore {
         totalCut = takerCut + makerCut;
     }
 
-    function _calculateTakerCut(address paymentErc20TokenAddress, uint256 price)
-        internal
-        view
-        returns (uint256)
-    {
+    function _calculateTakerCut(
+        address paymentErc20TokenAddress,
+        uint256 price
+    ) internal view returns (uint256) {
         (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
             paymentErc20TokenAddress
         );
@@ -115,18 +116,16 @@ abstract contract EndemicExchangeCore {
         return _calculateCut(takerFee, price);
     }
 
-    function _calculateCut(uint256 fee, uint256 amount)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _calculateCut(
+        uint256 fee,
+        uint256 amount
+    ) internal pure returns (uint256) {
         return (amount * fee) / MAX_FEE;
     }
 
-    function _requireSupportedPaymentMethod(address paymentMethodAddress)
-        internal
-        view
-    {
+    function _requireSupportedPaymentMethod(
+        address paymentMethodAddress
+    ) internal view {
         if (paymentMethodAddress == ZERO_ADDRESS) return;
 
         if (!paymentManager.isPaymentMethodSupported(paymentMethodAddress)) {
@@ -150,10 +149,9 @@ abstract contract EndemicExchangeCore {
         }
     }
 
-    function _requireSufficientEtherSupplied(uint256 sufficientAmount)
-        internal
-        view
-    {
+    function _requireSufficientEtherSupplied(
+        uint256 sufficientAmount
+    ) internal view {
         if (msg.value < sufficientAmount) {
             revert UnsufficientCurrencySupplied();
         }

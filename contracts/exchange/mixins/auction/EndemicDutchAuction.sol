@@ -107,7 +107,13 @@ abstract contract EndemicDutchAuction is
             auction.paymentErc20TokenAddress
         );
 
-        emit AuctionSuccessful(currentPrice, msg.sender, totalCut);
+        emit AuctionSuccessful(
+            auction.nftContract,
+            auction.tokenId,
+            currentPrice,
+            msg.sender,
+            totalCut
+        );
     }
 
     function getCurrentPrice(

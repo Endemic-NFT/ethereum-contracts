@@ -151,9 +151,9 @@ abstract contract EndemicFundsDistributor {
         if (!success) revert FundsTransferFailed();
     }
 
-    function _updateDistributorConfiguration(address _feeRecipientAddress)
-        internal
-    {
+    function _updateDistributorConfiguration(
+        address _feeRecipientAddress
+    ) internal {
         feeRecipientAddress = _feeRecipientAddress;
     }
 

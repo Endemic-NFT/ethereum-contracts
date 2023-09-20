@@ -7,6 +7,7 @@ interface ICollectionInitializer {
         string memory name,
         string memory symbol,
         uint256 royalties,
-        address administrator
+        address administrator,
+        address approver
     ) external;
 }

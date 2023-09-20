@@ -32,6 +32,12 @@ const aurora = {
 };
 
 const mainnet = {
+  royaltiesProviderProxy: '0x99F8D550094076b63bbBe84D291Bb8a6D34133aB',
+  endemicErc721Factory: '0x153963Ce24b27868f944b669a7a25114578feE95',
+  endemicErc721: '0x7A0A36B4353EbF5B01130b3A3DBEdCCBb326bee5',
+  endemicExchangeProxy: '0xadeddcd5b4F6f9a0631B3a0BC5B069150E558161',
+  paymentManagerProxy: '0xD48CC91057118e15fB9841c2138E2ec836AbF438',
+
   endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
 };
 
@@ -40,7 +46,23 @@ const sepolia = {
   endemicErc721Factory: '0x4b8312305d25330E73b0b5778Fb9193a183C5c22',
   endemicErc721: '0x3B7A2D4bfA13378f275146D7AE05518F42241BcD',
   paymentManagerProxy: '0xBE45e76c9Db68e23148392400452114be019e5EC',
-  endemicExchangeProxy: '0x8243A166c489B902640991710241eb91cCc78Cc5',
+  endemicExchangeProxy: '0x96126E53fb8A595e59c85f25D0535F9D9b646dB0',
+};
+
+const mumbai = {
+  royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
+  endemicErc721Factory: '0x8243A166c489B902640991710241eb91cCc78Cc5',
+  endemicErc721: '0xc6570BFca2ee551B813eaFb5b17Cf3337d4BB5ef',
+  paymentManagerProxy: '0x2bA3BC56f48f2E28F672B86bA75cB6C379293Fe1',
+  endemicExchangeProxy: '0x2a48F4d51641693B8d7cd6Ad194c2907eeE5427B',
+};
+
+const polygon = {
+  royaltiesProviderProxy: '0xaBF9Bd38B968e6ABba30736bb7Ca93270fC023A0',
+  endemicErc721Factory: '0x783C73C80c54D05777a8584a8fbEeBE37E3E596F',
+  endemicErc721: '0xdFf29d105E841c20d9aDfA2F632a69E8D64c764B',
+  endemicExchangeProxy: '0xD028022Be9601538F73C0283e182d8E5db3247f7',
+  paymentManagerProxy: '0x0372523354E4aBA4840d2856F77E543384b359bD',
 };
 
 const networks = {
@@ -49,6 +71,8 @@ const networks = {
   goerli,
   arbitrum_goerli,
   sepolia,
+  mumbai,
+  polygon,
 };
 
 const getForNetwork = (network) => networks[network];

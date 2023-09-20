@@ -25,15 +25,13 @@ contract EndemicExchange is
     function __EndemicExchange_init(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress,
-        address _approvedSettler
+        address _feeRecipientAddress
     ) external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
 
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
-        _updateApprovedSettler(_approvedSettler);
     }
 
     /**
@@ -45,11 +43,9 @@ contract EndemicExchange is
     function updateConfiguration(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress,
-        address _approvedSettler
+        address _feeRecipientAddress
     ) external onlyOwner {
         _updateDistributorConfiguration(_feeRecipientAddress);
         _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
-        _updateApprovedSettler(_approvedSettler);
     }
 }

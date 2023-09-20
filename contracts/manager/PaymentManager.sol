@@ -8,11 +8,13 @@ error InvalidFees();
 
 contract PaymentManager is OwnableUpgradeable {
     address internal constant ZERO_ADDRESS = address(0);
-    uint16 internal constant MAX_FEE = 10000;
+    uint256 internal constant MAX_FEE = 10000;
 
-    mapping(address paymentMethod=> bool enabled) public supportedPaymentMethods;
+    mapping(address paymentMethod => bool enabled)
+        public supportedPaymentMethods;
 
-    mapping(address paymentMethod => PaymentMethodFees feesConfig) public feesByPaymentMethod;
+    mapping(address paymentMethod => PaymentMethodFees feesConfig)
+        public feesByPaymentMethod;
 
     struct PaymentMethodFees {
         address paymentMethodAddress;
@@ -20,10 +22,10 @@ contract PaymentManager is OwnableUpgradeable {
         uint256 takerFee;
     }
 
-    function __PaymentManager_init(uint256 makerFee, uint256 takerFee)
-        external
-        initializer
-    {
+    function __PaymentManager_init(
+        uint256 makerFee,
+        uint256 takerFee
+    ) external initializer {
         __Ownable_init_unchained();
 
         //initial support and fees for ether payments
@@ -36,11 +38,9 @@ contract PaymentManager is OwnableUpgradeable {
         );
     }
 
-    function getPaymentMethodFees(address paymentMethodAddress)
-        external
-        view
-        returns (uint256 takerFee, uint256 makerFee)
-    {
+    function getPaymentMethodFees(
+        address paymentMethodAddress
+    ) external view returns (uint256 takerFee, uint256 makerFee) {
         PaymentMethodFees memory paymentFees = feesByPaymentMethod[
             paymentMethodAddress
         ];
@@ -54,11 +54,9 @@ contract PaymentManager is OwnableUpgradeable {
         makerFee = paymentFees.makerFee;
     }
 
-    function isPaymentMethodSupported(address paymentMethodAddress)
-        external
-        view
-        returns (bool)
-    {
+    function isPaymentMethodSupported(
+        address paymentMethodAddress
+    ) external view returns (bool) {
         return supportedPaymentMethods[paymentMethodAddress];
     }
 
