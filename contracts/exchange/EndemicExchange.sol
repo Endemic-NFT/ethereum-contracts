@@ -21,17 +21,23 @@ contract EndemicExchange is
      * @param _royaltiesProvider - royalyies provider contract
      * @param _paymentManager - payment manager contract address
      * @param _feeRecipientAddress - address to receive exchange fees
+     * @param _approvedSigner - address to sign reserve auction orders
      */
     function __EndemicExchange_init(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress
+        address _feeRecipientAddress,
+        address _approvedSigner
     ) external initializer {
         __Context_init_unchained();
         __Ownable_init_unchained();
 
         _updateDistributorConfiguration(_feeRecipientAddress);
-        _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
+        _updateExchangeConfiguration(
+            _royaltiesProvider,
+            _paymentManager,
+            _approvedSigner
+        );
     }
 
     /**
@@ -39,13 +45,19 @@ contract EndemicExchange is
      * @param _royaltiesProvider - royalyies provider contract
      * @param _paymentManager - payment manager contract address
      * @param _feeRecipientAddress - address to receive exchange fees
+     * @param _approvedSigner - address to sign reserve auction orders
      */
     function updateConfiguration(
         address _royaltiesProvider,
         address _paymentManager,
-        address _feeRecipientAddress
+        address _feeRecipientAddress,
+        address _approvedSigner
     ) external onlyOwner {
         _updateDistributorConfiguration(_feeRecipientAddress);
-        _updateExchangeConfiguration(_royaltiesProvider, _paymentManager);
+        _updateExchangeConfiguration(
+            _royaltiesProvider,
+            _paymentManager,
+            _approvedSigner
+        );
     }
 }

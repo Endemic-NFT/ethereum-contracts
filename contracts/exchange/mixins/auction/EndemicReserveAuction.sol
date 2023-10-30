@@ -21,6 +21,11 @@ abstract contract EndemicReserveAuction is
             "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,bool isBid)"
         );
 
+    bytes32 private constant RESERVE_AUCTION_APPROVAL_TYPEHASH =
+        keccak256(
+            "ReserveAuctionConfirmation(address auctionSigner,address bidSigner,uint256 auctionNonce,uint256 bidNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 auctionPrice,uint256 bidPrice)"
+        );
+
     struct ReserveAuction {
         address signer;
         uint8 v;
@@ -45,6 +50,9 @@ abstract contract EndemicReserveAuction is
     }
 
     function finalizeReserveAuction(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
         ReserveAuction calldata auction,
         ReserveAuction calldata bid
     ) external onlySupportedERC20Payments(auction.paymentErc20TokenAddress) {
@@ -57,6 +65,7 @@ abstract contract EndemicReserveAuction is
             auction.signer == bid.signer
         ) revert InvalidConfiguration();
 
+        _verifyApprovalSignature(v, r, s, auction, bid);
         _verifySignature(auction);
         _verifySignature(bid);
 
@@ -139,6 +148,39 @@ abstract contract EndemicReserveAuction is
         );
 
         if (digest.recover(data.v, data.r, data.s) != data.signer) {
+            revert InvalidSignature();
+        }
+    }
+
+    function _verifyApprovalSignature(
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        ReserveAuction calldata auction,
+        ReserveAuction calldata bid
+    ) internal view {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                _buildDomainSeparator(),
+                keccak256(
+                    abi.encode(
+                        RESERVE_AUCTION_APPROVAL_TYPEHASH,
+                        auction.signer,
+                        bid.signer,
+                        auction.orderNonce,
+                        bid.orderNonce,
+                        auction.nftContract,
+                        auction.tokenId,
+                        auction.paymentErc20TokenAddress,
+                        auction.price,
+                        bid.price
+                    )
+                )
+            )
+        );
+
+        if (digest.recover(v, r, s) != approvedSigner) {
             revert InvalidSignature();
         }
     }
