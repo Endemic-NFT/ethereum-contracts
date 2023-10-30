@@ -10,10 +10,11 @@ import "../../manager/interfaces/IPaymentManager.sol";
 abstract contract EndemicExchangeCore {
     IRoyaltiesProvider public royaltiesProvider;
     IPaymentManager public paymentManager;
-    address public approvedSigner;
 
     uint16 internal constant MAX_FEE = 10000;
     address internal constant ZERO_ADDRESS = address(0);
+
+    address public approvedSigner;
 
     error InvalidAddress();
     error InvalidInterface();
@@ -197,5 +198,5 @@ abstract contract EndemicExchangeCore {
     /**
      * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[1000] private __gap;
+    uint256[999] private __gap;
 }
