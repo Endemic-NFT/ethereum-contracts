@@ -5,7 +5,10 @@ const {
   deployEndemicExchangeWithDeps,
   deployEndemicToken,
 } = require('../helpers/deploy');
-const { getTypedMessage_reserve } = require('../helpers/eip712');
+const {
+  getTypedMessage_reserve,
+  getTypedMessage_reserveApproval,
+} = require('../helpers/eip712');
 
 const { FEE_RECIPIENT, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
 
@@ -26,7 +29,8 @@ describe('ExchangeReserveAuction', function () {
     feeRecipient,
     mintApprover,
     collectionAdministrator,
-    settler;
+    settler,
+    approvedSigner;
 
   const mintToken = async (recipient) => {
     return nftContract.mint(
@@ -49,12 +53,13 @@ describe('ExchangeReserveAuction', function () {
       collectionAdministrator,
       mintApprover,
       settler,
+      approvedSigner,
     ] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(
       makerFee,
       takerFee,
-      settler.address
+      approvedSigner.address
     );
 
     royaltiesProviderContract = result.royaltiesProviderContract;
@@ -93,6 +98,44 @@ describe('ExchangeReserveAuction', function () {
     });
 
     const signature = await signer._signTypedData(
+      typedMessage.domain,
+      typedMessage.types,
+      typedMessage.values
+    );
+
+    const sig = signature.substring(2);
+    const r = '0x' + sig.substring(0, 64);
+    const s = '0x' + sig.substring(64, 128);
+    const v = parseInt(sig.substring(128, 130), 16);
+
+    return { v, r, s };
+  };
+
+  const getReserveAuctionApprovalSignature = async (
+    auctionSigner,
+    bidSigner,
+    auctionNonce,
+    bidNonce,
+    tokenId,
+    paymentErc20TokenAddress,
+    auctionPrice,
+    bidPrice
+  ) => {
+    const typedMessage = getTypedMessage_reserveApproval({
+      chainId: network.config.chainId,
+      verifierContract: endemicExchange.address,
+      auctionSigner: auctionSigner.address,
+      bidSigner: bidSigner.address,
+      auctionNonce: auctionNonce,
+      bidNonce: bidNonce,
+      nftContract: nftContract.address,
+      tokenId: tokenId,
+      paymentErc20TokenAddress: paymentErc20TokenAddress,
+      auctionPrice: auctionPrice,
+      bidPrice: bidPrice,
+    });
+
+    const signature = await approvedSigner._signTypedData(
       typedMessage.domain,
       typedMessage.types,
       typedMessage.values
@@ -153,7 +196,21 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103')
+      );
+
       await endemicExchange.connect(settler).finalizeReserveAuction(
+        approvalSig.v,
+        approvalSig.r,
+        approvalSig.s,
         {
           signer: user1.address,
           v: sig.v,
@@ -193,6 +250,9 @@ describe('ExchangeReserveAuction', function () {
     it('should fail to finalize if payment method is not supported', async function () {
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: sig.v,
@@ -224,6 +284,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: sig.v,
@@ -257,6 +320,9 @@ describe('ExchangeReserveAuction', function () {
     it('should fail to finalize if auction or bid has wrong configuration', async function () {
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: ZERO,
@@ -286,6 +352,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: ZERO,
@@ -317,6 +386,9 @@ describe('ExchangeReserveAuction', function () {
     it('should fail to finalize if auction and bid mismatch', async function () {
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: ZERO,
@@ -346,6 +418,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: ZERO,
@@ -375,6 +450,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address,
             v: ZERO,
@@ -405,6 +483,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
           {
             signer: user1.address, // mismatch
             v: ZERO,
@@ -443,8 +524,22 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103')
+      );
+
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
             v: sig.v,
@@ -474,6 +569,9 @@ describe('ExchangeReserveAuction', function () {
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
             v: sig.v,
@@ -521,8 +619,22 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.102')
+      );
+
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
             v: sig.v,
@@ -573,10 +685,24 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103')
+      );
+
       await endemicExchange.connect(user1).cancelNonce(1);
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
             v: sig.v,
@@ -624,10 +750,24 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103')
+      );
+
       await endemicExchange.connect(user2).cancelNonce(1);
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
             v: sig.v,
@@ -706,7 +846,21 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.02472'),
+        ethers.utils.parseUnits('0.206')
+      );
+
       await endemicExchange.connect(settler).finalizeReserveAuction(
+        approvalSig.v,
+        approvalSig.r,
+        approvalSig.s,
         {
           signer: user1.address,
           v: v,
@@ -782,7 +936,21 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.5'),
+        ethers.utils.parseUnits('1.03')
+      );
+
       await endemicExchange.connect(settler).finalizeReserveAuction(
+        approvalSig.v,
+        approvalSig.r,
+        approvalSig.s,
         {
           signer: user1.address,
           v: v,
@@ -846,11 +1014,25 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig2 = await getReserveAuctionApprovalSignature(
+        user2,
+        user3,
+        2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.515')
+      );
+
       // Grab current balance
       const user2Bal1 = await endemicToken.balanceOf(user2.address);
       const claimEthBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
 
       await endemicExchange.connect(settler).finalizeReserveAuction(
+        approvalSig2.v,
+        approvalSig2.r,
+        approvalSig2.s,
         {
           signer: user2.address,
           v: v3,
@@ -963,7 +1145,21 @@ describe('ExchangeReserveAuction', function () {
         true
       );
 
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.2'),
+        ethers.utils.parseUnits('0.206')
+      );
+
       await endemicExchange.connect(settler).finalizeReserveAuction(
+        approvalSig.v,
+        approvalSig.r,
+        approvalSig.s,
         {
           signer: user1.address,
           v: v,
