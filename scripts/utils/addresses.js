@@ -15,10 +15,10 @@ const goerli = {
 
 const arbitrum_goerli = {
   royaltiesProviderProxy: '0x03B19c39355fD271A0fF071fAeaEe65F4fe26914',
-  endemicErc721Factory: '0x45F3e4c28b68142e7C83c55aA95F3c5281006DB8',
-  endemicErc721: '0xFC69e4EFaB6e85D0400bf74873aEc6A5e4b73fbc',
-  endemicExchangeProxy: '0xF85Ab30873673dDe16E1d70518cB21814eE8fF9A',
-  paymentManagerProxy: '0x4bfe31506DBCbf63ECda7320A060008e81acf8c5',
+  endemicErc721Factory: '0x1244F3358F25A50b11c0B4EC5a1831116c9cB2f4',
+  endemicErc721: '0x6945ae5F31998CC28d8652f54a5d24cDf4377D2d',
+  endemicExchangeProxy: '0xC33a562169bC0fB03aBDDD869F2952A608eaf641',
+  paymentManagerProxy: '0x054ABdbAB1efb098a0e2aC52BcD6fB3436631dDA',
 };
 
 const aurora = {
@@ -33,9 +33,9 @@ const aurora = {
 
 const mainnet = {
   royaltiesProviderProxy: '0x99F8D550094076b63bbBe84D291Bb8a6D34133aB',
-  endemicErc721Factory: '0x153963Ce24b27868f944b669a7a25114578feE95',
-  endemicErc721: '0x7A0A36B4353EbF5B01130b3A3DBEdCCBb326bee5',
-  endemicExchangeProxy: '0xadeddcd5b4F6f9a0631B3a0BC5B069150E558161',
+  endemicErc721Factory: '0x6574671af0fAAD94714aD2e99e4eC7d50F22EFF6',
+  endemicErc721: '0x727a68e8DE25C75942E1E033b799E493E362802D',
+  endemicExchangeProxy: '0xF3891616B1bC96d52f642F2cc8FEB15C6D2a43Da',
   paymentManagerProxy: '0xD48CC91057118e15fB9841c2138E2ec836AbF438',
 
   endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
@@ -43,25 +43,25 @@ const mainnet = {
 
 const sepolia = {
   royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
-  endemicErc721Factory: '0x4b8312305d25330E73b0b5778Fb9193a183C5c22',
-  endemicErc721: '0x3B7A2D4bfA13378f275146D7AE05518F42241BcD',
+  endemicErc721Factory: '0xa3899FD9035de8438857c74F78E411e588fFCf39',
+  endemicErc721: '0x611eaF72138D36Fe41E85308021f89A1f01F59ae',
   paymentManagerProxy: '0xBE45e76c9Db68e23148392400452114be019e5EC',
-  endemicExchangeProxy: '0x96126E53fb8A595e59c85f25D0535F9D9b646dB0',
+  endemicExchangeProxy: '0x389F14Ed3aA0F277a90e7C3ADb0a2CfEC02d62B7',
 };
 
 const mumbai = {
   royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
-  endemicErc721Factory: '0x8243A166c489B902640991710241eb91cCc78Cc5',
-  endemicErc721: '0xc6570BFca2ee551B813eaFb5b17Cf3337d4BB5ef',
+  endemicErc721Factory: '0x2255D0C57eF61Eb4f89aC4f8b541c352dFFfc240',
+  endemicErc721: '0x6d76e19174CB4dEBa01D82BcA16914935c83f792',
   paymentManagerProxy: '0x2bA3BC56f48f2E28F672B86bA75cB6C379293Fe1',
-  endemicExchangeProxy: '0x2a48F4d51641693B8d7cd6Ad194c2907eeE5427B',
+  endemicExchangeProxy: '0x12394c8C432E14c9D2E25967e1B2125Ba58B8A76',
 };
 
 const polygon = {
   royaltiesProviderProxy: '0xaBF9Bd38B968e6ABba30736bb7Ca93270fC023A0',
-  endemicErc721Factory: '0x783C73C80c54D05777a8584a8fbEeBE37E3E596F',
-  endemicErc721: '0xdFf29d105E841c20d9aDfA2F632a69E8D64c764B',
-  endemicExchangeProxy: '0xD028022Be9601538F73C0283e182d8E5db3247f7',
+  endemicErc721Factory: '0x01F7F54678CabC43275271EDbF3b354aCb69E7f7',
+  endemicErc721: '0x6d76e19174CB4dEBa01D82BcA16914935c83f792',
+  endemicExchangeProxy: '0x5a98342C0E883B9387D070d5f13cFb572D33a936',
   paymentManagerProxy: '0x0372523354E4aBA4840d2856F77E543384b359bD',
 };
 

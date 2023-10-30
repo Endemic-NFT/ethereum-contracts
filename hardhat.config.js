@@ -55,6 +55,20 @@ module.exports = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      arbitrum_goerli: process.env.ARBITRUM_API_KEY,
+      mainnet: process.env.ETHERSCAN_API_KEY,
+      polygon: process.env.POLYGONSCAN_API_KEY,
+    },
+    customChains: [
+      {
+        network: 'arbitrum_goerli',
+        chainId: 421613,
+        urls: {
+          apiURL: `https://api-goerli.arbiscan.io/api?module=contract&action=verifysourcecode`,
+          browserURL: 'https://testnet.arbiscan.io/',
+        },
+      },
+    ],
   },
 };

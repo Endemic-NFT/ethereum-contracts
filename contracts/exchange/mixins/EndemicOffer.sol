@@ -41,7 +41,8 @@ abstract contract EndemicOffer is
         address bidder,
         address indexed seller,
         uint256 price,
-        uint256 totalFees
+        uint256 totalFees,
+        address paymentErc20TokenAddress
     );
 
     error InvalidOffer();
@@ -127,7 +128,8 @@ abstract contract EndemicOffer is
             offer.bidder,
             msg.sender,
             listingPrice,
-            totalCut
+            totalCut,
+            offer.paymentErc20TokenAddress
         );
     }
 

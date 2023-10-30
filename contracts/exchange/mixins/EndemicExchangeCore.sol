@@ -30,8 +30,10 @@ abstract contract EndemicExchangeCore {
         address indexed nftContract,
         uint256 indexed tokenId,
         uint256 indexed totalPrice,
+        address seller,
         address winner,
-        uint256 totalFees
+        uint256 totalFees,
+        address paymentErc20TokenAddress
     );
 
     modifier onlySupportedERC20Payments(address paymentErc20TokenAddress) {

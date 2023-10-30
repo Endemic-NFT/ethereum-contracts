@@ -421,8 +421,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.1000225'),
+          user1.address,
           user2.address,
-          ethers.utils.parseUnits('0.0029775')
+          ethers.utils.parseUnits('0.0029775'),
+          ZERO_ADDRESS
         );
     });
 
@@ -786,8 +788,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.09775'),
+          user1.address,
           user2.address,
-          ethers.utils.parseUnits('0.0029325')
+          ethers.utils.parseUnits('0.0029325'),
+          endemicToken.address
         );
     });
   });
@@ -858,8 +862,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.4400359'),
+          user1.address,
           user2.address,
-          ethers.utils.parseUnits('0.024134')
+          ethers.utils.parseUnits('0.024134'),
+          ZERO_ADDRESS
         );
 
       const claimEthBalance2 = await endemicExchange.provider.getBalance(
@@ -1004,8 +1010,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.5255125'),
+          user2.address,
           user3.address,
-          ethers.utils.parseUnits('0.028852083333333333')
+          ethers.utils.parseUnits('0.028852083333333333'),
+          ZERO_ADDRESS
         );
 
       //Grab updated balances
@@ -1109,8 +1117,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.4364'),
+          user1.address,
           user2.address,
-          ethers.utils.parseUnits('0.024002')
+          ethers.utils.parseUnits('0.024002'),
+          endemicToken.address
         );
 
       const claimEthBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
@@ -1337,8 +1347,10 @@ describe('ExchangeDutchAuction', function () {
           nftContract.address,
           1,
           ethers.utils.parseUnits('0.53'),
+          user2.address,
           user3.address,
-          ethers.utils.parseUnits('0.02915')
+          ethers.utils.parseUnits('0.02915'),
+          endemicToken.address
         );
 
       //Grab updated balances
