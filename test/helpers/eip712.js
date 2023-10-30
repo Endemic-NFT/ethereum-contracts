@@ -176,10 +176,61 @@ const getTypedMessage_reserve = ({
   return { domain, types, values };
 };
 
+const getTypedMessage_reserveApproval = ({
+  chainId,
+  verifierContract,
+  auctionSigner,
+  bidSigner,
+  auctionNonce,
+  bidNonce,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  auctionPrice,
+  bidPrice,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    ReserveAuctionApproval: [
+      { name: 'auctionSigner', type: 'address' },
+      { name: 'bidSigner', type: 'address' },
+      { name: 'auctionNonce', type: 'uint256' },
+      { name: 'bidNonce', type: 'uint256' },
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'auctionPrice', type: 'uint256' },
+      { name: 'bidPrice', type: 'uint256' },
+    ],
+  };
+
+  const values = {
+    auctionSigner: auctionSigner,
+    bidSigner: bidSigner,
+    auctionNonce: auctionNonce,
+    bidNonce: bidNonce,
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    auctionPrice: auctionPrice.toString(),
+    bidPrice: bidPrice.toString(),
+  };
+
+  return { domain, types, values };
+};
+
 module.exports = {
   getTypedMessage_sale,
   getTypedMessage_offer,
   getTypedMessage_dutch,
   getTypedMessage_reserve,
+  getTypedMessage_reserveApproval,
   keccak256,
 };

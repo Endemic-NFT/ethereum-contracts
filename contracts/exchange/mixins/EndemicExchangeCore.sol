@@ -10,6 +10,7 @@ import "../../manager/interfaces/IPaymentManager.sol";
 abstract contract EndemicExchangeCore {
     IRoyaltiesProvider public royaltiesProvider;
     IPaymentManager public paymentManager;
+    address public approvedSigner;
 
     uint16 internal constant MAX_FEE = 10000;
     address internal constant ZERO_ADDRESS = address(0);
@@ -180,7 +181,8 @@ abstract contract EndemicExchangeCore {
 
     function _updateExchangeConfiguration(
         address _royaltiesProvider,
-        address _paymentManager
+        address _paymentManager,
+        address _approvedSigner
     ) internal {
         if (
             _royaltiesProvider == ZERO_ADDRESS ||
@@ -189,6 +191,7 @@ abstract contract EndemicExchangeCore {
 
         royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
         paymentManager = IPaymentManager(_paymentManager);
+        approvedSigner = _approvedSigner;
     }
 
     /**
