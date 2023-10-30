@@ -198,7 +198,7 @@ const getTypedMessage_reserveApproval = ({
   };
 
   const types = {
-    ReserveAuctionConfirmation: [
+    ReserveAuctionApproval: [
       { name: 'auctionSigner', type: 'address' },
       { name: 'bidSigner', type: 'address' },
       { name: 'auctionNonce', type: 'uint256' },

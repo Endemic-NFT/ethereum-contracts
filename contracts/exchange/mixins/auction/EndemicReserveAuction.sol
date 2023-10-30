@@ -23,7 +23,7 @@ abstract contract EndemicReserveAuction is
 
     bytes32 private constant RESERVE_AUCTION_APPROVAL_TYPEHASH =
         keccak256(
-            "ReserveAuctionConfirmation(address auctionSigner,address bidSigner,uint256 auctionNonce,uint256 bidNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 auctionPrice,uint256 bidPrice)"
+            "ReserveAuctionApproval(address auctionSigner,address bidSigner,uint256 auctionNonce,uint256 bidNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 auctionPrice,uint256 bidPrice)"
         );
 
     struct ReserveAuction {
