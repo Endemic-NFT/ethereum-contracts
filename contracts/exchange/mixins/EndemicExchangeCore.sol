@@ -16,8 +16,6 @@ abstract contract EndemicExchangeCore {
     address internal constant ZERO_ADDRESS = address(0);
 
     error InvalidAddress();
-    error InvalidInterface();
-    error SellerNotAssetOwner();
     error UnsufficientCurrencySupplied();
     error InvalidPaymentMethod();
     error InvalidCaller();
@@ -199,5 +197,5 @@ abstract contract EndemicExchangeCore {
     /**
      * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[1000] private __gap;
+    uint256[999] private __gap;
 }

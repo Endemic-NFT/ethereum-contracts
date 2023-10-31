@@ -166,5 +166,5 @@ abstract contract EndemicOffer is
     /**
      * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[1000] private __gap;
+    uint256[500] private __gap;
 }
