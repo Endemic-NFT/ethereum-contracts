@@ -16,8 +16,6 @@ abstract contract EndemicExchangeCore {
     address internal constant ZERO_ADDRESS = address(0);
 
     error InvalidAddress();
-    error InvalidInterface();
-    error SellerNotAssetOwner();
     error UnsufficientCurrencySupplied();
     error InvalidPaymentMethod();
     error InvalidCaller();
