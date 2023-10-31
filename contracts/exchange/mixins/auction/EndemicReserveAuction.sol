@@ -99,8 +99,10 @@ abstract contract EndemicReserveAuction is
             auction.nftContract,
             auction.tokenId,
             auctionFees.bidPrice,
+            auction.signer,
             bid.signer,
-            auctionFees.totalCut
+            auctionFees.totalCut,
+            auction.paymentErc20TokenAddress
         );
     }
 

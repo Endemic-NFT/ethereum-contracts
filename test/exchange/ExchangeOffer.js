@@ -188,7 +188,8 @@ describe('ExchangeOffer', function () {
           user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
-          ethers.utils.parseUnits('0.030')
+          ethers.utils.parseUnits('0.030'),
+          endemicToken.address
         );
 
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
@@ -271,7 +272,8 @@ describe('ExchangeOffer', function () {
           user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
-          ethers.utils.parseUnits('0.05')
+          ethers.utils.parseUnits('0.05'),
+          endemicToken.address
         );
 
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
@@ -577,7 +579,8 @@ describe('ExchangeOffer', function () {
           user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
-          ethers.utils.parseUnits('0.030')
+          ethers.utils.parseUnits('0.030'),
+          endemicToken.address
         );
 
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
@@ -666,7 +669,8 @@ describe('ExchangeOffer', function () {
           user2.address,
           user1.address,
           ethers.utils.parseUnits('0.5'),
-          ethers.utils.parseUnits('0.05')
+          ethers.utils.parseUnits('0.05'),
+          endemicToken.address
         );
 
       expect(await nftContract.ownerOf(4)).to.equal(user2.address);
