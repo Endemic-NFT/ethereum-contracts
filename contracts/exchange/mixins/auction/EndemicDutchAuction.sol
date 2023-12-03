@@ -20,17 +20,20 @@ abstract contract EndemicDutchAuction is
 
     bytes32 private constant AUCTION_TYPEHASH =
         keccak256(
-            "DutchAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 startingPrice,uint256 endingPrice,uint256 startingAt,uint256 duration)"
+            "DutchAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 startingPrice,uint256 endingPrice,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient,uint256 startingAt,uint256 duration)"
         );
 
     struct DutchAuction {
-        address seller;
         uint256 orderNonce;
         address nftContract;
         uint256 tokenId;
         address paymentErc20TokenAddress;
         uint256 startingPrice;
         uint256 endingPrice;
+        uint256 makerFeePercentage;
+        uint256 takerFeePercentage;
+        uint256 royaltiesPercentage;
+        address royaltiesRecipient;
         uint256 startingAt;
         uint256 duration;
     }
@@ -39,10 +42,11 @@ abstract contract EndemicDutchAuction is
         uint8 v,
         bytes32 r,
         bytes32 s,
+        address seller,
         DutchAuction calldata auction
     ) external payable nonReentrant {
         if (block.timestamp < auction.startingAt) revert AuctionNotStarted();
-        if (auction.seller == msg.sender) revert InvalidCaller();
+        if (seller == msg.sender) revert InvalidCaller();
         if (auction.startingPrice <= auction.endingPrice) {
             revert InvalidConfiguration();
         }
@@ -50,11 +54,11 @@ abstract contract EndemicDutchAuction is
             revert InvalidDuration();
         }
 
-        _verifySignature(auction, v, r, s);
+        _verifySignature(seller, auction, v, r, s);
 
         _requireSupportedPaymentMethod(auction.paymentErc20TokenAddress);
 
-        _invalidateNonce(auction.seller, auction.orderNonce);
+        _invalidateNonce(seller, auction.orderNonce);
 
         uint256 currentPrice = _calculateCurrentPrice(
             auction.startingPrice,
@@ -68,14 +72,13 @@ abstract contract EndemicDutchAuction is
         (
             uint256 makerCut,
             uint256 takerCut,
-            address royaltiesRecipient,
-            uint256 royaltieFee,
+            uint256 royaltiesCut,
             uint256 totalCut
         ) = _calculateFees(
-                auction.paymentErc20TokenAddress,
-                auction.nftContract,
-                auction.tokenId,
-                currentPrice
+                currentPrice,
+                auction.makerFeePercentage,
+                auction.takerFeePercentage,
+                auction.royaltiesPercentage
             );
 
         currentPrice = _determinePriceByPaymentMethod(
@@ -91,7 +94,7 @@ abstract contract EndemicDutchAuction is
         );
 
         IERC721(auction.nftContract).transferFrom(
-            auction.seller,
+            seller,
             msg.sender,
             auction.tokenId
         );
@@ -100,9 +103,9 @@ abstract contract EndemicDutchAuction is
             currentPrice,
             makerCut,
             totalCut,
-            royaltieFee,
-            royaltiesRecipient,
-            auction.seller,
+            royaltiesCut,
+            auction.royaltiesRecipient,
+            seller,
             msg.sender,
             auction.paymentErc20TokenAddress
         );
@@ -111,7 +114,7 @@ abstract contract EndemicDutchAuction is
             auction.nftContract,
             auction.tokenId,
             currentPrice,
-            auction.seller,
+            seller,
             msg.sender,
             totalCut,
             auction.paymentErc20TokenAddress
@@ -194,6 +197,7 @@ abstract contract EndemicDutchAuction is
     }
 
     function _verifySignature(
+        address seller,
         DutchAuction calldata auction,
         uint8 v,
         bytes32 r,
@@ -203,23 +207,11 @@ abstract contract EndemicDutchAuction is
             abi.encodePacked(
                 "\x19\x01",
                 _buildDomainSeparator(),
-                keccak256(
-                    abi.encode(
-                        AUCTION_TYPEHASH,
-                        auction.orderNonce,
-                        auction.nftContract,
-                        auction.tokenId,
-                        auction.paymentErc20TokenAddress,
-                        auction.startingPrice,
-                        auction.endingPrice,
-                        auction.startingAt,
-                        auction.duration
-                    )
-                )
+                keccak256(abi.encode(AUCTION_TYPEHASH, auction))
             )
         );
 
-        if (digest.recover(v, r, s) != auction.seller) {
+        if (digest.recover(v, r, s) != seller) {
             revert InvalidSignature();
         }
     }

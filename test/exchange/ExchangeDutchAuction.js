@@ -27,11 +27,7 @@ const AUCTION_NOT_STARTED = 'AuctionNotStarted';
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
 describe('ExchangeDutchAuction', function () {
-  let endemicExchange,
-    endemicToken,
-    nftContract,
-    royaltiesProviderContract,
-    paymentManagerContract;
+  let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
   let owner,
     user1,
@@ -52,7 +48,7 @@ describe('ExchangeDutchAuction', function () {
     );
   };
 
-  async function deploy(makerFee = 0, takerFee) {
+  async function deploy(makerFeePercentage = 0, takerFeePercentage) {
     [
       owner,
       user1,
@@ -63,9 +59,11 @@ describe('ExchangeDutchAuction', function () {
       mintApprover,
     ] = await ethers.getSigners();
 
-    const result = await deployEndemicExchangeWithDeps(makerFee, takerFee);
+    const result = await deployEndemicExchangeWithDeps(
+      makerFeePercentage,
+      takerFeePercentage
+    );
 
-    royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
     paymentManagerContract = result.paymentManagerContract;
 
@@ -88,7 +86,11 @@ describe('ExchangeDutchAuction', function () {
     startingPrice,
     endingPrice,
     startingAt,
-    duration
+    duration,
+    makerFeePercentage = 0,
+    takerFeePercentage = 300,
+    royaltiesPercentage = 1500,
+    royaltiesRecipient = owner.address
   ) => {
     const typedMessage = getTypedMessage_dutch({
       chainId: network.config.chainId,
@@ -99,6 +101,10 @@ describe('ExchangeDutchAuction', function () {
       paymentErc20TokenAddress: paymentErc20TokenAddress,
       startingPrice: startingPrice,
       endingPrice: endingPrice,
+      makerFeePercentage: makerFeePercentage,
+      takerFeePercentage: takerFeePercentage,
+      royaltiesPercentage: royaltiesPercentage,
+      royaltiesRecipient: royaltiesRecipient,
       startingAt: startingAt,
       duration: duration,
     });
@@ -143,49 +149,64 @@ describe('ExchangeDutchAuction', function () {
 
     it("should fail to bid if auction didn't start yet", async function () {
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: ZERO_ADDRESS,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp + 50,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp + 50,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, AUCTION_NOT_STARTED);
     });
 
     it('should fail to bid if auction has wrong price configuration', async function () {
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: ZERO_ADDRESS,
-          startingPrice: ethers.utils.parseUnits('0.01'),
-          endingPrice: ethers.utils.parseUnits('0.1'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            startingPrice: ethers.utils.parseUnits('0.01'),
+            endingPrice: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_CONFIGURATION);
     });
 
     it('should fail to bid if caller is auction creator', async function () {
       await expect(
-        endemicExchange.connect(user1).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: ZERO_ADDRESS,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user1)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_CALLER);
     });
 
@@ -201,17 +222,22 @@ describe('ExchangeDutchAuction', function () {
       );
 
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: ZERO_ADDRESS,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(v, r, s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: ZERO_ADDRESS,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
@@ -221,14 +247,18 @@ describe('ExchangeDutchAuction', function () {
           sig.v,
           sig.r,
           sig.s,
+          user1.address,
           {
-            seller: user1.address,
             orderNonce: 1,
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             startingPrice: ethers.utils.parseUnits('0.1'),
             endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             startingAt: defaultTimestamp,
             duration: 120,
           },
@@ -261,14 +291,18 @@ describe('ExchangeDutchAuction', function () {
           sig.v,
           sig.r,
           sig.s,
+          user1.address,
           {
-            seller: user1.address,
             orderNonce: 1,
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             startingPrice: ethers.utils.parseUnits('0.1'),
             endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             startingAt: defaultTimestamp,
             duration: 120,
           },
@@ -313,14 +347,18 @@ describe('ExchangeDutchAuction', function () {
         v,
         r,
         s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('1.4'),
           endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp,
           duration: 1000,
         },
@@ -357,14 +395,18 @@ describe('ExchangeDutchAuction', function () {
         sig.v,
         sig.r,
         sig.s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('0.1'),
           endingPrice: ethers.utils.parseUnits('0.01'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: defaultTimestamp,
           duration: 120,
         },
@@ -399,14 +441,18 @@ describe('ExchangeDutchAuction', function () {
         sig.v,
         sig.r,
         sig.s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('0.1'),
           endingPrice: ethers.utils.parseUnits('0.01'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: defaultTimestamp,
           duration: 120,
         },
@@ -458,14 +504,18 @@ describe('ExchangeDutchAuction', function () {
           v,
           r,
           s,
+          user2.address,
           {
-            seller: user2.address,
             orderNonce: 1,
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             startingPrice: ethers.utils.parseUnits('0.2'),
             endingPrice: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             startingAt: timestamp,
             duration: 1000,
           },
@@ -510,49 +560,64 @@ describe('ExchangeDutchAuction', function () {
 
     it("should fail to bid if auction didn't start yet", async function () {
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp + 50,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp + 50,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, AUCTION_NOT_STARTED);
     });
 
     it('should fail to bid if auction has wrong price configuration', async function () {
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.01'),
-          endingPrice: ethers.utils.parseUnits('0.1'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.01'),
+            endingPrice: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_CONFIGURATION);
     });
 
     it('should fail to bid if caller is auction creator', async function () {
       await expect(
-        endemicExchange.connect(user1).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user1)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_CALLER);
     });
 
@@ -568,33 +633,43 @@ describe('ExchangeDutchAuction', function () {
       );
 
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(v, r, s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.005'), // ending price changed
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_SIGNATURE);
     });
 
     it('should fail to bid with insufficient value', async function () {
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(
         endemicExchange,
         UNSUFFICIENT_CURRENCY_SUPPLIED
@@ -625,17 +700,22 @@ describe('ExchangeDutchAuction', function () {
       await endemicExchange.connect(user1).cancelNonce(1);
 
       await expect(
-        endemicExchange.connect(user2).bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
-          startingPrice: ethers.utils.parseUnits('0.1'),
-          endingPrice: ethers.utils.parseUnits('0.01'),
-          startingAt: defaultTimestamp,
-          duration: 120,
-        })
+        endemicExchange
+          .connect(user2)
+          .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
+            orderNonce: 1,
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            startingPrice: ethers.utils.parseUnits('0.1'),
+            endingPrice: ethers.utils.parseUnits('0.01'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+            startingAt: defaultTimestamp,
+            duration: 120,
+          })
       ).to.be.revertedWithCustomError(endemicExchange, NONCE_USED);
     });
 
@@ -681,17 +761,22 @@ describe('ExchangeDutchAuction', function () {
           ethers.utils.parseUnits(totalPrice.toString())
         );
 
-      await endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-        seller: user1.address,
-        orderNonce: 1,
-        nftContract: nftContract.address,
-        tokenId: 1,
-        paymentErc20TokenAddress: endemicToken.address,
-        startingPrice: ethers.utils.parseUnits('1.4'),
-        endingPrice: ethers.utils.parseUnits('0.2'),
-        startingAt: timestamp,
-        duration: 1000,
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(v, r, s, user1.address, {
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('1.4'),
+          endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
+          startingAt: timestamp,
+          duration: 1000,
+        });
 
       // User1 should receive 0.39492 ether, 80% of auction has passed
 
@@ -729,14 +814,17 @@ describe('ExchangeDutchAuction', function () {
 
       await endemicExchange
         .connect(user2)
-        .bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
+        .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           startingPrice: ethers.utils.parseUnits('0.1'),
           endingPrice: ethers.utils.parseUnits('0.01'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: defaultTimestamp,
           duration: 120,
         });
@@ -770,14 +858,17 @@ describe('ExchangeDutchAuction', function () {
 
       const bid1 = await endemicExchange
         .connect(user2)
-        .bidForDutchAuction(sig.v, sig.r, sig.s, {
-          seller: user1.address,
+        .bidForDutchAuction(sig.v, sig.r, sig.s, user1.address, {
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           startingPrice: ethers.utils.parseUnits('0.1'),
           endingPrice: ethers.utils.parseUnits('0.01'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: defaultTimestamp,
           duration: 120,
         });
@@ -814,7 +905,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250
       );
 
       const user1Bal1 = await user1.getBalance();
@@ -840,14 +932,18 @@ describe('ExchangeDutchAuction', function () {
         v,
         r,
         s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('1.4'),
           endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp,
           duration: 1000,
         },
@@ -902,7 +998,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250
       );
 
       await helpers.time.increase(800);
@@ -927,14 +1024,18 @@ describe('ExchangeDutchAuction', function () {
         v,
         r,
         s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('1.4'),
           endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp,
           duration: 1000,
         },
@@ -957,7 +1058,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.0'),
         ethers.utils.parseUnits('0.5'),
         timestamp2,
-        1200
+        1200,
+        250
       );
 
       await helpers.time.increase(1140);
@@ -988,14 +1090,18 @@ describe('ExchangeDutchAuction', function () {
         v2,
         r2,
         s2,
+        user2.address,
         {
-          seller: user2.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('1.0'),
           endingPrice: ethers.utils.parseUnits('0.5'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp2,
           duration: 1200,
         },
@@ -1063,7 +1169,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250
       );
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
@@ -1099,14 +1206,17 @@ describe('ExchangeDutchAuction', function () {
       // buys NFT and calculates price diff on contract and user1 wallet
       const bidTx = await endemicExchange
         .connect(user2)
-        .bidForDutchAuction(v, r, s, {
-          seller: user1.address,
+        .bidForDutchAuction(v, r, s, user1.address, {
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           startingPrice: ethers.utils.parseUnits('1.4'),
           endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp,
           duration: 1000,
         });
@@ -1139,11 +1249,7 @@ describe('ExchangeDutchAuction', function () {
     });
 
     it('should take cut on primary sale on dutch auction with different fees for specific ERC20', async function () {
-      await paymentManagerContract.updatePaymentMethodFees(
-        endemicToken.address,
-        500,
-        500
-      );
+      // Maker fee 5%, taker fee 5%
 
       const claimEthBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
       const timestamp = await helpers.time.latest();
@@ -1154,7 +1260,9 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        500,
+        500
       );
 
       //   totalPriceChange = 0.2 - 1.4 = -1.2
@@ -1188,17 +1296,22 @@ describe('ExchangeDutchAuction', function () {
         );
 
       // buys NFT and calculates price diff on contract and user1 wallet
-      await endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-        seller: user1.address,
-        orderNonce: 1,
-        nftContract: nftContract.address,
-        tokenId: 1,
-        paymentErc20TokenAddress: endemicToken.address,
-        startingPrice: ethers.utils.parseUnits('1.4'),
-        endingPrice: ethers.utils.parseUnits('0.2'),
-        startingAt: timestamp,
-        duration: 1000,
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(v, r, s, user1.address, {
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('1.4'),
+          endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 500,
+          takerFeePercentage: 500,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
+          startingAt: timestamp,
+          duration: 1000,
+        });
 
       const claimEthBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
@@ -1231,7 +1344,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250
       );
 
       await helpers.time.increase(800);
@@ -1264,17 +1378,22 @@ describe('ExchangeDutchAuction', function () {
         );
 
       // Buy with user 2
-      await endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-        seller: user1.address,
-        orderNonce: 1,
-        nftContract: nftContract.address,
-        tokenId: 1,
-        paymentErc20TokenAddress: endemicToken.address,
-        startingPrice: ethers.utils.parseUnits('1.4'),
-        endingPrice: ethers.utils.parseUnits('0.2'),
-        startingAt: timestamp,
-        duration: 1000,
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(v, r, s, user1.address, {
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('1.4'),
+          endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
+          startingAt: timestamp,
+          duration: 1000,
+        });
 
       // Auction again with user 2
       await nftContract.connect(user2).approve(endemicExchange.address, 1);
@@ -1290,7 +1409,8 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.0'),
         ethers.utils.parseUnits('0.5'),
         timestamp2,
-        1200
+        1200,
+        250
       );
 
       // Grab current balance
@@ -1329,14 +1449,17 @@ describe('ExchangeDutchAuction', function () {
       // Buy with user 3
       const bidTx = await endemicExchange
         .connect(user3)
-        .bidForDutchAuction(v2, r2, s2, {
-          seller: user2.address,
+        .bidForDutchAuction(v2, r2, s2, user2.address, {
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           startingPrice: ethers.utils.parseUnits('1.0'),
           endingPrice: ethers.utils.parseUnits('0.5'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           startingAt: timestamp2,
           duration: 1200,
         });
@@ -1375,11 +1498,7 @@ describe('ExchangeDutchAuction', function () {
       await deploy(250, 300, 2200);
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
 
-      await royaltiesProviderContract.setRoyaltiesForCollection(
-        nftContract.address,
-        feeRecipient.address,
-        1000
-      );
+      // Royalties are 10%, recipient is `feeRecipient`
     });
 
     it('should distribute royalties on dutch auction', async () => {
@@ -1391,7 +1510,11 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250,
+        300,
+        1000,
+        feeRecipient.address
       );
 
       await helpers.time.increase(800);
@@ -1423,14 +1546,18 @@ describe('ExchangeDutchAuction', function () {
         v,
         r,
         s,
+        user1.address,
         {
-          seller: user1.address,
           orderNonce: 1,
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           startingPrice: ethers.utils.parseUnits('1.4'),
           endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1000,
+          royaltiesRecipient: feeRecipient.address,
           startingAt: timestamp,
           duration: 1000,
         },
@@ -1473,18 +1600,14 @@ describe('ExchangeDutchAuction', function () {
       await deploy(250, 300, 2200);
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
 
-      await royaltiesProviderContract.setRoyaltiesForCollection(
-        nftContract.address,
-        feeRecipient.address,
-        1000
-      );
-
       endemicToken = await deployEndemicToken(owner);
 
       await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
+
+      // Royalties are 10%, recipient is `feeRecipient`
     });
 
     it('should distribute royalties on dutch auction', async () => {
@@ -1496,7 +1619,11 @@ describe('ExchangeDutchAuction', function () {
         ethers.utils.parseUnits('1.4'),
         ethers.utils.parseUnits('0.2'),
         timestamp,
-        1000
+        1000,
+        250,
+        300,
+        1000,
+        feeRecipient.address
       );
 
       await helpers.time.increase(800);
@@ -1536,17 +1663,22 @@ describe('ExchangeDutchAuction', function () {
           ethers.utils.parseUnits(totalPrice.toString())
         );
 
-      await endemicExchange.connect(user2).bidForDutchAuction(v, r, s, {
-        seller: user1.address,
-        orderNonce: 1,
-        nftContract: nftContract.address,
-        tokenId: 1,
-        paymentErc20TokenAddress: endemicToken.address,
-        startingPrice: ethers.utils.parseUnits('1.4'),
-        endingPrice: ethers.utils.parseUnits('0.2'),
-        startingAt: timestamp,
-        duration: 1000,
-      });
+      await endemicExchange
+        .connect(user2)
+        .bidForDutchAuction(v, r, s, user1.address, {
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 1,
+          paymentErc20TokenAddress: endemicToken.address,
+          startingPrice: ethers.utils.parseUnits('1.4'),
+          endingPrice: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1000,
+          royaltiesRecipient: feeRecipient.address,
+          startingAt: timestamp,
+          duration: 1000,
+        });
 
       const user1Bal2 = await endemicToken.balanceOf(user1.address);
       const feeRecipientBalance2 = await endemicToken.balanceOf(

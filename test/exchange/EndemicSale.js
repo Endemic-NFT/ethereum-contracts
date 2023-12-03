@@ -22,7 +22,12 @@ const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 describe('EndemicSale', () => {
   let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
-  let owner, user1, user2, mintApprover, collectionAdministrator;
+  let owner,
+    user1,
+    user2,
+    mintApprover,
+    collectionAdministrator,
+    royaltiesRecipient;
 
   const RANDOM_R_VALUE =
     '0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d';
@@ -32,6 +37,9 @@ describe('EndemicSale', () => {
   const RANDOM_TIMESTAMP = 2032530705;
   const LAST_YEAR_TIMESTAMP = 1615762236;
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
+  const ONE_ETHER_MAKER_CUT = ONE_ETHER.mul(25).div(1000); // 2.5%
+  const ONE_ETHER_TAKER_CUT = ONE_ETHER.mul(30).div(1000); // 3%
+  const ONE_ETHER_ROYALTY_AMOUNT = ONE_ETHER.mul(150).div(1000); // 15%
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
   const mintToken = async (recipient) => {
@@ -46,8 +54,14 @@ describe('EndemicSale', () => {
   };
 
   async function deploy() {
-    [owner, user1, user2, mintApprover, collectionAdministrator] =
-      await ethers.getSigners();
+    [
+      owner,
+      user1,
+      user2,
+      mintApprover,
+      collectionAdministrator,
+      royaltiesRecipient,
+    ] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps();
 
@@ -81,6 +95,10 @@ describe('EndemicSale', () => {
       nftContract: nftContract.address,
       paymentErc20TokenAddress,
       price: ONE_ETHER,
+      makerCut: ONE_ETHER_MAKER_CUT,
+      takerCut: ONE_ETHER_TAKER_CUT,
+      royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+      royaltiesRecipient: royaltiesRecipient.address,
       buyer,
     });
 
@@ -112,6 +130,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ZERO_ONE_ETHER,
+            makerCut: 0,
+            takerCut: 0,
+            royaltiesCut: 0,
+            royaltiesRecipient: ZERO_ADDRESS,
             buyer: ZERO_ADDRESS,
             expiresAt: LAST_YEAR_TIMESTAMP,
           })
@@ -137,6 +159,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: 2000994705,
           },
@@ -160,6 +186,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ZERO_ONE_ETHER,
+            makerCut: 0,
+            takerCut: 0,
+            royaltiesCut: 0,
+            royaltiesRecipient: ZERO_ADDRESS,
             buyer: ZERO_ADDRESS,
             expiresAt: RANDOM_TIMESTAMP,
           }
@@ -182,6 +212,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: 2000994705,
           },
@@ -210,6 +244,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: RANDOM_TIMESTAMP,
           },
@@ -235,6 +273,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: 2000994705,
           },
@@ -265,6 +307,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: 2000994705,
           },
@@ -293,6 +339,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: ZERO_ADDRESS,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         },
@@ -317,6 +367,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: 2000994705,
           },
@@ -353,6 +407,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ZERO_ONE_ETHER,
+            makerCut: 0,
+            takerCut: 0,
+            royaltiesCut: 0,
+            royaltiesRecipient: ZERO_ADDRESS,
             buyer: ZERO_ADDRESS,
             expiresAt: LAST_YEAR_TIMESTAMP,
           }
@@ -378,6 +436,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -397,6 +459,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ZERO_ONE_ETHER,
+            makerCut: 0,
+            takerCut: 0,
+            royaltiesCut: 0,
+            royaltiesRecipient: ZERO_ADDRESS,
             buyer: ZERO_ADDRESS,
             expiresAt: RANDOM_TIMESTAMP,
           }
@@ -418,6 +484,10 @@ describe('EndemicSale', () => {
           paymentErc20TokenAddress:
             '0x0000000000000000000000000000000000000001',
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -437,6 +507,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -457,6 +531,10 @@ describe('EndemicSale', () => {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: ZERO_ADDRESS,
             expiresAt: RANDOM_TIMESTAMP,
           })
@@ -482,6 +560,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -508,6 +590,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -532,6 +618,10 @@ describe('EndemicSale', () => {
         tokenId: 2,
         paymentErc20TokenAddress: endemicToken.address,
         price: ONE_ETHER,
+        makerCut: ONE_ETHER_MAKER_CUT,
+        takerCut: ONE_ETHER_TAKER_CUT,
+        royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+        royaltiesRecipient: royaltiesRecipient.address,
         buyer: ZERO_ADDRESS,
         expiresAt: 2000994705,
       });
@@ -547,6 +637,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: ZERO_ADDRESS,
           expiresAt: 2000994705,
         })
@@ -576,6 +670,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: owner.address,
             expiresAt: 2000994705,
           },
@@ -607,6 +705,10 @@ describe('EndemicSale', () => {
             tokenId: 2,
             paymentErc20TokenAddress: ZERO_ADDRESS,
             price: ONE_ETHER,
+            makerCut: ONE_ETHER_MAKER_CUT,
+            takerCut: ONE_ETHER_TAKER_CUT,
+            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+            royaltiesRecipient: royaltiesRecipient.address,
             buyer: owner.address,
             expiresAt: 2000994705,
           },
@@ -648,6 +750,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: owner.address,
           expiresAt: 2000994705,
         })
@@ -677,6 +783,10 @@ describe('EndemicSale', () => {
           tokenId: 2,
           paymentErc20TokenAddress: endemicToken.address,
           price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
           buyer: owner.address,
           expiresAt: 2000994705,
         })

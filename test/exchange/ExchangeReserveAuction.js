@@ -16,11 +16,7 @@ const INVALID_PAYMENT_METHOD = 'InvalidPaymentMethod';
 const UNSUFFICIENT_CURRENCY_SUPPLIED = 'UnsufficientCurrencySupplied';
 
 describe('ExchangeReserveAuction', function () {
-  let endemicExchange,
-    endemicToken,
-    nftContract,
-    royaltiesProviderContract,
-    paymentManagerContract;
+  let endemicExchange, endemicToken, nftContract, paymentManagerContract;
 
   let owner,
     user1,
@@ -43,7 +39,7 @@ describe('ExchangeReserveAuction', function () {
     );
   };
 
-  async function deploy(makerFee = 0, takerFee) {
+  async function deploy(makerFeePercentage = 0, takerFeePercentage) {
     [
       owner,
       user1,
@@ -57,12 +53,11 @@ describe('ExchangeReserveAuction', function () {
     ] = await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps(
-      makerFee,
-      takerFee,
+      makerFeePercentage,
+      takerFeePercentage,
       approvedSigner.address
     );
 
-    royaltiesProviderContract = result.royaltiesProviderContract;
     endemicExchange = result.endemicExchangeContract;
     paymentManagerContract = result.paymentManagerContract;
 
@@ -84,6 +79,10 @@ describe('ExchangeReserveAuction', function () {
     tokenId,
     paymentErc20TokenAddress,
     price,
+    makerFeePercentage,
+    takerFeePercentage,
+    royaltiesPercentage,
+    royaltiesRecipient,
     isBid
   ) => {
     const typedMessage = getTypedMessage_reserve({
@@ -94,6 +93,10 @@ describe('ExchangeReserveAuction', function () {
       tokenId: tokenId,
       paymentErc20TokenAddress: paymentErc20TokenAddress,
       price: price,
+      makerFeePercentage: makerFeePercentage,
+      takerFeePercentage: takerFeePercentage,
+      royaltiesPercentage: royaltiesPercentage,
+      royaltiesRecipient: royaltiesRecipient,
       isBid: isBid,
     });
 
@@ -119,7 +122,11 @@ describe('ExchangeReserveAuction', function () {
     tokenId,
     paymentErc20TokenAddress,
     auctionPrice,
-    bidPrice
+    bidPrice,
+    makerFeePercentage,
+    takerFeePercentage,
+    royaltiesPercentage,
+    royaltiesRecipient
   ) => {
     const typedMessage = getTypedMessage_reserveApproval({
       chainId: network.config.chainId,
@@ -133,6 +140,10 @@ describe('ExchangeReserveAuction', function () {
       paymentErc20TokenAddress: paymentErc20TokenAddress,
       auctionPrice: auctionPrice,
       bidPrice: bidPrice,
+      makerFeePercentage: makerFeePercentage,
+      takerFeePercentage: takerFeePercentage,
+      royaltiesPercentage: royaltiesPercentage,
+      royaltiesRecipient: royaltiesRecipient,
     });
 
     const signature = await approvedSigner._signTypedData(
@@ -171,6 +182,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         reservePrice,
+        0,
+        300,
+        1500,
+        owner.address,
         false
       );
     });
@@ -193,6 +208,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -204,7 +223,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.103')
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
       );
 
       await endemicExchange.connect(settler).finalizeReserveAuction(
@@ -221,6 +244,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.1'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -233,6 +260,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.103'),
+          makerFeePercentage: 0,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: true,
         }
       );
@@ -264,6 +295,10 @@ describe('ExchangeReserveAuction', function () {
             paymentErc20TokenAddress:
               '0x000000000000000000000000000000000000beef',
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -277,6 +312,10 @@ describe('ExchangeReserveAuction', function () {
             paymentErc20TokenAddress:
               '0x000000000000000000000000000000000000beef',
             price: ethers.utils.parseUnits('0.103'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -298,6 +337,10 @@ describe('ExchangeReserveAuction', function () {
             paymentErc20TokenAddress:
               '0x0000000000000000000000000000000000000000', // ether
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -311,6 +354,10 @@ describe('ExchangeReserveAuction', function () {
             paymentErc20TokenAddress:
               '0x0000000000000000000000000000000000000000', // ether
             price: ethers.utils.parseUnits('0.103'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -333,6 +380,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true, // wrong
           },
           {
@@ -345,6 +396,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -365,6 +420,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -377,6 +436,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false, // wrong
           }
         )
@@ -399,6 +462,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -411,6 +478,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -431,6 +502,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 2, // mismatch
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -443,6 +518,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1, // mismatch
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -463,6 +542,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address, // mismatch
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -476,6 +559,10 @@ describe('ExchangeReserveAuction', function () {
             paymentErc20TokenAddress:
               '0x000000000000000000000000000000000000beef', // mismatch
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -496,6 +583,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -508,6 +599,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: 100,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -521,6 +616,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -532,7 +631,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.103')
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
       );
 
       await expect(
@@ -550,6 +653,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.09'), // changed price
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -562,6 +669,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.103'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -582,6 +693,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -594,6 +709,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.104'), // changed price
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -616,6 +735,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.102'),
+        0,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -627,7 +750,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.102')
+        ethers.utils.parseUnits('0.102'),
+        0,
+        300,
+        1500,
+        owner.address
       );
 
       await expect(
@@ -645,6 +772,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -657,6 +788,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.102'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -682,6 +817,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -693,7 +832,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.103')
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
       );
 
       await endemicExchange.connect(user1).cancelNonce(1);
@@ -713,6 +856,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -725,6 +872,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.103'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -747,6 +898,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -758,7 +913,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.103')
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
       );
 
       await endemicExchange.connect(user2).cancelNonce(1);
@@ -778,6 +937,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -790,6 +953,10 @@ describe('ExchangeReserveAuction', function () {
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.103'),
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
             isBid: true,
           }
         )
@@ -819,6 +986,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.02472'),
+        250,
+        300,
+        1500,
+        owner.address,
         false
       );
 
@@ -843,6 +1014,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.206'),
+        250,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -854,7 +1029,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.02472'),
-        ethers.utils.parseUnits('0.206')
+        ethers.utils.parseUnits('0.206'),
+        250,
+        300,
+        1500,
+        owner.address
       );
 
       await endemicExchange.connect(settler).finalizeReserveAuction(
@@ -871,6 +1050,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.02472'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -883,6 +1066,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.206'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: true,
         }
       );
@@ -911,6 +1098,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.5'),
+        250,
+        300,
+        1500,
+        owner.address,
         false
       );
 
@@ -933,6 +1124,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('1.03'),
+        250,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -944,7 +1139,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.5'),
-        ethers.utils.parseUnits('1.03')
+        ethers.utils.parseUnits('1.03'),
+        250,
+        300,
+        1500,
+        owner.address
       );
 
       await endemicExchange.connect(settler).finalizeReserveAuction(
@@ -961,6 +1160,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.5'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -973,6 +1176,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('1.03'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: true,
         }
       );
@@ -989,6 +1196,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
+        250,
+        300,
+        1500,
+        owner.address,
         false
       );
 
@@ -1011,6 +1222,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.515'),
+        250,
+        300,
+        1500,
+        owner.address,
         true
       );
 
@@ -1022,7 +1237,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.1'),
-        ethers.utils.parseUnits('0.515')
+        ethers.utils.parseUnits('0.515'),
+        250,
+        300,
+        1500,
+        owner.address
       );
 
       // Grab current balance
@@ -1043,6 +1262,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.1'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -1055,6 +1278,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.515'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1500,
+          royaltiesRecipient: owner.address,
           isBid: true,
         }
       );
@@ -1082,18 +1309,14 @@ describe('ExchangeReserveAuction', function () {
       await deploy(250, 300, 2200);
       await nftContract.connect(user1).approve(endemicExchange.address, 1);
 
-      await royaltiesProviderContract.setRoyaltiesForCollection(
-        nftContract.address,
-        feeRecipient.address,
-        1000
-      );
-
       endemicToken = await deployEndemicToken(owner);
 
       await paymentManagerContract.updateSupportedPaymentMethod(
         endemicToken.address,
         true
       );
+
+      // Royalties are 10%, recipient is `feeRecipient`
     });
 
     it('should distribute royalties on reserve auction', async () => {
@@ -1103,6 +1326,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.2'),
+        250,
+        300,
+        1000,
+        feeRecipient.address,
         false
       );
 
@@ -1142,6 +1369,10 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.206'),
+        250,
+        300,
+        1000,
+        feeRecipient.address,
         true
       );
 
@@ -1153,7 +1384,11 @@ describe('ExchangeReserveAuction', function () {
         1,
         endemicToken.address,
         ethers.utils.parseUnits('0.2'),
-        ethers.utils.parseUnits('0.206')
+        ethers.utils.parseUnits('0.206'),
+        250,
+        300,
+        1000,
+        feeRecipient.address
       );
 
       await endemicExchange.connect(settler).finalizeReserveAuction(
@@ -1170,6 +1405,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.2'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1000,
+          royaltiesRecipient: feeRecipient.address,
           isBid: false,
         },
         {
@@ -1182,6 +1421,10 @@ describe('ExchangeReserveAuction', function () {
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.206'),
+          makerFeePercentage: 250,
+          takerFeePercentage: 300,
+          royaltiesPercentage: 1000,
+          royaltiesRecipient: feeRecipient.address,
           isBid: true,
         }
       );
