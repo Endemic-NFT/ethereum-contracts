@@ -621,6 +621,71 @@ describe('ExchangeReserveAuction', function () {
       ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
     });
 
+    it('should fail to finalize if approval signature is invalid', async function () {
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
+        true
+      );
+
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103'),
+        0,
+        310, // changed
+        1500,
+        owner.address
+      );
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            price: ethers.utils.parseUnits('0.1'), // changed price
+            isBid: false,
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+    });
+
     it('should fail to finalize if bid has insufficient value', async function () {
       await endemicToken.transfer(
         user2.address,

@@ -6,7 +6,12 @@ const {
   deployEndemicToken,
 } = require('../helpers/deploy');
 const { getTypedMessage_sale } = require('../helpers/eip712');
-const { ZERO_ADDRESS, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
+const {
+  FEE_RECIPIENT,
+  ZERO_ADDRESS,
+  ZERO,
+  ZERO_BYTES32,
+} = require('../helpers/constants');
 const { addTakerFee } = require('../helpers/token');
 
 const INVALID_SIGNATURE = 'InvalidSignature';
@@ -37,9 +42,9 @@ describe('EndemicSale', () => {
   const RANDOM_TIMESTAMP = 2032530705;
   const LAST_YEAR_TIMESTAMP = 1615762236;
   const ONE_ETHER = ethers.utils.parseUnits('1.0');
-  const ONE_ETHER_MAKER_CUT = ONE_ETHER.mul(25).div(1000); // 2.5%
-  const ONE_ETHER_TAKER_CUT = ONE_ETHER.mul(30).div(1000); // 3%
-  const ONE_ETHER_ROYALTY_AMOUNT = ONE_ETHER.mul(150).div(1000); // 15%
+  const ONE_ETHER_MAKER_CUT = ONE_ETHER.mul(25).div(1000); // 2.5% = 0.025 eth
+  const ONE_ETHER_TAKER_CUT = ONE_ETHER.mul(30).div(1000); // 3% = 0.03 eth
+  const ONE_ETHER_ROYALTY_AMOUNT = ONE_ETHER.mul(150).div(1000); // 15% = 0.15 eth
   const ZERO_ONE_ETHER = ethers.utils.parseUnits('0.1');
 
   const mintToken = async (recipient) => {
@@ -291,36 +296,76 @@ describe('EndemicSale', () => {
     });
 
     it('should succesfully buy from sale', async function () {
+      // taker fee is 3% = 0.03 eth
+      // user sends 1.03 eth
+      // maker fee is 2.5% = 0.025 eth
+      // royalties are 15% = 0.15 eth
+      // owner will get 0.825 eth
+
+      const royaltiesRecipientBalance1 = await ethers.provider.getBalance(
+        royaltiesRecipient.address
+      );
+      const feeBalance1 = await ethers.provider.getBalance(FEE_RECIPIENT);
+
       const { r, s, v } = await getSaleSignature({});
 
       const priceWithFees = addTakerFee(ONE_ETHER);
 
-      await expect(
-        endemicExchange.connect(user2).buyFromSale(
-          v,
-          r,
-          s,
-          {
-            seller: user1.address,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 2,
-            paymentErc20TokenAddress: ZERO_ADDRESS,
-            price: ONE_ETHER,
-            makerCut: ONE_ETHER_MAKER_CUT,
-            takerCut: ONE_ETHER_TAKER_CUT,
-            royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
-            royaltiesRecipient: royaltiesRecipient.address,
-            buyer: ZERO_ADDRESS,
-            expiresAt: 2000994705,
-          },
-          {
-            value: priceWithFees,
-          }
-        )
-      ).to.emit(endemicExchange, SALE_SUCCESS);
+      const user1Balance1 = await ethers.provider.getBalance(user1.address);
+
+      const tx = await endemicExchange.connect(user2).buyFromSale(
+        v,
+        r,
+        s,
+        {
+          seller: user1.address,
+          orderNonce: 1,
+          nftContract: nftContract.address,
+          tokenId: 2,
+          paymentErc20TokenAddress: ZERO_ADDRESS,
+          price: ONE_ETHER,
+          makerCut: ONE_ETHER_MAKER_CUT,
+          takerCut: ONE_ETHER_TAKER_CUT,
+          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+          royaltiesRecipient: royaltiesRecipient.address,
+          buyer: ZERO_ADDRESS,
+          expiresAt: 2000994705,
+        },
+        {
+          value: priceWithFees,
+        }
+      );
+
+      await expect(tx)
+        .to.emit(endemicExchange, SALE_SUCCESS)
+        .withArgs(
+          nftContract.address,
+          2,
+          user1.address,
+          user2.address,
+          ethers.utils.parseEther('1'),
+          ethers.utils.parseEther('0.055'),
+          ZERO_ADDRESS
+        );
 
       expect(await nftContract.ownerOf(2)).to.equal(user2.address);
+
+      const user1Balance2 = await ethers.provider.getBalance(user1.address);
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseEther('0.825')
+      );
+
+      const feeBalance2 = await ethers.provider.getBalance(FEE_RECIPIENT);
+      expect(feeBalance2.sub(feeBalance1)).to.equal(
+        ethers.utils.parseEther('0.055')
+      );
+
+      const royaltiesRecipientBalance2 = await ethers.provider.getBalance(
+        royaltiesRecipient.address
+      );
+      expect(
+        royaltiesRecipientBalance2.sub(royaltiesRecipientBalance1)
+      ).to.equal(ethers.utils.parseEther('0.15'));
     });
 
     it('should fail to buy from same sale twice', async function () {
@@ -574,6 +619,17 @@ describe('EndemicSale', () => {
     });
 
     it('should succesfully buy from sale', async function () {
+      // taker fee is 3% = 0.03 eth
+      // user sends 1.03 eth
+      // maker fee is 2.5% = 0.025 eth
+      // royalties are 15% = 0.15 eth
+      // owner will get 0.825 eth
+
+      const royaltiesRecipientBalance1 = await endemicToken.balanceOf(
+        royaltiesRecipient.address
+      );
+      const feeBalance1 = await endemicToken.balanceOf(FEE_RECIPIENT);
+
       const { r, s, v } = await getSaleSignature({
         paymentErc20TokenAddress: endemicToken.address,
       });
@@ -582,24 +638,53 @@ describe('EndemicSale', () => {
 
       await endemicToken.approve(endemicExchange.address, priceWithFees);
 
-      await expect(
-        endemicExchange.buyFromSale(v, r, s, {
-          seller: user1.address,
-          orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 2,
-          paymentErc20TokenAddress: endemicToken.address,
-          price: ONE_ETHER,
-          makerCut: ONE_ETHER_MAKER_CUT,
-          takerCut: ONE_ETHER_TAKER_CUT,
-          royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
-          royaltiesRecipient: royaltiesRecipient.address,
-          buyer: ZERO_ADDRESS,
-          expiresAt: 2000994705,
-        })
-      ).to.emit(endemicExchange, SALE_SUCCESS);
+      const user1Balance1 = await endemicToken.balanceOf(user1.address);
+
+      const tx = await endemicExchange.buyFromSale(v, r, s, {
+        seller: user1.address,
+        orderNonce: 1,
+        nftContract: nftContract.address,
+        tokenId: 2,
+        paymentErc20TokenAddress: endemicToken.address,
+        price: ONE_ETHER,
+        makerCut: ONE_ETHER_MAKER_CUT,
+        takerCut: ONE_ETHER_TAKER_CUT,
+        royaltiesCut: ONE_ETHER_ROYALTY_AMOUNT,
+        royaltiesRecipient: royaltiesRecipient.address,
+        buyer: ZERO_ADDRESS,
+        expiresAt: 2000994705,
+      });
+
+      await expect(tx)
+        .to.emit(endemicExchange, SALE_SUCCESS)
+        .withArgs(
+          nftContract.address,
+          2,
+          user1.address,
+          owner.address,
+          ethers.utils.parseEther('1'),
+          ethers.utils.parseEther('0.055'),
+          endemicToken.address
+        );
 
       expect(await nftContract.ownerOf(2)).to.equal(owner.address);
+
+      const user1Balance2 = await endemicToken.balanceOf(user1.address);
+      expect(user1Balance2.sub(user1Balance1)).to.equal(
+        ethers.utils.parseEther('0.825')
+      );
+
+      const feeBalance2 = await endemicToken.balanceOf(FEE_RECIPIENT);
+      expect(feeBalance2.sub(feeBalance1)).to.equal(
+        ethers.utils.parseEther('0.055')
+      );
+
+      const royaltiesRecipientBalance2 = await endemicToken.balanceOf(
+        royaltiesRecipient.address
+      );
+      expect(
+        royaltiesRecipientBalance2.sub(royaltiesRecipientBalance1)
+      ).to.equal(ethers.utils.parseEther('0.15'));
     });
 
     it('should fail to buy from same sale twice', async function () {
