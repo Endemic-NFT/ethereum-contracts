@@ -32,15 +32,18 @@ abstract contract EndemicReserveAuction is
         bytes32 r;
         bytes32 s;
         uint256 orderNonce;
+        uint256 price;
+        bool isBid;
+    }
+
+    struct AuctionInfo {
         address nftContract;
         uint256 tokenId;
         address paymentErc20TokenAddress;
-        uint256 price;
         uint256 makerFeePercentage;
         uint256 takerFeePercentage;
         uint256 royaltiesPercentage;
         address royaltiesRecipient;
-        bool isBid;
     }
 
     function finalizeReserveAuction(
@@ -48,27 +51,19 @@ abstract contract EndemicReserveAuction is
         bytes32 r,
         bytes32 s,
         ReserveAuction calldata auction,
-        ReserveAuction calldata bid
-    ) external onlySupportedERC20Payments(auction.paymentErc20TokenAddress) {
-        if (
-            auction.isBid ||
-            !bid.isBid ||
-            auction.nftContract != bid.nftContract ||
-            auction.tokenId != bid.tokenId ||
-            auction.paymentErc20TokenAddress != bid.paymentErc20TokenAddress ||
-            auction.signer == bid.signer ||
-            auction.makerFeePercentage != bid.makerFeePercentage ||
-            auction.takerFeePercentage != bid.takerFeePercentage ||
-            auction.royaltiesPercentage != bid.royaltiesPercentage ||
-            auction.royaltiesRecipient != bid.royaltiesRecipient
-        ) revert InvalidConfiguration();
+        ReserveAuction calldata bid,
+        AuctionInfo calldata info
+    ) external onlySupportedERC20Payments(info.paymentErc20TokenAddress) {
+        if (auction.isBid || !bid.isBid || auction.signer == bid.signer) {
+            revert InvalidConfiguration();
+        }
 
-        _verifyApprovalSignature(v, r, s, auction, bid);
-        _verifySignature(auction);
-        _verifySignature(bid);
+        _verifyApprovalSignature(v, r, s, auction, bid, info);
+        _verifySignature(auction, info);
+        _verifySignature(bid, info);
 
         uint256 bidPrice = (bid.price * MAX_FEE) /
-            (bid.takerFeePercentage + MAX_FEE);
+            (info.takerFeePercentage + MAX_FEE);
 
         if (auction.price > bidPrice) {
             revert UnsufficientCurrencySupplied();
@@ -81,18 +76,18 @@ abstract contract EndemicReserveAuction is
             uint256 totalCut
         ) = _calculateFees(
                 bidPrice,
-                auction.makerFeePercentage,
-                auction.takerFeePercentage,
-                auction.royaltiesPercentage
+                info.makerFeePercentage,
+                info.takerFeePercentage,
+                info.royaltiesPercentage
             );
 
         _invalidateNonce(auction.signer, auction.orderNonce);
         _invalidateNonce(bid.signer, bid.orderNonce);
 
-        IERC721(auction.nftContract).transferFrom(
+        IERC721(info.nftContract).transferFrom(
             auction.signer,
             bid.signer,
-            auction.tokenId
+            info.tokenId
         );
 
         _distributeFunds(
@@ -100,24 +95,27 @@ abstract contract EndemicReserveAuction is
             makerCut,
             totalCut,
             royaltiesCut,
-            auction.royaltiesRecipient,
+            info.royaltiesRecipient,
             auction.signer,
             bid.signer,
-            auction.paymentErc20TokenAddress
+            info.paymentErc20TokenAddress
         );
 
         emit AuctionSuccessful(
-            auction.nftContract,
-            auction.tokenId,
+            info.nftContract,
+            info.tokenId,
             bidPrice,
             auction.signer,
             bid.signer,
             totalCut,
-            auction.paymentErc20TokenAddress
+            info.paymentErc20TokenAddress
         );
     }
 
-    function _verifySignature(ReserveAuction calldata data) internal view {
+    function _verifySignature(
+        ReserveAuction calldata data,
+        AuctionInfo calldata info
+    ) internal view {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -126,14 +124,14 @@ abstract contract EndemicReserveAuction is
                     abi.encode(
                         RESERVE_AUCTION_TYPEHASH,
                         data.orderNonce,
-                        data.nftContract,
-                        data.tokenId,
-                        data.paymentErc20TokenAddress,
+                        info.nftContract,
+                        info.tokenId,
+                        info.paymentErc20TokenAddress,
                         data.price,
-                        data.makerFeePercentage,
-                        data.takerFeePercentage,
-                        data.royaltiesPercentage,
-                        data.royaltiesRecipient,
+                        info.makerFeePercentage,
+                        info.takerFeePercentage,
+                        info.royaltiesPercentage,
+                        info.royaltiesRecipient,
                         data.isBid
                     )
                 )
@@ -150,7 +148,8 @@ abstract contract EndemicReserveAuction is
         bytes32 r,
         bytes32 s,
         ReserveAuction calldata auction,
-        ReserveAuction calldata bid
+        ReserveAuction calldata bid,
+        AuctionInfo calldata info
     ) internal view {
         bytes32 approvalHash = keccak256(
             abi.encode(
@@ -159,15 +158,15 @@ abstract contract EndemicReserveAuction is
                 bid.signer,
                 auction.orderNonce,
                 bid.orderNonce,
-                auction.nftContract,
-                auction.tokenId,
-                auction.paymentErc20TokenAddress,
+                info.nftContract,
+                info.tokenId,
+                info.paymentErc20TokenAddress,
                 auction.price,
                 bid.price,
-                auction.makerFeePercentage,
-                auction.takerFeePercentage,
-                auction.royaltiesPercentage,
-                auction.royaltiesRecipient
+                info.makerFeePercentage,
+                info.takerFeePercentage,
+                info.royaltiesPercentage,
+                info.royaltiesRecipient
             )
         );
 

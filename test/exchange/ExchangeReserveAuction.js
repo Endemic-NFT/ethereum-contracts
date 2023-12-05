@@ -240,14 +240,7 @@ describe('ExchangeReserveAuction', function () {
           r: sig.r,
           s: sig.s,
           orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.1'),
-          makerFeePercentage: 0,
-          takerFeePercentage: 300,
-          royaltiesPercentage: 1500,
-          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -256,15 +249,17 @@ describe('ExchangeReserveAuction', function () {
           r: r,
           s: s,
           orderNonce: 1,
+          price: ethers.utils.parseUnits('0.103'),
+          isBid: true,
+        },
+        {
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
-          price: ethers.utils.parseUnits('0.103'),
           makerFeePercentage: 0,
           takerFeePercentage: 300,
           royaltiesPercentage: 1500,
           royaltiesRecipient: owner.address,
-          isBid: true,
         }
       );
 
@@ -290,15 +285,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress:
-              '0x000000000000000000000000000000000000beef',
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -307,16 +294,18 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress:
               '0x000000000000000000000000000000000000beef',
-            price: ethers.utils.parseUnits('0.103'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
@@ -332,15 +321,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress:
-              '0x0000000000000000000000000000000000000000', // ether
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -349,16 +330,18 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress:
               '0x0000000000000000000000000000000000000000', // ether
-            price: ethers.utils.parseUnits('0.103'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
@@ -376,14 +359,7 @@ describe('ExchangeReserveAuction', function () {
             r: ZERO_BYTES32,
             s: ZERO_BYTES32,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: true, // wrong
           },
           {
@@ -392,15 +368,17 @@ describe('ExchangeReserveAuction', function () {
             r: ZERO_BYTES32,
             s: ZERO_BYTES32,
             orderNonce: 1,
+            price: 100,
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
@@ -416,14 +394,7 @@ describe('ExchangeReserveAuction', function () {
             r: ZERO_BYTES32,
             s: ZERO_BYTES32,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -432,181 +403,122 @@ describe('ExchangeReserveAuction', function () {
             r: ZERO_BYTES32,
             s: ZERO_BYTES32,
             orderNonce: 1,
+            price: 100,
+            isBid: false, // wrong
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: false, // wrong
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+    });
+
+    it('should fail to finalize if seller is same as bidder', async function () {
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          ZERO,
+          ZERO_BYTES32,
+          ZERO_BYTES32,
+          {
+            signer: user1.address, // same signer
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            price: 100,
+            isBid: false,
+          },
+          {
+            signer: user1.address, // same signer
+            v: ZERO,
+            r: ZERO_BYTES32,
+            s: ZERO_BYTES32,
+            orderNonce: 1,
+            price: 100,
+            isBid: true,
+          },
+          {
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
     });
 
     it('should fail to finalize if auction and bid mismatch', async function () {
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        '0x000000000000000000000000000000000000beef', // mismatch payment method
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
+        true
+      );
+
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
+      );
+
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
             orderNonce: 1,
-            nftContract: '0x000000000000000000000000000000000000beef', // mismatch
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
+            price: ethers.utils.parseUnits('0.1'),
             isBid: false,
           },
           {
             signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
+            v: v,
+            r: r,
+            s: s,
             orderNonce: 1,
-            nftContract: nftContract.address, // mismatch
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
+            price: ethers.utils.parseUnits('0.103'),
             isBid: true,
-          }
-        )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
-
-      await expect(
-        endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
-          {
-            signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 2, // mismatch
-            paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-            isBid: false,
           },
           {
-            signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1, // mismatch
-            paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-            isBid: true,
-          }
-        )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
-
-      await expect(
-        endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
-          {
-            signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address, // mismatch
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-            isBid: false,
-          },
-          {
-            signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress:
-              '0x000000000000000000000000000000000000beef', // mismatch
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-            isBid: true,
-          }
-        )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
-
-      await expect(
-        endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
-          {
-            signer: user1.address, // mismatch
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: false,
-          },
-          {
-            signer: user1.address, // mismatch
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            price: 100,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
     });
 
     it('should fail to finalize if signature is invalid', async function () {
@@ -649,14 +561,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.09'), // changed price
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -665,15 +570,17 @@ describe('ExchangeReserveAuction', function () {
             r: r,
             s: s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.103'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
@@ -689,14 +596,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -705,15 +605,17 @@ describe('ExchangeReserveAuction', function () {
             r: r,
             s: s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.104'), // changed price
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.104'), // changed price
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
@@ -768,14 +670,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -784,15 +679,17 @@ describe('ExchangeReserveAuction', function () {
             r: r,
             s: s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.102'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.102'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(
@@ -852,14 +749,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -868,15 +758,17 @@ describe('ExchangeReserveAuction', function () {
             r: r,
             s: s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.103'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
@@ -933,14 +825,7 @@ describe('ExchangeReserveAuction', function () {
             r: sig.r,
             s: sig.s,
             orderNonce: 1,
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
             price: ethers.utils.parseUnits('0.1'),
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
             isBid: false,
           },
           {
@@ -949,15 +834,17 @@ describe('ExchangeReserveAuction', function () {
             r: r,
             s: s,
             orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+            isBid: true,
+          },
+          {
             nftContract: nftContract.address,
             tokenId: 1,
             paymentErc20TokenAddress: endemicToken.address,
-            price: ethers.utils.parseUnits('0.103'),
             makerFeePercentage: 0,
             takerFeePercentage: 300,
             royaltiesPercentage: 1500,
             royaltiesRecipient: owner.address,
-            isBid: true,
           }
         )
       ).to.be.revertedWithCustomError(endemicExchange, 'NonceUsed');
@@ -1046,14 +933,7 @@ describe('ExchangeReserveAuction', function () {
           r: r,
           s: s,
           orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.02472'),
-          makerFeePercentage: 250,
-          takerFeePercentage: 300,
-          royaltiesPercentage: 1500,
-          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -1062,15 +942,17 @@ describe('ExchangeReserveAuction', function () {
           r: r2,
           s: s2,
           orderNonce: 1,
+          price: ethers.utils.parseUnits('0.206'),
+          isBid: true,
+        },
+        {
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
-          price: ethers.utils.parseUnits('0.206'),
           makerFeePercentage: 250,
           takerFeePercentage: 300,
           royaltiesPercentage: 1500,
           royaltiesRecipient: owner.address,
-          isBid: true,
         }
       );
 
@@ -1156,14 +1038,7 @@ describe('ExchangeReserveAuction', function () {
           r: r,
           s: s,
           orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.5'),
-          makerFeePercentage: 250,
-          takerFeePercentage: 300,
-          royaltiesPercentage: 1500,
-          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -1172,15 +1047,17 @@ describe('ExchangeReserveAuction', function () {
           r: r2,
           s: s2,
           orderNonce: 1,
+          price: ethers.utils.parseUnits('1.03'),
+          isBid: true,
+        },
+        {
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
-          price: ethers.utils.parseUnits('1.03'),
           makerFeePercentage: 250,
           takerFeePercentage: 300,
           royaltiesPercentage: 1500,
           royaltiesRecipient: owner.address,
-          isBid: true,
         }
       );
 
@@ -1258,14 +1135,7 @@ describe('ExchangeReserveAuction', function () {
           r: r3,
           s: s3,
           orderNonce: 2,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.1'),
-          makerFeePercentage: 250,
-          takerFeePercentage: 300,
-          royaltiesPercentage: 1500,
-          royaltiesRecipient: owner.address,
           isBid: false,
         },
         {
@@ -1274,15 +1144,17 @@ describe('ExchangeReserveAuction', function () {
           r: r4,
           s: s4,
           orderNonce: 1,
+          price: ethers.utils.parseUnits('0.515'),
+          isBid: true,
+        },
+        {
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
-          price: ethers.utils.parseUnits('0.515'),
           makerFeePercentage: 250,
           takerFeePercentage: 300,
           royaltiesPercentage: 1500,
           royaltiesRecipient: owner.address,
-          isBid: true,
         }
       );
 
@@ -1401,14 +1273,7 @@ describe('ExchangeReserveAuction', function () {
           r: r,
           s: s,
           orderNonce: 1,
-          nftContract: nftContract.address,
-          tokenId: 1,
-          paymentErc20TokenAddress: endemicToken.address,
           price: ethers.utils.parseUnits('0.2'),
-          makerFeePercentage: 250,
-          takerFeePercentage: 300,
-          royaltiesPercentage: 1000,
-          royaltiesRecipient: feeRecipient.address,
           isBid: false,
         },
         {
@@ -1417,15 +1282,17 @@ describe('ExchangeReserveAuction', function () {
           r: r2,
           s: s2,
           orderNonce: 1,
+          price: ethers.utils.parseUnits('0.206'),
+          isBid: true,
+        },
+        {
           nftContract: nftContract.address,
           tokenId: 1,
           paymentErc20TokenAddress: endemicToken.address,
-          price: ethers.utils.parseUnits('0.206'),
           makerFeePercentage: 250,
           takerFeePercentage: 300,
           royaltiesPercentage: 1000,
           royaltiesRecipient: feeRecipient.address,
-          isBid: true,
         }
       );
 
