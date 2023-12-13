@@ -18,7 +18,12 @@ abstract contract EndemicReserveAuction is
 
     bytes32 private constant RESERVE_AUCTION_TYPEHASH =
         keccak256(
-            "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient,bool isBid)"
+            "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient)"
+        );
+
+    bytes32 private constant RESERVE_AUCTION_BID_TYPEHASH =
+        keccak256(
+            "ReserveAuctionBid(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient)"
         );
 
     bytes32 private constant RESERVE_AUCTION_APPROVAL_TYPEHASH =
@@ -33,7 +38,6 @@ abstract contract EndemicReserveAuction is
         bytes32 s;
         uint256 orderNonce;
         uint256 price;
-        bool isBid;
     }
 
     struct AuctionInfo {
@@ -54,13 +58,13 @@ abstract contract EndemicReserveAuction is
         ReserveAuction calldata bid,
         AuctionInfo calldata info
     ) external onlySupportedERC20Payments(info.paymentErc20TokenAddress) {
-        if (auction.isBid || !bid.isBid || auction.signer == bid.signer) {
+        if (auction.signer == bid.signer) {
             revert InvalidConfiguration();
         }
 
         _verifyApprovalSignature(v, r, s, auction, bid, info);
-        _verifySignature(auction, info);
-        _verifySignature(bid, info);
+        _verifySignature(auction, info, RESERVE_AUCTION_TYPEHASH);
+        _verifySignature(bid, info, RESERVE_AUCTION_BID_TYPEHASH);
 
         uint256 bidPrice = (bid.price * MAX_FEE) /
             (info.takerFeePercentage + MAX_FEE);
@@ -114,7 +118,8 @@ abstract contract EndemicReserveAuction is
 
     function _verifySignature(
         ReserveAuction calldata data,
-        AuctionInfo calldata info
+        AuctionInfo calldata info,
+        bytes32 typehash
     ) internal view {
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -122,7 +127,7 @@ abstract contract EndemicReserveAuction is
                 _buildDomainSeparator(),
                 keccak256(
                     abi.encode(
-                        RESERVE_AUCTION_TYPEHASH,
+                        typehash,
                         data.orderNonce,
                         info.nftContract,
                         info.tokenId,
@@ -131,8 +136,7 @@ abstract contract EndemicReserveAuction is
                         info.makerFeePercentage,
                         info.takerFeePercentage,
                         info.royaltiesPercentage,
-                        info.royaltiesRecipient,
-                        data.isBid
+                        info.royaltiesRecipient
                     )
                 )
             )

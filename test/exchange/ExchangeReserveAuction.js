@@ -8,6 +8,7 @@ const {
 const {
   getTypedMessage_reserve,
   getTypedMessage_reserveApproval,
+  getTypedMessage_reserveBid,
 } = require('../helpers/eip712');
 
 const { FEE_RECIPIENT, ZERO, ZERO_BYTES32 } = require('../helpers/constants');
@@ -85,20 +86,37 @@ describe('ExchangeReserveAuction', function () {
     royaltiesRecipient,
     isBid
   ) => {
-    const typedMessage = getTypedMessage_reserve({
-      chainId: network.config.chainId,
-      verifierContract: endemicExchange.address,
-      orderNonce: orderNonce,
-      nftContract: nftContract.address,
-      tokenId: tokenId,
-      paymentErc20TokenAddress: paymentErc20TokenAddress,
-      price: price,
-      makerFeePercentage: makerFeePercentage,
-      takerFeePercentage: takerFeePercentage,
-      royaltiesPercentage: royaltiesPercentage,
-      royaltiesRecipient: royaltiesRecipient,
-      isBid: isBid,
-    });
+    var typedMessage;
+
+    if (!isBid) {
+      typedMessage = getTypedMessage_reserve({
+        chainId: network.config.chainId,
+        verifierContract: endemicExchange.address,
+        orderNonce: orderNonce,
+        nftContract: nftContract.address,
+        tokenId: tokenId,
+        paymentErc20TokenAddress: paymentErc20TokenAddress,
+        price: price,
+        makerFeePercentage: makerFeePercentage,
+        takerFeePercentage: takerFeePercentage,
+        royaltiesPercentage: royaltiesPercentage,
+        royaltiesRecipient: royaltiesRecipient,
+      });
+    } else {
+      typedMessage = getTypedMessage_reserveBid({
+        chainId: network.config.chainId,
+        verifierContract: endemicExchange.address,
+        orderNonce: orderNonce,
+        nftContract: nftContract.address,
+        tokenId: tokenId,
+        paymentErc20TokenAddress: paymentErc20TokenAddress,
+        price: price,
+        makerFeePercentage: makerFeePercentage,
+        takerFeePercentage: takerFeePercentage,
+        royaltiesPercentage: royaltiesPercentage,
+        royaltiesRecipient: royaltiesRecipient,
+      });
+    }
 
     const signature = await signer._signTypedData(
       typedMessage.domain,
@@ -241,7 +259,6 @@ describe('ExchangeReserveAuction', function () {
           s: sig.s,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.1'),
-          isBid: false,
         },
         {
           signer: user2.address,
@@ -250,7 +267,6 @@ describe('ExchangeReserveAuction', function () {
           s: s,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.103'),
-          isBid: true,
         },
         {
           nftContract: nftContract.address,
@@ -286,7 +302,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -295,7 +310,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -322,7 +336,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -331,7 +344,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -347,64 +359,74 @@ describe('ExchangeReserveAuction', function () {
       ).to.be.revertedWithCustomError(endemicExchange, INVALID_PAYMENT_METHOD);
     });
 
-    it('should fail to finalize if auction or bid has wrong configuration', async function () {
-      await expect(
-        endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
-          {
-            signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            price: 100,
-            isBid: true, // wrong
-          },
-          {
-            signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
-            orderNonce: 1,
-            price: 100,
-            isBid: true,
-          },
-          {
-            nftContract: nftContract.address,
-            tokenId: 1,
-            paymentErc20TokenAddress: endemicToken.address,
-            makerFeePercentage: 0,
-            takerFeePercentage: 300,
-            royaltiesPercentage: 1500,
-            royaltiesRecipient: owner.address,
-          }
-        )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+    it('should fail to finalize if auction has wrong configuration', async function () {
+      // Auction signature
+      const { v, r, s } = await getReserveAuctionSignature(
+        user1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        0,
+        300,
+        1500,
+        owner.address,
+        true // this should be `false` because this is auction
+      );
+
+      // Bid signature
+      const {
+        v: v2,
+        r: r2,
+        s: s2,
+      } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
+        true
+      );
+
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
+      );
 
       await expect(
         endemicExchange.connect(settler).finalizeReserveAuction(
-          ZERO,
-          ZERO_BYTES32,
-          ZERO_BYTES32,
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
           {
             signer: user1.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
+            v: v,
+            r: r,
+            s: s,
             orderNonce: 1,
-            price: 100,
-            isBid: false,
+            price: ethers.utils.parseUnits('0.1'),
           },
           {
             signer: user2.address,
-            v: ZERO,
-            r: ZERO_BYTES32,
-            s: ZERO_BYTES32,
+            v: v2,
+            r: r2,
+            s: s2,
             orderNonce: 1,
-            price: 100,
-            isBid: false, // wrong
+            price: ethers.utils.parseUnits('0.103'),
           },
           {
             nftContract: nftContract.address,
@@ -416,7 +438,71 @@ describe('ExchangeReserveAuction', function () {
             royaltiesRecipient: owner.address,
           }
         )
-      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidConfiguration');
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
+    });
+
+    it('should fail to finalize if bid has wrong configuration', async function () {
+      // Bid signature
+      const { v, r, s } = await getReserveAuctionSignature(
+        user2,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address,
+        false // this should be `true` because this is bid
+      );
+
+      const approvalSig = await getReserveAuctionApprovalSignature(
+        user1,
+        user2,
+        1,
+        1,
+        1,
+        endemicToken.address,
+        ethers.utils.parseUnits('0.1'),
+        ethers.utils.parseUnits('0.103'),
+        0,
+        300,
+        1500,
+        owner.address
+      );
+
+      await expect(
+        endemicExchange.connect(settler).finalizeReserveAuction(
+          approvalSig.v,
+          approvalSig.r,
+          approvalSig.s,
+          {
+            signer: user1.address,
+            v: sig.v,
+            r: sig.r,
+            s: sig.s,
+            orderNonce: 1,
+            price: ethers.utils.parseUnits('0.1'),
+          },
+          {
+            signer: user2.address,
+            v: v,
+            r: r,
+            s: s,
+            orderNonce: 1,
+            price: ethers.utils.parseUnits('0.103'),
+          },
+          {
+            nftContract: nftContract.address,
+            tokenId: 1,
+            paymentErc20TokenAddress: endemicToken.address,
+            makerFeePercentage: 0,
+            takerFeePercentage: 300,
+            royaltiesPercentage: 1500,
+            royaltiesRecipient: owner.address,
+          }
+        )
+      ).to.be.revertedWithCustomError(endemicExchange, 'InvalidSignature');
     });
 
     it('should fail to finalize if seller is same as bidder', async function () {
@@ -432,7 +518,6 @@ describe('ExchangeReserveAuction', function () {
             s: ZERO_BYTES32,
             orderNonce: 1,
             price: 100,
-            isBid: false,
           },
           {
             signer: user1.address, // same signer
@@ -441,7 +526,6 @@ describe('ExchangeReserveAuction', function () {
             s: ZERO_BYTES32,
             orderNonce: 1,
             price: 100,
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -497,7 +581,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -506,7 +589,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -562,7 +644,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.09'), // changed price
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -571,7 +652,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -597,7 +677,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -606,7 +685,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.104'), // changed price
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -662,7 +740,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'), // changed price
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -671,7 +748,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -736,7 +812,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -745,7 +820,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.102'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -815,7 +889,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -824,7 +897,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -891,7 +963,6 @@ describe('ExchangeReserveAuction', function () {
             s: sig.s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.1'),
-            isBid: false,
           },
           {
             signer: user2.address,
@@ -900,7 +971,6 @@ describe('ExchangeReserveAuction', function () {
             s: s,
             orderNonce: 1,
             price: ethers.utils.parseUnits('0.103'),
-            isBid: true,
           },
           {
             nftContract: nftContract.address,
@@ -999,7 +1069,6 @@ describe('ExchangeReserveAuction', function () {
           s: s,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.02472'),
-          isBid: false,
         },
         {
           signer: user2.address,
@@ -1008,7 +1077,6 @@ describe('ExchangeReserveAuction', function () {
           s: s2,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.206'),
-          isBid: true,
         },
         {
           nftContract: nftContract.address,
@@ -1104,7 +1172,6 @@ describe('ExchangeReserveAuction', function () {
           s: s,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.5'),
-          isBid: false,
         },
         {
           signer: user2.address,
@@ -1113,7 +1180,6 @@ describe('ExchangeReserveAuction', function () {
           s: s2,
           orderNonce: 1,
           price: ethers.utils.parseUnits('1.03'),
-          isBid: true,
         },
         {
           nftContract: nftContract.address,
@@ -1201,7 +1267,6 @@ describe('ExchangeReserveAuction', function () {
           s: s3,
           orderNonce: 2,
           price: ethers.utils.parseUnits('0.1'),
-          isBid: false,
         },
         {
           signer: user3.address,
@@ -1210,7 +1275,6 @@ describe('ExchangeReserveAuction', function () {
           s: s4,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.515'),
-          isBid: true,
         },
         {
           nftContract: nftContract.address,
@@ -1339,7 +1403,6 @@ describe('ExchangeReserveAuction', function () {
           s: s,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.2'),
-          isBid: false,
         },
         {
           signer: user2.address,
@@ -1348,7 +1411,6 @@ describe('ExchangeReserveAuction', function () {
           s: s2,
           orderNonce: 1,
           price: ethers.utils.parseUnits('0.206'),
-          isBid: true,
         },
         {
           nftContract: nftContract.address,

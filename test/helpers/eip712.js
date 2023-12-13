@@ -183,7 +183,6 @@ const getTypedMessage_reserve = ({
   takerFeePercentage,
   royaltiesPercentage,
   royaltiesRecipient,
-  isBid,
 }) => {
   const domain = {
     name: 'Endemic Exchange',
@@ -204,7 +203,6 @@ const getTypedMessage_reserve = ({
       { name: 'takerFeePercentage', type: 'uint256' },
       { name: 'royaltiesPercentage', type: 'uint256' },
       { name: 'royaltiesRecipient', type: 'address' },
-      { name: 'isBid', type: 'bool' },
     ],
   };
 
@@ -218,7 +216,56 @@ const getTypedMessage_reserve = ({
     takerFeePercentage: takerFeePercentage,
     royaltiesPercentage: royaltiesPercentage,
     royaltiesRecipient: royaltiesRecipient,
-    isBid: isBid,
+  };
+
+  return { domain, types, values };
+};
+
+const getTypedMessage_reserveBid = ({
+  chainId,
+  verifierContract,
+  orderNonce,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  price,
+  makerFeePercentage,
+  takerFeePercentage,
+  royaltiesPercentage,
+  royaltiesRecipient,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    ReserveAuctionBid: [
+      { name: 'orderNonce', type: 'uint256' },
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'price', type: 'uint256' },
+      { name: 'makerFeePercentage', type: 'uint256' },
+      { name: 'takerFeePercentage', type: 'uint256' },
+      { name: 'royaltiesPercentage', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
+    ],
+  };
+
+  const values = {
+    orderNonce: orderNonce,
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    price: price,
+    makerFeePercentage: makerFeePercentage,
+    takerFeePercentage: takerFeePercentage,
+    royaltiesPercentage: royaltiesPercentage,
+    royaltiesRecipient: royaltiesRecipient,
   };
 
   return { domain, types, values };
@@ -291,6 +338,7 @@ module.exports = {
   getTypedMessage_offer,
   getTypedMessage_dutch,
   getTypedMessage_reserve,
+  getTypedMessage_reserveBid,
   getTypedMessage_reserveApproval,
   keccak256,
 };
