@@ -75,20 +75,11 @@ const deployInitializedCollection = async (
   return collection;
 };
 
-const deployEndemicExchange = async (
-  royaltiesProviderAddress,
-  paymentManagerAddress,
-  approvedSigner
-) => {
+const deployEndemicExchange = async (paymentManagerAddress, approvedSigner) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
-    [
-      royaltiesProviderAddress,
-      paymentManagerAddress,
-      FEE_RECIPIENT,
-      approvedSigner,
-    ],
+    [paymentManagerAddress, FEE_RECIPIENT, approvedSigner],
     {
       initializer: '__EndemicExchange_init',
     }
@@ -102,18 +93,14 @@ const deployEndemicExchangeWithDeps = async (
   takerFee = 300,
   approvedSigner = ZERO_ADDRESS
 ) => {
-  const royaltiesProviderContract = await deployRoyaltiesProvider();
-
   const paymentManagerContract = await deployPaymentManager(makerFee, takerFee);
 
   const endemicExchangeContract = await deployEndemicExchange(
-    royaltiesProviderContract.address,
     paymentManagerContract.address,
     approvedSigner
   );
 
   return {
-    royaltiesProviderContract,
     endemicExchangeContract,
     paymentManagerContract,
   };

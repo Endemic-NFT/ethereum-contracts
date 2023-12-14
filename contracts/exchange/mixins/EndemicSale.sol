@@ -21,7 +21,7 @@ abstract contract EndemicSale is
 
     bytes32 private constant SALE_TYPEHASH =
         keccak256(
-            "Sale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,address buyer,uint256 expiresAt)"
+            "Sale(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerCut,uint256 takerCut,uint256 royaltiesCut,address royaltiesRecipient,address buyer,uint256 expiresAt)"
         );
 
     struct Sale {
@@ -31,6 +31,10 @@ abstract contract EndemicSale is
         uint256 tokenId;
         address paymentErc20TokenAddress;
         uint256 price;
+        uint256 makerCut;
+        uint256 takerCut;
+        uint256 royaltiesCut;
+        address royaltiesRecipient;
         address buyer;
         uint256 expiresAt;
     }
@@ -64,70 +68,46 @@ abstract contract EndemicSale is
 
         _verifySignature(v, r, s, sale);
 
-        uint256 takerCut = _calculateTakerCut(
-            sale.paymentErc20TokenAddress,
-            sale.price
-        );
-
         _requireSupportedPaymentMethod(sale.paymentErc20TokenAddress);
         _requireSufficientCurrencySupplied(
-            sale.price + takerCut,
+            sale.price + sale.takerCut,
             sale.paymentErc20TokenAddress,
             msg.sender
         );
 
         _invalidateNonce(sale.seller, sale.orderNonce);
 
-        _finalizeSale(
-            sale.nftContract,
-            sale.tokenId,
-            sale.paymentErc20TokenAddress,
-            sale.seller,
-            sale.price
-        );
+        _finalizeSale(sale);
     }
 
-    function _finalizeSale(
-        address nftContract,
-        uint256 tokenId,
-        address paymentErc20TokenAddress,
-        address seller,
-        uint256 price
-    ) internal {
-        (
-            uint256 makerCut,
-            ,
-            address royaltiesRecipient,
-            uint256 royaltieFee,
-            uint256 totalCut
-        ) = _calculateFees(
-                paymentErc20TokenAddress,
-                nftContract,
-                tokenId,
-                price
-            );
+    function _finalizeSale(Sale calldata sale) internal {
+        IERC721(sale.nftContract).transferFrom(
+            sale.seller,
+            msg.sender,
+            sale.tokenId
+        );
 
-        IERC721(nftContract).transferFrom(seller, msg.sender, tokenId);
+        uint256 totalCut = sale.makerCut + sale.takerCut;
 
         _distributeFunds(
-            price,
-            makerCut,
+            sale.price,
+            sale.makerCut,
             totalCut,
-            royaltieFee,
-            royaltiesRecipient,
-            seller,
+            sale.royaltiesCut,
+            sale.royaltiesRecipient,
+            sale.seller,
             msg.sender,
-            paymentErc20TokenAddress
+            sale.paymentErc20TokenAddress
         );
 
         emit SaleSuccess(
-            nftContract,
-            tokenId,
-            seller,
+            sale.nftContract,
+            sale.tokenId,
+            sale.seller,
             msg.sender,
-            price,
+            sale.price,
             totalCut,
-            paymentErc20TokenAddress
+            sale.paymentErc20TokenAddress
         );
     }
 
@@ -149,6 +129,10 @@ abstract contract EndemicSale is
                         sale.tokenId,
                         sale.paymentErc20TokenAddress,
                         sale.price,
+                        sale.makerCut,
+                        sale.takerCut,
+                        sale.royaltiesCut,
+                        sale.royaltiesRecipient,
                         sale.buyer,
                         sale.expiresAt
                     )

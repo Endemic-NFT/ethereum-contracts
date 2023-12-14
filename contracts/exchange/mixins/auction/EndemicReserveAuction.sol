@@ -18,12 +18,17 @@ abstract contract EndemicReserveAuction is
 
     bytes32 private constant RESERVE_AUCTION_TYPEHASH =
         keccak256(
-            "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,bool isBid)"
+            "ReserveAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient)"
+        );
+
+    bytes32 private constant RESERVE_AUCTION_BID_TYPEHASH =
+        keccak256(
+            "ReserveAuctionBid(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient)"
         );
 
     bytes32 private constant RESERVE_AUCTION_APPROVAL_TYPEHASH =
         keccak256(
-            "ReserveAuctionApproval(address auctionSigner,address bidSigner,uint256 auctionNonce,uint256 bidNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 auctionPrice,uint256 bidPrice)"
+            "ReserveAuctionApproval(address auctionSigner,address bidSigner,uint256 auctionNonce,uint256 bidNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 auctionPrice,uint256 bidPrice,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient)"
         );
 
     struct ReserveAuction {
@@ -32,20 +37,16 @@ abstract contract EndemicReserveAuction is
         bytes32 r;
         bytes32 s;
         uint256 orderNonce;
+        uint256 price;
+    }
+
+    struct AuctionInfo {
         address nftContract;
         uint256 tokenId;
         address paymentErc20TokenAddress;
-        uint256 price;
-        bool isBid;
-    }
-
-    struct AuctionFees {
-        uint256 bidPrice;
-        uint256 takerFee;
-        uint256 takerCut;
-        uint256 makerCut;
-        uint256 totalCut;
-        uint256 royaltieFee;
+        uint256 makerFeePercentage;
+        uint256 takerFeePercentage;
+        uint256 royaltiesPercentage;
         address royaltiesRecipient;
     }
 
@@ -54,96 +55,88 @@ abstract contract EndemicReserveAuction is
         bytes32 r,
         bytes32 s,
         ReserveAuction calldata auction,
-        ReserveAuction calldata bid
-    ) external onlySupportedERC20Payments(auction.paymentErc20TokenAddress) {
-        if (
-            auction.isBid ||
-            !bid.isBid ||
-            auction.nftContract != bid.nftContract ||
-            auction.tokenId != bid.tokenId ||
-            auction.paymentErc20TokenAddress != bid.paymentErc20TokenAddress ||
-            auction.signer == bid.signer
-        ) revert InvalidConfiguration();
+        ReserveAuction calldata bid,
+        AuctionInfo calldata info
+    ) external onlySupportedERC20Payments(info.paymentErc20TokenAddress) {
+        if (auction.signer == bid.signer) {
+            revert InvalidConfiguration();
+        }
 
-        _verifyApprovalSignature(v, r, s, auction, bid);
-        _verifySignature(auction);
-        _verifySignature(bid);
+        _verifyApprovalSignature(v, r, s, auction, bid, info);
+        _verifySignature(auction, info, RESERVE_AUCTION_TYPEHASH);
+        _verifySignature(bid, info, RESERVE_AUCTION_BID_TYPEHASH);
 
-        AuctionFees memory auctionFees = _calculateAuctionFees(auction, bid);
+        uint256 bidPrice = (bid.price * MAX_FEE) /
+            (info.takerFeePercentage + MAX_FEE);
 
-        if (auction.price + auctionFees.takerCut > bid.price) {
+        if (auction.price > bidPrice) {
             revert UnsufficientCurrencySupplied();
         }
+
+        (
+            uint256 makerCut,
+            ,
+            uint256 royaltiesCut,
+            uint256 totalCut
+        ) = _calculateFees(
+                bidPrice,
+                info.makerFeePercentage,
+                info.takerFeePercentage,
+                info.royaltiesPercentage
+            );
 
         _invalidateNonce(auction.signer, auction.orderNonce);
         _invalidateNonce(bid.signer, bid.orderNonce);
 
-        IERC721(auction.nftContract).transferFrom(
+        IERC721(info.nftContract).transferFrom(
             auction.signer,
             bid.signer,
-            auction.tokenId
+            info.tokenId
         );
 
         _distributeFunds(
-            auctionFees.bidPrice,
-            auctionFees.makerCut,
-            auctionFees.totalCut,
-            auctionFees.royaltieFee,
-            auctionFees.royaltiesRecipient,
+            bidPrice,
+            makerCut,
+            totalCut,
+            royaltiesCut,
+            info.royaltiesRecipient,
             auction.signer,
             bid.signer,
-            auction.paymentErc20TokenAddress
+            info.paymentErc20TokenAddress
         );
 
         emit AuctionSuccessful(
-            auction.nftContract,
-            auction.tokenId,
-            auctionFees.bidPrice,
+            info.nftContract,
+            info.tokenId,
+            bidPrice,
             auction.signer,
             bid.signer,
-            auctionFees.totalCut,
-            auction.paymentErc20TokenAddress
+            totalCut,
+            info.paymentErc20TokenAddress
         );
     }
 
-    function _calculateAuctionFees(
-        ReserveAuction calldata auction,
-        ReserveAuction calldata bid
-    ) internal view returns (AuctionFees memory data) {
-        (data.takerFee, ) = paymentManager.getPaymentMethodFees(
-            auction.paymentErc20TokenAddress
-        );
-        data.bidPrice = (bid.price * MAX_FEE) / (data.takerFee + MAX_FEE);
-        data.takerCut = _calculateCut(data.takerFee, auction.price);
-
-        (
-            data.makerCut,
-            ,
-            data.royaltiesRecipient,
-            data.royaltieFee,
-            data.totalCut
-        ) = _calculateFees(
-            auction.paymentErc20TokenAddress,
-            auction.nftContract,
-            auction.tokenId,
-            data.bidPrice
-        );
-    }
-
-    function _verifySignature(ReserveAuction calldata data) internal view {
+    function _verifySignature(
+        ReserveAuction calldata data,
+        AuctionInfo calldata info,
+        bytes32 typehash
+    ) internal view {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 _buildDomainSeparator(),
                 keccak256(
                     abi.encode(
-                        RESERVE_AUCTION_TYPEHASH,
+                        typehash,
                         data.orderNonce,
-                        data.nftContract,
-                        data.tokenId,
-                        data.paymentErc20TokenAddress,
+                        info.nftContract,
+                        info.tokenId,
+                        info.paymentErc20TokenAddress,
                         data.price,
-                        data.isBid
+                        info.makerFeePercentage,
+                        info.takerFeePercentage,
+                        info.royaltiesPercentage,
+                        info.royaltiesRecipient
                     )
                 )
             )
@@ -159,27 +152,30 @@ abstract contract EndemicReserveAuction is
         bytes32 r,
         bytes32 s,
         ReserveAuction calldata auction,
-        ReserveAuction calldata bid
+        ReserveAuction calldata bid,
+        AuctionInfo calldata info
     ) internal view {
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                _buildDomainSeparator(),
-                keccak256(
-                    abi.encode(
-                        RESERVE_AUCTION_APPROVAL_TYPEHASH,
-                        auction.signer,
-                        bid.signer,
-                        auction.orderNonce,
-                        bid.orderNonce,
-                        auction.nftContract,
-                        auction.tokenId,
-                        auction.paymentErc20TokenAddress,
-                        auction.price,
-                        bid.price
-                    )
-                )
+        bytes32 approvalHash = keccak256(
+            abi.encode(
+                RESERVE_AUCTION_APPROVAL_TYPEHASH,
+                auction.signer,
+                bid.signer,
+                auction.orderNonce,
+                bid.orderNonce,
+                info.nftContract,
+                info.tokenId,
+                info.paymentErc20TokenAddress,
+                auction.price,
+                bid.price,
+                info.makerFeePercentage,
+                info.takerFeePercentage,
+                info.royaltiesPercentage,
+                info.royaltiesRecipient
             )
+        );
+
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", _buildDomainSeparator(), approvalHash)
         );
 
         if (digest.recover(v, r, s) != approvedSigner) {

@@ -9,6 +9,10 @@ const getTypedMessage_sale = ({
   nftContract,
   paymentErc20TokenAddress,
   price,
+  makerCut,
+  takerCut,
+  royaltiesCut,
+  royaltiesRecipient,
   buyer,
 }) => {
   const domain = {
@@ -26,6 +30,10 @@ const getTypedMessage_sale = ({
       { name: 'tokenId', type: 'uint256' },
       { name: 'paymentErc20TokenAddress', type: 'address' },
       { name: 'price', type: 'uint256' },
+      { name: 'makerCut', type: 'uint256' },
+      { name: 'takerCut', type: 'uint256' },
+      { name: 'royaltiesCut', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
       { name: 'buyer', type: 'address' },
       { name: 'expiresAt', type: 'uint256' },
     ],
@@ -36,7 +44,11 @@ const getTypedMessage_sale = ({
     nftContract: nftContract,
     tokenId: 2,
     paymentErc20TokenAddress: paymentErc20TokenAddress,
-    price: price.toString(),
+    price: price,
+    makerCut: makerCut,
+    takerCut: takerCut,
+    royaltiesCut: royaltiesCut,
+    royaltiesRecipient: royaltiesRecipient,
     buyer: buyer,
     expiresAt: 2000994705,
   };
@@ -52,6 +64,10 @@ const getTypedMessage_offer = ({
   tokenId,
   paymentErc20TokenAddress,
   price,
+  makerCut,
+  takerCut,
+  royaltiesCut,
+  royaltiesRecipient,
   expiresAt,
   isForCollection,
 }) => {
@@ -70,6 +86,10 @@ const getTypedMessage_offer = ({
       { name: 'tokenId', type: 'uint256' },
       { name: 'paymentErc20TokenAddress', type: 'address' },
       { name: 'price', type: 'uint256' },
+      { name: 'makerCut', type: 'uint256' },
+      { name: 'takerCut', type: 'uint256' },
+      { name: 'royaltiesCut', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
       { name: 'expiresAt', type: 'uint256' },
       { name: 'isForCollection', type: 'bool' },
     ],
@@ -80,7 +100,11 @@ const getTypedMessage_offer = ({
     nftContract: nftContract,
     tokenId: tokenId,
     paymentErc20TokenAddress: paymentErc20TokenAddress,
-    price: price.toString(),
+    price: price,
+    makerCut: makerCut,
+    takerCut: takerCut,
+    royaltiesCut: royaltiesCut,
+    royaltiesRecipient: royaltiesRecipient,
     expiresAt: expiresAt,
     isForCollection: isForCollection,
   };
@@ -97,6 +121,10 @@ const getTypedMessage_dutch = ({
   paymentErc20TokenAddress,
   startingPrice,
   endingPrice,
+  makerFeePercentage,
+  takerFeePercentage,
+  royaltiesPercentage,
+  royaltiesRecipient,
   startingAt,
   duration,
 }) => {
@@ -116,6 +144,10 @@ const getTypedMessage_dutch = ({
       { name: 'paymentErc20TokenAddress', type: 'address' },
       { name: 'startingPrice', type: 'uint256' },
       { name: 'endingPrice', type: 'uint256' },
+      { name: 'makerFeePercentage', type: 'uint256' },
+      { name: 'takerFeePercentage', type: 'uint256' },
+      { name: 'royaltiesPercentage', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
       { name: 'startingAt', type: 'uint256' },
       { name: 'duration', type: 'uint256' },
     ],
@@ -126,8 +158,12 @@ const getTypedMessage_dutch = ({
     nftContract: nftContract,
     tokenId: tokenId,
     paymentErc20TokenAddress: paymentErc20TokenAddress,
-    startingPrice: startingPrice.toString(),
-    endingPrice: endingPrice.toString(),
+    startingPrice: startingPrice,
+    endingPrice: endingPrice,
+    makerFeePercentage: makerFeePercentage,
+    takerFeePercentage: takerFeePercentage,
+    royaltiesPercentage: royaltiesPercentage,
+    royaltiesRecipient: royaltiesRecipient,
     startingAt: startingAt,
     duration: duration,
   };
@@ -143,7 +179,10 @@ const getTypedMessage_reserve = ({
   tokenId,
   paymentErc20TokenAddress,
   price,
-  isBid,
+  makerFeePercentage,
+  takerFeePercentage,
+  royaltiesPercentage,
+  royaltiesRecipient,
 }) => {
   const domain = {
     name: 'Endemic Exchange',
@@ -160,7 +199,10 @@ const getTypedMessage_reserve = ({
       { name: 'tokenId', type: 'uint256' },
       { name: 'paymentErc20TokenAddress', type: 'address' },
       { name: 'price', type: 'uint256' },
-      { name: 'isBid', type: 'bool' },
+      { name: 'makerFeePercentage', type: 'uint256' },
+      { name: 'takerFeePercentage', type: 'uint256' },
+      { name: 'royaltiesPercentage', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
     ],
   };
 
@@ -169,8 +211,61 @@ const getTypedMessage_reserve = ({
     nftContract: nftContract,
     tokenId: tokenId,
     paymentErc20TokenAddress: paymentErc20TokenAddress,
-    price: price.toString(),
-    isBid: isBid,
+    price: price,
+    makerFeePercentage: makerFeePercentage,
+    takerFeePercentage: takerFeePercentage,
+    royaltiesPercentage: royaltiesPercentage,
+    royaltiesRecipient: royaltiesRecipient,
+  };
+
+  return { domain, types, values };
+};
+
+const getTypedMessage_reserveBid = ({
+  chainId,
+  verifierContract,
+  orderNonce,
+  nftContract,
+  tokenId,
+  paymentErc20TokenAddress,
+  price,
+  makerFeePercentage,
+  takerFeePercentage,
+  royaltiesPercentage,
+  royaltiesRecipient,
+}) => {
+  const domain = {
+    name: 'Endemic Exchange',
+    version: '1',
+    chainId: chainId,
+    verifyingContract: verifierContract,
+    salt: keccak256('Endemic Exchange Salt'),
+  };
+
+  const types = {
+    ReserveAuctionBid: [
+      { name: 'orderNonce', type: 'uint256' },
+      { name: 'nftContract', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'paymentErc20TokenAddress', type: 'address' },
+      { name: 'price', type: 'uint256' },
+      { name: 'makerFeePercentage', type: 'uint256' },
+      { name: 'takerFeePercentage', type: 'uint256' },
+      { name: 'royaltiesPercentage', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
+    ],
+  };
+
+  const values = {
+    orderNonce: orderNonce,
+    nftContract: nftContract,
+    tokenId: tokenId,
+    paymentErc20TokenAddress: paymentErc20TokenAddress,
+    price: price,
+    makerFeePercentage: makerFeePercentage,
+    takerFeePercentage: takerFeePercentage,
+    royaltiesPercentage: royaltiesPercentage,
+    royaltiesRecipient: royaltiesRecipient,
   };
 
   return { domain, types, values };
@@ -188,6 +283,10 @@ const getTypedMessage_reserveApproval = ({
   paymentErc20TokenAddress,
   auctionPrice,
   bidPrice,
+  makerFeePercentage,
+  takerFeePercentage,
+  royaltiesPercentage,
+  royaltiesRecipient,
 }) => {
   const domain = {
     name: 'Endemic Exchange',
@@ -208,6 +307,10 @@ const getTypedMessage_reserveApproval = ({
       { name: 'paymentErc20TokenAddress', type: 'address' },
       { name: 'auctionPrice', type: 'uint256' },
       { name: 'bidPrice', type: 'uint256' },
+      { name: 'makerFeePercentage', type: 'uint256' },
+      { name: 'takerFeePercentage', type: 'uint256' },
+      { name: 'royaltiesPercentage', type: 'uint256' },
+      { name: 'royaltiesRecipient', type: 'address' },
     ],
   };
 
@@ -219,8 +322,12 @@ const getTypedMessage_reserveApproval = ({
     nftContract: nftContract,
     tokenId: tokenId,
     paymentErc20TokenAddress: paymentErc20TokenAddress,
-    auctionPrice: auctionPrice.toString(),
-    bidPrice: bidPrice.toString(),
+    auctionPrice: auctionPrice,
+    bidPrice: bidPrice,
+    makerFeePercentage: makerFeePercentage,
+    takerFeePercentage: takerFeePercentage,
+    royaltiesPercentage: royaltiesPercentage,
+    royaltiesRecipient: royaltiesRecipient,
   };
 
   return { domain, types, values };
@@ -231,6 +338,7 @@ module.exports = {
   getTypedMessage_offer,
   getTypedMessage_dutch,
   getTypedMessage_reserve,
+  getTypedMessage_reserveBid,
   getTypedMessage_reserveApproval,
   keccak256,
 };
