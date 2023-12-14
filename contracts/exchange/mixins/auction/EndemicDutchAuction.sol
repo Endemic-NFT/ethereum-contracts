@@ -18,7 +18,7 @@ abstract contract EndemicDutchAuction is
 {
     using ECDSA for bytes32;
 
-    bytes32 private constant AUCTION_TYPEHASH =
+    bytes32 private constant DUTCH_AUCTION_TYPEHASH =
         keccak256(
             "DutchAuction(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 startingPrice,uint256 endingPrice,uint256 makerFeePercentage,uint256 takerFeePercentage,uint256 royaltiesPercentage,address royaltiesRecipient,uint256 startingAt,uint256 duration)"
         );
@@ -207,7 +207,7 @@ abstract contract EndemicDutchAuction is
             abi.encodePacked(
                 "\x19\x01",
                 _buildDomainSeparator(),
-                keccak256(abi.encode(AUCTION_TYPEHASH, auction))
+                keccak256(abi.encode(DUTCH_AUCTION_TYPEHASH, auction))
             )
         );
 
