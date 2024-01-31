@@ -76,7 +76,7 @@ contract Collection is
         uint256 royalties,
         address administrator,
         address approver
-    ) external onlyCollectionFactory initializer {
+    ) external virtual onlyCollectionFactory initializer {
         _transferOwnership(creator);
         __ERC721_init_unchained(name, symbol);
         __EIP712_init_unchained(name, "1");
@@ -92,7 +92,7 @@ contract Collection is
         bytes32 r,
         bytes32 s,
         uint256 nonce
-    ) external onlyOwner {
+    ) external virtual onlyOwner {
         // Check if mint approval is required
         if (mintApprovalRequired) {
             // Make sure that mint is approved
@@ -110,7 +110,7 @@ contract Collection is
         bytes32 r,
         bytes32 s,
         uint256 nonce
-    ) external onlyOwner {
+    ) external virtual onlyOwner {
         // Check if mint approval is required
         if (mintApprovalRequired) {
             // Make sure that mint is approved

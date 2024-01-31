@@ -16,7 +16,13 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 1000,
+        details: {
+          yulDetails: {
+            optimizerSteps: 'u',
+          },
+        },
       },
+      viaIR: true,
     },
   },
   defaultNetwork: 'hardhat',
