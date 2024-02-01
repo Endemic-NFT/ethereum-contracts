@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "./Collection.sol";
+import "../../erc-721/Collection.sol";
 
 contract OrderCollection is Collection {
     address public mintOperator;
