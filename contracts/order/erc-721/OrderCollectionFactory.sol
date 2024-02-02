@@ -3,15 +3,24 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/IOrderCollection.sol";
-import "../../erc-721/access/AdministratedUpgradable.sol";
 
-contract OrderCollectionFactory is AdministratedUpgradable {
+contract OrderCollectionFactory is AccessControlUpgradeable {
     using AddressUpgradeable for address;
     using ClonesUpgradeable for address;
 
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
     address public implementation;
+    address public collectionAdministrator;
     address public operator;
+
+    error AddressCannotBeZeroAddress();
+
+    event ImplementationUpdated(address indexed newImplementation);
+    event CollectionAdministratorUpdated(address indexed newAdministrator);
+    event OperatorUpdated(address indexed newApprover);
 
     modifier onlyContract(address _implementation) {
         require(
@@ -21,13 +30,9 @@ contract OrderCollectionFactory is AdministratedUpgradable {
         _;
     }
 
-    modifier onlyOperator() {
-        require(msg.sender == operator, "ArtOrder: Caller is not the operator");
-        _;
-    }
-
-    function initialize(address _administrator) internal initializer {
-        __Administrated_init(_administrator);
+    function initialize() internal initializer {
+        __AccessControl_init();
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function createCollection(
@@ -35,19 +40,56 @@ contract OrderCollectionFactory is AdministratedUpgradable {
         string memory name,
         string memory symbol,
         uint256 royalties
-    ) external onlyOperator returns (address) {
+    ) external onlyRole(MINTER_ROLE) returns (address) {
         return _createCollection(owner, name, symbol, royalties);
     }
 
     function updateImplementation(address newImplementation)
         external
-        onlyAdministrator
+        onlyRole(DEFAULT_ADMIN_ROLE)
         onlyContract(newImplementation)
     {
         _updateImplementation(newImplementation);
     }
 
-    function updateOperator(address newOperator) external onlyAdministrator {
+    function updateCollectionAdministrator(address newCollectionAdministrator)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (newCollectionAdministrator == address(0)) {
+            revert AddressCannotBeZeroAddress();
+        }
+
+        collectionAdministrator = newCollectionAdministrator;
+
+        emit CollectionAdministratorUpdated(newCollectionAdministrator);
+    }
+
+    function updateOperator(address newOperator)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (newOperator == address(0)) {
+            revert AddressCannotBeZeroAddress();
+        }
+
+        operator = newOperator;
+
+        emit OperatorUpdated(newOperator);
+    }
+
+    function updateConfiguration(
+        address newCollectionAdministrator,
+        address newOperator
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (
+            newCollectionAdministrator == address(0) ||
+            newOperator == address(0)
+        ) {
+            revert AddressCannotBeZeroAddress();
+        }
+
+        collectionAdministrator = newCollectionAdministrator;
         operator = newOperator;
     }
 
@@ -59,7 +101,7 @@ contract OrderCollectionFactory is AdministratedUpgradable {
             "Order Collection Implementation",
             "OCI",
             1000,
-            administrator,
+            collectionAdministrator,
             operator
         );
     }
@@ -77,7 +119,7 @@ contract OrderCollectionFactory is AdministratedUpgradable {
             name,
             symbol,
             royalties,
-            administrator,
+            collectionAdministrator,
             operator
         );
 
