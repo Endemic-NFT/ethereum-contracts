@@ -17,7 +17,7 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
 
     bytes32 public constant FINALIZE_ORDER_TYPEHASH =
         keccak256(
-            "FinalizeOrder(address orderer,address artist,uint256 price,uint256 timestamp,address paymentErc20TokenAddress,string tokenCID)"
+            "FinalizeOrder(address orderer,address artist,uint256 price,uint256 timestamp,address paymentErc20TokenAddress)"
         );
 
     struct Order {
@@ -65,13 +65,12 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
 
     function _checkFinalizeOrderSignature(
         Order calldata order,
-        string calldata tokenCID,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) internal view {
         address signer = ecrecover(
-            _prepareFinalizeOrderMessage(order, tokenCID),
+            _prepareFinalizeOrderMessage(order),
             v,
             r,
             s
@@ -122,10 +121,11 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
             );
     }
 
-    function _prepareFinalizeOrderMessage(
-        Order calldata order,
-        string calldata tokenCID
-    ) internal view returns (bytes32) {
+    function _prepareFinalizeOrderMessage(Order calldata order)
+        internal
+        view
+        returns (bytes32)
+    {
         return
             _hashTypedDataV4(
                 keccak256(
@@ -135,8 +135,7 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
                         order.artist,
                         order.price,
                         order.timestamp,
-                        order.paymentErc20TokenAddress,
-                        tokenCID
+                        order.paymentErc20TokenAddress
                     )
                 )
             );

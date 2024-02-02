@@ -3,11 +3,12 @@ pragma solidity 0.8.18;
 
 import "../../erc-721/Collection.sol";
 
+// TODO: fix constructor
 contract OrderCollection is Collection {
     address public mintOperator;
 
     error OnlyOwnerOrApproved();
-    error InvalidMintOperatorAddress();
+    error InvalidAddress();
 
     modifier onlyOwnerOrApproved() {
         if (msg.sender != owner() && msg.sender != mintOperator) {
@@ -77,7 +78,7 @@ contract OrderCollection is Collection {
         onlyAdministrator
     {
         if (newMintOperator == address(0)) {
-            revert InvalidMintOperatorAddress();
+            revert InvalidAddress();
         }
 
         mintOperator = newMintOperator;

@@ -10,46 +10,67 @@ contract OrderCollectionFactory is AdministratedUpgradable {
     using AddressUpgradeable for address;
     using ClonesUpgradeable for address;
 
-    address public collectionImplementation;
+    address public implementation;
+    address public operator;
 
-    modifier onlyContract(address implementation) {
+    modifier onlyContract(address _implementation) {
         require(
-            implementation.isContract(),
+            _implementation.isContract(),
             "ArtOrder: Address is not a contract"
         );
         _;
     }
 
-    function __OrderCollectionFactory_init(address _administrator)
-        internal
-        onlyInitializing
-    {
+    modifier onlyOperator() {
+        require(msg.sender == operator, "ArtOrder: Caller is not the operator");
+        _;
+    }
+
+    function initialize(address _administrator) internal initializer {
         __Administrated_init(_administrator);
     }
 
-    function _updateCollectionImplementation(address newImplementation)
-        internal
+    function createCollection(
+        address owner,
+        string memory name,
+        string memory symbol,
+        uint256 royalties
+    ) external onlyOperator returns (address) {
+        return _createCollection(owner, name, symbol, royalties);
+    }
+
+    function updateImplementation(address newImplementation)
+        external
+        onlyAdministrator
         onlyContract(newImplementation)
     {
-        collectionImplementation = newImplementation;
+        _updateImplementation(newImplementation);
+    }
 
-        IOrderCollection(collectionImplementation).initialize(
+    function updateOperator(address newOperator) external onlyAdministrator {
+        operator = newOperator;
+    }
+
+    function _updateImplementation(address newImplementation) internal {
+        implementation = newImplementation;
+
+        IOrderCollection(implementation).initialize(
             msg.sender,
             "Order Collection Implementation",
             "OCI",
             1000,
             administrator,
-            address(this)
+            operator
         );
     }
 
-    function _deployCollectionContract(
+    function _createCollection(
         address owner,
         string memory name,
         string memory symbol,
         uint256 royalties
     ) internal returns (address) {
-        address proxy = collectionImplementation.clone();
+        address proxy = implementation.clone();
 
         IOrderCollection(proxy).initialize(
             owner,
@@ -57,7 +78,7 @@ contract OrderCollectionFactory is AdministratedUpgradable {
             symbol,
             royalties,
             administrator,
-            address(this)
+            operator
         );
 
         return address(proxy);

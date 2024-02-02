@@ -2,6 +2,9 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "./interfaces/IOrderCollectionFactory.sol";
+import "./interfaces/IOrderCollection.sol";
+import "../erc-721/access/AdministratedUpgradable.sol";
 import "./erc-721/OrderCollection.sol";
 import "./erc-721/OrderCollectionFactory.sol";
 import "./mixins/ArtOrderFundsDistributor.sol";
@@ -16,7 +19,7 @@ contract ArtOrder is
     ReentrancyGuardUpgradeable,
     ArtOrderFundsDistributor,
     ArtOrderEIP712,
-    OrderCollectionFactory
+    AdministratedUpgradable
 {
     enum OrderStatus {
         Inactive,
@@ -24,6 +27,8 @@ contract ArtOrder is
         Cancelled,
         Finalized
     }
+
+    address collectionFactory;
 
     mapping(bytes32 => OrderStatus) private _statusPerOrder;
     mapping(address => address) private _collectionPerArtist;
@@ -59,12 +64,15 @@ contract ArtOrder is
     function initialize(
         uint256 _feeAmount,
         address _feeRecipient,
-        address administrator
+        address _administrator,
+        address _collectionFactory
     ) external initializer {
         __ReentrancyGuard_init_unchained();
         __ArtOrderFundsDistributor_init(_feeRecipient, _feeAmount);
         __ArtOrderEIP712_init();
-        __OrderCollectionFactory_init(administrator);
+        __Administrated_init(_administrator);
+
+        collectionFactory = _collectionFactory;
     }
 
     function createOrder(
@@ -162,22 +170,21 @@ contract ArtOrder is
     function finalizeOrder(
         Order calldata order,
         string calldata tokenCID,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
+        uint8 vFinalize,
+        bytes32 rFinalize,
+        bytes32 sFinalize,
+        uint8 vMint,
+        bytes32 rMint,
+        bytes32 sMint,
         uint256 nonce
     ) external nonReentrant {
-        _checkFinalizeOrderSignature(order, tokenCID, v, r, s);
+        _checkFinalizeOrderSignature(order, vFinalize, rFinalize, sFinalize);
 
         address collectionAddr = _collectionPerArtist[order.artist];
 
         if (collectionAddr == address(0)) {
-            collectionAddr = _deployCollectionContract(
-                order.artist,
-                "Order Collection",
-                "OC",
-                1000
-            );
+            collectionAddr = IOrderCollectionFactory(collectionFactory)
+                .createCollection(order.artist, "Order Collection", "OC", 1000);
 
             _collectionPerArtist[order.artist] = collectionAddr;
         }
@@ -185,9 +192,9 @@ contract ArtOrder is
         IOrderCollection(collectionAddr).mint(
             order.orderer,
             tokenCID,
-            v,
-            r,
-            s,
+            vMint,
+            rMint,
+            sMint,
             nonce
         );
 
@@ -216,13 +223,6 @@ contract ArtOrder is
         onlyAdministrator
     {
         _updateDistributorConfiguration(newFeeRecipient, newFeeAmount);
-    }
-
-    function updateCollectionImplementation(address newImplementation)
-        external
-        onlyAdministrator
-    {
-        _updateCollectionImplementation(newImplementation);
     }
 
     function _getOrderHash(Order calldata order)
