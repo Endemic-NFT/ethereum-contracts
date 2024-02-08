@@ -168,11 +168,11 @@ contract ArtOrder is
     function finalizeOrder(
         Order calldata order,
         string calldata tokenCID,
-        uint8 vFinalize,
-        bytes32 rFinalize,
-        bytes32 sFinalize
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external nonReentrant {
-        _checkFinalizeOrderSignature(order, vFinalize, rFinalize, sFinalize);
+        _checkFinalizeOrderSignature(order, v, r, s);
 
         address collectionAddr = collectionPerArtist[order.artist];
 
