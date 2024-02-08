@@ -1,6 +1,5 @@
 const { ethers, upgrades } = require('hardhat');
 const { FEE_RECIPIENT, ZERO_ADDRESS } = require('./constants');
-const { deploy } = require('@openzeppelin/hardhat-upgrades/dist/utils');
 
 const deployEndemicToken = async (deployer) => {
   const EndemicToken = await ethers.getContractFactory('EndemicToken');
@@ -162,10 +161,7 @@ const deployArtOrderWithFactory = async (
 
   await artOrder.deployed();
 
-  await nftFactory.grantRole(
-    await nftFactory.MINTER_ROLE(),
-    artOrder.address
-  );
+  await nftFactory.grantRole(await nftFactory.MINTER_ROLE(), artOrder.address);
 
   await nftFactory.updateOperator(artOrder.address);
 

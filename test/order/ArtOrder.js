@@ -441,7 +441,7 @@ describe('ArtOrder', function () {
     it('reverts if signature is not valid', async function () {
       await time.increase(ONE_DAY);
 
-      const { v, r, s } = await createCancelOrderSignature(
+      const { _, r, s } = await createCancelOrderSignature(
         artOrderContract,
         orderer,
         orderEth
@@ -668,7 +668,7 @@ describe('ArtOrder', function () {
     });
 
     it('reverts if signature is not valid', async function () {
-      const { v, r, s } = await createFinalizeOrderSignature(
+      const { _, r, s } = await createFinalizeOrderSignature(
         artOrderContract,
         artist,
         orderEth
