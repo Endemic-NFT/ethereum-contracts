@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ArtOrderEIP712 is EIP712Upgradeable {
-    bytes32 public constant LOCK_FUNDS_TYPEHASH =
+    bytes32 public constant CREATE_ORDER_TYPEHASH =
         keccak256(
             "CreateOrder(address orderer,address artist,uint256 price,uint256 timestamp,address paymentErc20TokenAddress)"
         );
@@ -90,7 +90,7 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
             _hashTypedDataV4(
                 keccak256(
                     abi.encode(
-                        LOCK_FUNDS_TYPEHASH,
+                        CREATE_ORDER_TYPEHASH,
                         order.orderer,
                         order.artist,
                         order.price,
