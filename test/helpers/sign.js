@@ -78,9 +78,99 @@ const createBatchMintApprovalSignature = async (
   return ethers.utils.splitSignature(signature);
 };
 
+const createCreateOrderSignature = async (orderContract, signer, order) => {
+  const signature = await signer._signTypedData(
+    {
+      name: 'ArtOrder',
+      version: '1',
+      chainId: 31337,
+      verifyingContract: orderContract.address,
+    },
+    {
+      CreateOrder: [
+        { name: 'orderer', type: 'address' },
+        { name: 'artist', type: 'address' },
+        { name: 'price', type: 'uint256' },
+        { name: 'timestamp', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
+      ],
+    },
+    {
+      orderer: order.orderer,
+      artist: order.artist,
+      price: order.price,
+      timestamp: order.timestamp,
+      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
+const createCancelOrderSignature = async (orderContract, signer, order) => {
+  const signature = await signer._signTypedData(
+    {
+      name: 'ArtOrder',
+      version: '1',
+      chainId: 31337,
+      verifyingContract: orderContract.address,
+    },
+    {
+      CancelOrder: [
+        { name: 'orderer', type: 'address' },
+        { name: 'artist', type: 'address' },
+        { name: 'price', type: 'uint256' },
+        { name: 'timestamp', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
+      ],
+    },
+    {
+      orderer: order.orderer,
+      artist: order.artist,
+      price: order.price,
+      timestamp: order.timestamp,
+      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
+const createFinalizeOrderSignature = async (orderContract, signer, order) => {
+  const signature = await signer._signTypedData(
+    {
+      name: 'ArtOrder',
+      version: '1',
+      chainId: 31337,
+      verifyingContract: orderContract.address,
+    },
+    {
+      FinalizeOrder: [
+        { name: 'orderer', type: 'address' },
+        { name: 'artist', type: 'address' },
+        { name: 'price', type: 'uint256' },
+        { name: 'timestamp', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
+      ],
+    },
+    {
+      orderer: order.orderer,
+      artist: order.artist,
+      price: order.price,
+      timestamp: order.timestamp,
+      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
 module.exports = {
   hashAndSign,
   sign,
   createMintApprovalSignature,
   createBatchMintApprovalSignature,
+  createCreateOrderSignature,
+  createCancelOrderSignature,
+  createFinalizeOrderSignature,
 };

@@ -28,10 +28,10 @@ contract ArtOrder is
         Finalized
     }
 
-    address collectionFactory;
+    address public collectionFactory;
 
-    mapping(bytes32 => OrderStatus) private _statusPerOrder;
-    mapping(address => address) private _collectionPerArtist;
+    mapping(bytes32 => OrderStatus) public statusPerOrder;
+    mapping(address => address) public collectionPerArtist;
 
     error OrderAlreadyExists();
     error OrderNotActive();
@@ -101,22 +101,21 @@ contract ArtOrder is
 
         bytes32 orderHash = _getOrderHash(order);
 
-        if (_statusPerOrder[orderHash] != OrderStatus.Inactive)
+        if (statusPerOrder[orderHash] != OrderStatus.Inactive)
             revert OrderAlreadyExists();
 
         if (order.paymentErc20TokenAddress == address(0)) {
             if (msg.value != order.price) revert InvalidEtherAmount();
         } else {
             if (msg.value != 0) revert InvalidEtherAmount();
-            _transferErc20Funds(
-                IERC20(order.paymentErc20TokenAddress),
+            IERC20(order.paymentErc20TokenAddress).transferFrom(
                 order.orderer,
                 address(this),
                 order.price
             );
         }
 
-        _statusPerOrder[orderHash] = OrderStatus.Active;
+        statusPerOrder[orderHash] = OrderStatus.Active;
 
         emit OrderCreated(
             order.orderer,
@@ -141,18 +140,17 @@ contract ArtOrder is
 
         bytes32 orderHash = _getOrderHash(order);
 
-        if (_statusPerOrder[orderHash] != OrderStatus.Active) {
+        if (statusPerOrder[orderHash] != OrderStatus.Active) {
             revert OrderNotActive();
         }
 
-        _statusPerOrder[orderHash] = OrderStatus.Cancelled;
+        statusPerOrder[orderHash] = OrderStatus.Cancelled;
 
         if (order.paymentErc20TokenAddress == address(0)) {
             _transferEtherFunds(order.orderer, order.price);
         } else {
             _transferErc20Funds(
                 IERC20(order.paymentErc20TokenAddress),
-                address(this),
                 order.orderer,
                 order.price
             );
@@ -172,35 +170,28 @@ contract ArtOrder is
         string calldata tokenCID,
         uint8 vFinalize,
         bytes32 rFinalize,
-        bytes32 sFinalize,
-        uint8 vMint,
-        bytes32 rMint,
-        bytes32 sMint,
-        uint256 nonce
+        bytes32 sFinalize
     ) external nonReentrant {
         _checkFinalizeOrderSignature(order, vFinalize, rFinalize, sFinalize);
 
-        address collectionAddr = _collectionPerArtist[order.artist];
+        address collectionAddr = collectionPerArtist[order.artist];
+
+        bytes32 orderHash = _getOrderHash(order);
+
+        if (statusPerOrder[orderHash] != OrderStatus.Active) {
+            revert OrderNotActive();
+        }
 
         if (collectionAddr == address(0)) {
             collectionAddr = IOrderCollectionFactory(collectionFactory)
                 .createCollection(order.artist, "Order Collection", "OC", 1000);
 
-            _collectionPerArtist[order.artist] = collectionAddr;
+            collectionPerArtist[order.artist] = collectionAddr;
         }
 
-        IOrderCollection(collectionAddr).mint(
-            order.orderer,
-            tokenCID,
-            vMint,
-            rMint,
-            sMint,
-            nonce
-        );
+        IOrderCollection(collectionAddr).mint(order.orderer, tokenCID);
 
-        bytes32 orderHash = _getOrderHash(order);
-
-        _statusPerOrder[orderHash] = OrderStatus.Finalized;
+        statusPerOrder[orderHash] = OrderStatus.Finalized;
 
         _distributeOrderFunds(
             order.artist,

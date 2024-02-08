@@ -43,8 +43,8 @@ contract ArtOrderFundsDistributor is Initializable {
     ) internal {
         uint256 fee = (amount * feeAmount) / 10_000;
 
-        _transferErc20Funds(IERC20(token), address(this), feeRecipient, fee);
-        _transferErc20Funds(IERC20(token), address(this), artist, amount - fee);
+        _transferErc20Funds(IERC20(token), feeRecipient, fee);
+        _transferErc20Funds(IERC20(token), artist, amount - fee);
     }
 
     function _transferEtherFunds(address recipient, uint256 value) internal {
@@ -55,11 +55,10 @@ contract ArtOrderFundsDistributor is Initializable {
 
     function _transferErc20Funds(
         IERC20 ERC20PaymentToken,
-        address sender,
         address recipient,
         uint256 value
     ) internal {
-        bool success = ERC20PaymentToken.transferFrom(sender, recipient, value);
+        bool success = ERC20PaymentToken.transfer(recipient, value);
 
         if (!success) revert FundsTransferFailed();
     }

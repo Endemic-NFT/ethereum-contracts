@@ -21,6 +21,14 @@ contract OrderCollectionFactory is AccessControlUpgradeable {
     event ImplementationUpdated(address indexed newImplementation);
     event CollectionAdministratorUpdated(address indexed newAdministrator);
     event OperatorUpdated(address indexed newApprover);
+    event NFTContractCreated(
+        address indexed nftContract,
+        address indexed owner,
+        string name,
+        string symbol,
+        string category,
+        uint256 royalties
+    );
 
     modifier onlyContract(address _implementation) {
         require(
@@ -30,7 +38,7 @@ contract OrderCollectionFactory is AccessControlUpgradeable {
         _;
     }
 
-    function initialize() internal initializer {
+    function initialize() external initializer {
         __AccessControl_init();
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -121,6 +129,15 @@ contract OrderCollectionFactory is AccessControlUpgradeable {
             royalties,
             collectionAdministrator,
             operator
+        );
+
+        emit NFTContractCreated(
+            proxy,
+            owner,
+            name,
+            symbol,
+            "Art Order",
+            royalties
         );
 
         return address(proxy);
