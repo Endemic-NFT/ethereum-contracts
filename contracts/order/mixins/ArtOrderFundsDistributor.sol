@@ -9,6 +9,7 @@ contract ArtOrderFundsDistributor is Initializable {
     uint256 public feeAmount;
 
     error FundsTransferFailed();
+    error InvalidEtherAmount();
 
     function __ArtOrderFundsDistributor_init(
         address _feeRecipientAddress,
@@ -17,7 +18,40 @@ contract ArtOrderFundsDistributor is Initializable {
         _updateDistributorConfiguration(_feeRecipientAddress, _feeAmount);
     }
 
-    function _distributeOrderFunds(
+    function _lockCreateOrderFunds(
+        address orderer,
+        uint256 price,
+        address paymentErc20TokenAddress
+    ) internal {
+        if (paymentErc20TokenAddress == address(0)) {
+            if (msg.value != price) revert InvalidEtherAmount();
+        } else {
+            if (msg.value != 0) revert InvalidEtherAmount();
+            IERC20(paymentErc20TokenAddress).transferFrom(
+                orderer,
+                address(this),
+                price
+            );
+        }
+    }
+
+    function _distributeCancelledOrderFunds(
+        address orderer,
+        uint256 price,
+        address paymentErc20TokenAddress
+    ) internal {
+        if (paymentErc20TokenAddress == address(0)) {
+            _transferEtherFunds(orderer, price);
+        } else {
+            _transferErc20Funds(
+                IERC20(paymentErc20TokenAddress),
+                orderer,
+                price
+            );
+        }
+    }
+
+    function _distributeFinalizedOrderFunds(
         address artist,
         uint256 price,
         address paymentErc20TokenAddress

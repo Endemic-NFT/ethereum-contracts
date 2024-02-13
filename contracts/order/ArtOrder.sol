@@ -10,10 +10,6 @@ import "./erc-721/OrderCollectionFactory.sol";
 import "./mixins/ArtOrderFundsDistributor.sol";
 import "./mixins/ArtOrderEIP712.sol";
 
-/**
- * TODO:
- * natspec comments
- */
 contract ArtOrder is
     Initializable,
     ReentrancyGuardUpgradeable,
@@ -36,7 +32,7 @@ contract ArtOrder is
     error OrderAlreadyExists();
     error OrderNotActive();
     error OrderTimestampNotExceeded();
-    error InvalidEtherAmount();
+    error OrderTimestampExceeded();
 
     event OrderCreated(
         address indexed orderer,
@@ -104,16 +100,11 @@ contract ArtOrder is
         if (statusPerOrder[orderHash] != OrderStatus.Inactive)
             revert OrderAlreadyExists();
 
-        if (order.paymentErc20TokenAddress == address(0)) {
-            if (msg.value != order.price) revert InvalidEtherAmount();
-        } else {
-            if (msg.value != 0) revert InvalidEtherAmount();
-            IERC20(order.paymentErc20TokenAddress).transferFrom(
-                order.orderer,
-                address(this),
-                order.price
-            );
-        }
+        _lockCreateOrderFunds(
+            order.orderer,
+            order.price,
+            order.paymentErc20TokenAddress
+        );
 
         statusPerOrder[orderHash] = OrderStatus.Active;
 
@@ -146,15 +137,11 @@ contract ArtOrder is
 
         statusPerOrder[orderHash] = OrderStatus.Cancelled;
 
-        if (order.paymentErc20TokenAddress == address(0)) {
-            _transferEtherFunds(order.orderer, order.price);
-        } else {
-            _transferErc20Funds(
-                IERC20(order.paymentErc20TokenAddress),
-                order.orderer,
-                order.price
-            );
-        }
+        _distributeCancelledOrderFunds(
+            order.orderer,
+            order.price,
+            order.paymentErc20TokenAddress
+        );
 
         emit OrderCancelled(
             order.orderer,
@@ -174,26 +161,17 @@ contract ArtOrder is
     ) external nonReentrant {
         _checkFinalizeOrderSignature(order, v, r, s);
 
-        address collectionAddr = collectionPerArtist[order.artist];
-
         bytes32 orderHash = _getOrderHash(order);
 
         if (statusPerOrder[orderHash] != OrderStatus.Active) {
             revert OrderNotActive();
         }
 
-        if (collectionAddr == address(0)) {
-            collectionAddr = IOrderCollectionFactory(collectionFactory)
-                .createCollection(order.artist, "Order Collection", "OC", 1000);
-
-            collectionPerArtist[order.artist] = collectionAddr;
-        }
-
-        IOrderCollection(collectionAddr).mint(order.orderer, tokenCID);
+        _mintOrderNft(order.orderer, order.artist, tokenCID);
 
         statusPerOrder[orderHash] = OrderStatus.Finalized;
 
-        _distributeOrderFunds(
+        _distributeFinalizedOrderFunds(
             order.artist,
             order.price,
             order.paymentErc20TokenAddress
@@ -214,6 +192,23 @@ contract ArtOrder is
         onlyAdministrator
     {
         _updateDistributorConfiguration(newFeeRecipient, newFeeAmount);
+    }
+
+    function _mintOrderNft(
+        address orderer,
+        address artist,
+        string calldata tokenCID
+    ) internal {
+        address collectionAddr = collectionPerArtist[artist];
+
+        if (collectionAddr == address(0)) {
+            collectionAddr = IOrderCollectionFactory(collectionFactory)
+                .createCollection(artist, "Order Collection", "OC", 1000);
+
+            collectionPerArtist[artist] = collectionAddr;
+        }
+
+        IOrderCollection(collectionAddr).mint(orderer, tokenCID);
     }
 
     function _getOrderHash(Order calldata order)
