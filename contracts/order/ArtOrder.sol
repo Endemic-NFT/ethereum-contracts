@@ -29,11 +29,6 @@ contract ArtOrder is
     mapping(bytes32 => OrderStatus) public statusPerOrder;
     mapping(address => address) public collectionPerArtist;
 
-    error OrderAlreadyExists();
-    error OrderNotActive();
-    error OrderTimestampNotExceeded();
-    error OrderTimestampExceeded();
-
     event OrderCreated(
         address indexed orderer,
         address indexed artist,
@@ -57,6 +52,17 @@ contract ArtOrder is
         string tokenCID
     );
 
+    error OrderAlreadyExists();
+    error OrderNotActive();
+    error OrderTimestampNotExceeded();
+    error OrderTimestampExceeded();
+    error UnauthorizedCaller();
+
+    modifier onlyCaller(address caller) {
+        if (msg.sender != caller) revert UnauthorizedCaller();
+        _;
+    }
+
     function initialize(
         uint256 _feeAmount,
         address _feeRecipient,
@@ -73,40 +79,22 @@ contract ArtOrder is
 
     function createOrder(
         Order calldata order,
-        uint8 vOrderer,
-        bytes32 rOrderer,
-        bytes32 sOrderer,
-        uint8 vArtist,
-        bytes32 rArtist,
-        bytes32 sArtist
-    ) external payable {
-        _checkCreateOrderSignature(
-            order,
-            vOrderer,
-            rOrderer,
-            sOrderer,
-            order.orderer
-        );
-        _checkCreateOrderSignature(
-            order,
-            vArtist,
-            rArtist,
-            sArtist,
-            order.artist
-        );
+        OrderSignature calldata artistSignature
+    ) external payable onlyCaller(order.orderer) {
+        _checkCreateOrderSignature(order, artistSignature);
 
         bytes32 orderHash = _getOrderHash(order);
 
         if (statusPerOrder[orderHash] != OrderStatus.Inactive)
             revert OrderAlreadyExists();
 
-        _lockCreateOrderFunds(
+        statusPerOrder[orderHash] = OrderStatus.Active;
+
+        _lockOrderFunds(
             order.orderer,
             order.price,
             order.paymentErc20TokenAddress
         );
-
-        statusPerOrder[orderHash] = OrderStatus.Active;
 
         emit OrderCreated(
             order.orderer,
@@ -117,14 +105,10 @@ contract ArtOrder is
         );
     }
 
-    function cancelOrder(
-        Order calldata order,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        _checkCancelOrderSignature(order, v, r, s);
-
+    function cancelOrder(Order calldata order)
+        external
+        onlyCaller(order.orderer)
+    {
         if (block.timestamp < order.timestamp) {
             revert OrderTimestampNotExceeded();
         }
@@ -152,24 +136,45 @@ contract ArtOrder is
         );
     }
 
-    function finalizeOrder(
-        Order calldata order,
-        string calldata tokenCID,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external nonReentrant {
-        _checkFinalizeOrderSignature(order, v, r, s);
+    function finalizeOrder(Order calldata order, string calldata tokenCID)
+        external
+        nonReentrant
+        onlyCaller(order.artist)
+    {
+        if (block.timestamp > order.timestamp) {
+            revert OrderTimestampExceeded();
+        }
 
+        _finalizeOrder(order, tokenCID);
+    }
+
+    function finalizeExtendedOrder(
+        Order calldata order,
+        uint256 newTimestamp,
+        string calldata tokenCID,
+        OrderSignature calldata extendSignature
+    ) external nonReentrant onlyCaller(order.artist) {
+        _checkExtendOrderSignature(order, newTimestamp, extendSignature);
+
+        if (block.timestamp > newTimestamp) {
+            revert OrderTimestampExceeded();
+        }
+
+        _finalizeOrder(order, tokenCID);
+    }
+
+    function _finalizeOrder(Order calldata order, string calldata tokenCID)
+        internal
+    {
         bytes32 orderHash = _getOrderHash(order);
 
         if (statusPerOrder[orderHash] != OrderStatus.Active) {
             revert OrderNotActive();
         }
 
-        _mintOrderNft(order.orderer, order.artist, tokenCID);
-
         statusPerOrder[orderHash] = OrderStatus.Finalized;
+
+        _mintOrderNft(order.orderer, order.artist, tokenCID);
 
         _distributeFinalizedOrderFunds(
             order.artist,

@@ -107,7 +107,12 @@ const createCreateOrderSignature = async (orderContract, signer, order) => {
   return ethers.utils.splitSignature(signature);
 };
 
-const createCancelOrderSignature = async (orderContract, signer, order) => {
+const createExtendOrderSignature = async (
+  orderContract,
+  signer,
+  order,
+  newTimestamp
+) => {
   const signature = await signer._signTypedData(
     {
       name: 'ArtOrder',
@@ -116,12 +121,13 @@ const createCancelOrderSignature = async (orderContract, signer, order) => {
       verifyingContract: orderContract.address,
     },
     {
-      CancelOrder: [
+      ExtendOrder: [
         { name: 'orderer', type: 'address' },
         { name: 'artist', type: 'address' },
         { name: 'price', type: 'uint256' },
         { name: 'timestamp', type: 'uint256' },
         { name: 'paymentErc20TokenAddress', type: 'address' },
+        { name: 'newTimestamp', type: 'uint256' },
       ],
     },
     {
@@ -130,35 +136,7 @@ const createCancelOrderSignature = async (orderContract, signer, order) => {
       price: order.price,
       timestamp: order.timestamp,
       paymentErc20TokenAddress: order.paymentErc20TokenAddress,
-    }
-  );
-
-  return ethers.utils.splitSignature(signature);
-};
-
-const createFinalizeOrderSignature = async (orderContract, signer, order) => {
-  const signature = await signer._signTypedData(
-    {
-      name: 'ArtOrder',
-      version: '1',
-      chainId: 31337,
-      verifyingContract: orderContract.address,
-    },
-    {
-      FinalizeOrder: [
-        { name: 'orderer', type: 'address' },
-        { name: 'artist', type: 'address' },
-        { name: 'price', type: 'uint256' },
-        { name: 'timestamp', type: 'uint256' },
-        { name: 'paymentErc20TokenAddress', type: 'address' },
-      ],
-    },
-    {
-      orderer: order.orderer,
-      artist: order.artist,
-      price: order.price,
-      timestamp: order.timestamp,
-      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+      newTimestamp: newTimestamp,
     }
   );
 
@@ -171,6 +149,5 @@ module.exports = {
   createMintApprovalSignature,
   createBatchMintApprovalSignature,
   createCreateOrderSignature,
-  createCancelOrderSignature,
-  createFinalizeOrderSignature,
+  createExtendOrderSignature,
 };

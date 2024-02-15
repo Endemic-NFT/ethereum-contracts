@@ -18,7 +18,7 @@ contract ArtOrderFundsDistributor is Initializable {
         _updateDistributorConfiguration(_feeRecipientAddress, _feeAmount);
     }
 
-    function _lockCreateOrderFunds(
+    function _lockOrderFunds(
         address orderer,
         uint256 price,
         address paymentErc20TokenAddress

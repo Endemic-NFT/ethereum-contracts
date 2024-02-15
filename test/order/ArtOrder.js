@@ -4,8 +4,7 @@ const { deployArtOrderWithFactory } = require('../helpers/deploy');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const {
   createCreateOrderSignature,
-  createCancelOrderSignature,
-  createFinalizeOrderSignature,
+  createExtendOrderSignature,
 } = require('../helpers/sign');
 
 function getOrderHash(order) {
@@ -31,6 +30,7 @@ describe('ArtOrder', function () {
   let administrator, orderer, artist, feeRecipient;
   let timestampNow;
   let timestampDayAfter;
+  let timestamp2DaysAfter;
 
   let orderEth;
   let orderErc20;
@@ -39,6 +39,7 @@ describe('ArtOrder', function () {
     [administrator, orderer, artist, feeRecipient] = await ethers.getSigners();
     timestampNow = (await ethers.provider.getBlock('latest')).timestamp;
     timestampDayAfter = timestampNow + ONE_DAY;
+    timestamp2DaysAfter = timestampNow + ONE_DAY * 2;
 
     const EndemicToken = await ethers.getContractFactory('EndemicToken');
     tokenContract = await EndemicToken.deploy(orderer.address);
@@ -82,31 +83,20 @@ describe('ArtOrder', function () {
   });
 
   describe('createOrder', function () {
+    let artistSignature;
+
+    beforeEach(async function () {
+      artistSignature = await createCreateOrderSignature(
+        artOrderContract,
+        artist,
+        orderEth
+      );
+    });
+
     it('creates a new order and transfers ether', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
       await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderEth,
-          vOrderer,
-          rOrderer,
-          sOrderer,
-          vArtist,
-          rArtist,
-          sArtist,
-          { value: PRICE }
-        );
+        .createOrder(orderEth, artistSignature, { value: PRICE });
 
       const orderHash = getOrderHash(orderEth).toString();
 
@@ -117,21 +107,7 @@ describe('ArtOrder', function () {
     });
 
     it('creates a new order and transfers erc20', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(
-        artOrderContract,
-        orderer,
-        orderErc20
-      );
-
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(
+      const artistSignatureErc20 = await createCreateOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -139,15 +115,7 @@ describe('ArtOrder', function () {
 
       await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderErc20,
-          vOrderer,
-          rOrderer,
-          sOrderer,
-          vArtist,
-          rArtist,
-          sArtist
-        );
+        .createOrder(orderErc20, artistSignatureErc20);
 
       const orderHash = getOrderHash(orderErc20).toString();
 
@@ -158,30 +126,9 @@ describe('ArtOrder', function () {
     });
 
     it('emits OrderCreated event', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
       const tx = await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderEth,
-          vOrderer,
-          rOrderer,
-          sOrderer,
-          vArtist,
-          rArtist,
-          sArtist,
-          { value: PRICE }
-        );
+        .createOrder(orderEth, artistSignature, { value: PRICE });
 
       const receipt = await tx.wait();
       const eventData = receipt.events.find(
@@ -197,170 +144,64 @@ describe('ArtOrder', function () {
       );
     });
 
-    it('reverts if orderer signature is not valid', async function () {
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
+    it('reverts if caller not the orderer', async function () {
       await expect(
         artOrderContract
-          .connect(orderer)
-          .createOrder(
-            orderEth,
-            0,
-            rArtist,
-            sArtist,
-            vArtist,
-            rArtist,
-            sArtist,
-            {
-              value: PRICE,
-            }
-          )
+          .connect(administrator)
+          .createOrder(orderEth, artistSignature, { value: PRICE })
       ).to.be.reverted;
     });
 
     it('reverts if artist signature is not valid', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
+      const ordererSignature = await createCreateOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth
+      );
 
       await expect(
         artOrderContract
           .connect(orderer)
-          .createOrder(
-            orderEth,
-            vOrderer,
-            rOrderer,
-            sOrderer,
-            0,
-            rOrderer,
-            sOrderer,
-            {
-              value: PRICE,
-            }
-          )
+          .createOrder(orderEth, ordererSignature, {
+            value: PRICE,
+          })
       ).to.be.reverted;
     });
 
     it('reverts if order already exists', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
       await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderEth,
-          vOrderer,
-          rOrderer,
-          sOrderer,
-          vArtist,
-          rArtist,
-          sArtist,
-          { value: PRICE }
-        );
+        .createOrder(orderEth, artistSignature, { value: PRICE });
 
       await expect(
         artOrderContract
           .connect(orderer)
-          .createOrder(
-            orderEth,
-            vOrderer,
-            rOrderer,
-            sOrderer,
-            vArtist,
-            rArtist,
-            sArtist,
-            { value: PRICE }
-          )
+          .createOrder(orderEth, artistSignature, { value: PRICE })
       ).to.be.reverted;
     });
 
     it('reverts if invalid ether amount sent', async function () {
-      const {
-        v: vOrderer,
-        r: rOrderer,
-        s: sOrderer,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtist,
-        r: rArtist,
-        s: sArtist,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
       await expect(
         artOrderContract
           .connect(orderer)
-          .createOrder(
-            orderEth,
-            vOrderer,
-            rOrderer,
-            sOrderer,
-            vArtist,
-            rArtist,
-            sArtist,
-            { value: PRICE - 1 }
-          )
+          .createOrder(orderEth, artistSignature, { value: PRICE - 1 })
       ).to.be.reverted;
     });
   });
 
   describe('cancelOrder', () => {
     beforeEach(async function () {
-      const {
-        v: vOrdererEth,
-        r: rOrdererEth,
-        s: sOrdererEth,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtistEth,
-        r: rArtistEth,
-        s: sArtistEth,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
+      const artistSigEth = await createCreateOrderSignature(
+        artOrderContract,
+        artist,
+        orderEth
+      );
 
       await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderEth,
-          vOrdererEth,
-          rOrdererEth,
-          sOrdererEth,
-          vArtistEth,
-          rArtistEth,
-          sArtistEth,
-          { value: PRICE }
-        );
+        .createOrder(orderEth, artistSigEth, { value: PRICE });
 
-      const {
-        v: vOrdererErc20,
-        r: rOrdererErc20,
-        s: sOrdererErc20,
-      } = await createCreateOrderSignature(
-        artOrderContract,
-        orderer,
-        orderErc20
-      );
-
-      const {
-        v: vArtistErc20,
-        r: rArtistErc20,
-        s: sArtistErc20,
-      } = await createCreateOrderSignature(
+      const artistSigErc20 = await createCreateOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -368,27 +209,13 @@ describe('ArtOrder', function () {
 
       await artOrderContract
         .connect(orderer)
-        .createOrder(
-          orderErc20,
-          vOrdererErc20,
-          rOrdererErc20,
-          sOrdererErc20,
-          vArtistErc20,
-          rArtistErc20,
-          sArtistErc20
-        );
+        .createOrder(orderErc20, artistSigErc20);
     });
 
     it('cancels an order and transfers ether', async function () {
       await time.increase(ONE_DAY);
 
-      const { v, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderEth
-      );
-
-      await artOrderContract.connect(orderer).cancelOrder(orderEth, v, r, s);
+      await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
       expect(
         await ethers.provider.getBalance(artOrderContract.address)
@@ -398,13 +225,7 @@ describe('ArtOrder', function () {
     it('cancels an order and transfers erc20', async function () {
       await time.increase(ONE_DAY);
 
-      const { v, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderErc20
-      );
-
-      await artOrderContract.connect(orderer).cancelOrder(orderErc20, v, r, s);
+      await artOrderContract.connect(orderer).cancelOrder(orderErc20);
 
       expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
         0
@@ -414,15 +235,7 @@ describe('ArtOrder', function () {
     it('emits OrderCancelled event', async function () {
       await time.increase(ONE_DAY);
 
-      const { v, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderEth
-      );
-
-      const tx = await artOrderContract
-        .connect(orderer)
-        .cancelOrder(orderEth, v, r, s);
+      const tx = await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
       const receipt = await tx.wait();
       const eventData = receipt.events.find(
@@ -438,121 +251,53 @@ describe('ArtOrder', function () {
       );
     });
 
-    it('reverts if signature is not valid', async function () {
+    it('reverts if caller not the orderer', async function () {
       await time.increase(ONE_DAY);
 
-      const { _, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderEth
-      );
-
       await expect(
-        artOrderContract.connect(orderer).cancelOrder(orderEth, 0, r, s)
+        artOrderContract.connect(administrator).cancelOrder(orderEth)
       ).to.be.reverted;
     });
 
     it('reverts if order is still valid', async function () {
-      const { v, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderEth
-      );
-
-      await expect(
-        artOrderContract.connect(orderer).cancelOrder(orderEth, v, r, s)
-      ).to.be.reverted;
+      await expect(artOrderContract.connect(orderer).cancelOrder(orderEth)).to
+        .be.reverted;
     });
 
     it('reverts if order is not active', async function () {
-      const orderEth2 = {
-        ...orderEth,
-        price: PRICE * 2,
-      };
-
       await time.increase(ONE_DAY);
 
-      const { v, r, s } = await createCancelOrderSignature(
-        artOrderContract,
-        orderer,
-        orderEth2
-      );
+      await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
-      await expect(
-        artOrderContract.connect(orderer).cancelOrder(orderEth2, v, r, s)
-      ).to.be.reverted;
+      await expect(artOrderContract.connect(orderer).cancelOrder(orderEth)).to
+        .be.reverted;
     });
   });
 
   describe('finalizeOrder', () => {
     beforeEach(async function () {
-      const {
-        v: vOrdererEth,
-        r: rOrdererEth,
-        s: sOrdererEth,
-      } = await createCreateOrderSignature(artOrderContract, orderer, orderEth);
-
-      const {
-        v: vArtistEth,
-        r: rArtistEth,
-        s: sArtistEth,
-      } = await createCreateOrderSignature(artOrderContract, artist, orderEth);
-
-      await artOrderContract
-        .connect(orderer)
-        .createOrder(
-          orderEth,
-          vOrdererEth,
-          rOrdererEth,
-          sOrdererEth,
-          vArtistEth,
-          rArtistEth,
-          sArtistEth,
-          { value: PRICE }
-        );
-
-      const {
-        v: vOrdererErc20,
-        r: rOrdererErc20,
-        s: sOrdererErc20,
-      } = await createCreateOrderSignature(
-        artOrderContract,
-        orderer,
-        orderErc20
-      );
-
-      const {
-        v: vArtistErc20,
-        r: rArtistErc20,
-        s: sArtistErc20,
-      } = await createCreateOrderSignature(
-        artOrderContract,
-        artist,
-        orderErc20
-      );
-
-      await artOrderContract
-        .connect(orderer)
-        .createOrder(
-          orderErc20,
-          vOrdererErc20,
-          rOrdererErc20,
-          sOrdererErc20,
-          vArtistErc20,
-          rArtistErc20,
-          sArtistErc20
-        );
-    });
-
-    it('finalizes an order and distributes ether', async function () {
-      await time.increase(ONE_DAY);
-
-      const { v, r, s } = await createFinalizeOrderSignature(
+      const artistSigEth = await createCreateOrderSignature(
         artOrderContract,
         artist,
         orderEth
       );
 
+      await artOrderContract
+        .connect(orderer)
+        .createOrder(orderEth, artistSigEth, { value: PRICE });
+
+      const artistSigErc20 = await createCreateOrderSignature(
+        artOrderContract,
+        artist,
+        orderErc20
+      );
+
+      await artOrderContract
+        .connect(orderer)
+        .createOrder(orderErc20, artistSigErc20);
+    });
+
+    it('finalizes an order and distributes ether', async function () {
       const prevArtistBalance = await ethers.provider.getBalance(
         artist.address
       );
@@ -562,7 +307,7 @@ describe('ArtOrder', function () {
 
       const tx = await artOrderContract
         .connect(artist)
-        .finalizeOrder(orderEth, 'token CID', v, r, s);
+        .finalizeOrder(orderEth, 'token CID');
       const receipt = await tx.wait();
       const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
 
@@ -578,14 +323,6 @@ describe('ArtOrder', function () {
     });
 
     it('finalizes an order and distributes erc20', async function () {
-      await time.increase(ONE_DAY);
-
-      const { v, r, s } = await createFinalizeOrderSignature(
-        artOrderContract,
-        artist,
-        orderErc20
-      );
-
       const prevArtistBalance = await tokenContract.balanceOf(artist.address);
       const prevFeeRecipientBalance = await tokenContract.balanceOf(
         feeRecipient.address
@@ -593,7 +330,7 @@ describe('ArtOrder', function () {
 
       await artOrderContract
         .connect(artist)
-        .finalizeOrder(orderErc20, 'token CID', v, r, s);
+        .finalizeOrder(orderErc20, 'token CID');
 
       expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
         0
@@ -607,15 +344,9 @@ describe('ArtOrder', function () {
     });
 
     it('emits OrderFinalized event', async function () {
-      const { v, r, s } = await createFinalizeOrderSignature(
-        artOrderContract,
-        artist,
-        orderEth
-      );
-
       const tx = await artOrderContract
         .connect(artist)
-        .finalizeOrder(orderEth, 'token CID', v, r, s);
+        .finalizeOrder(orderEth, 'token CID');
 
       const receipt = await tx.wait();
       const eventData = receipt.events.find(
@@ -633,31 +364,13 @@ describe('ArtOrder', function () {
     });
 
     it('finalizes multiple orders for same artist', async function () {
-      await time.increase(ONE_DAY);
-
-      const { v, r, s } = await createFinalizeOrderSignature(
-        artOrderContract,
-        artist,
-        orderEth
-      );
+      await artOrderContract
+        .connect(artist)
+        .finalizeOrder(orderEth, 'token CID');
 
       await artOrderContract
         .connect(artist)
-        .finalizeOrder(orderEth, 'token CID', v, r, s);
-
-      const {
-        v: v2,
-        r: r2,
-        s: s2,
-      } = await createFinalizeOrderSignature(
-        artOrderContract,
-        artist,
-        orderErc20
-      );
-
-      await artOrderContract
-        .connect(artist)
-        .finalizeOrder(orderErc20, 'token CID', v2, r2, s2);
+        .finalizeOrder(orderErc20, 'token CID');
 
       expect(
         await ethers.provider.getBalance(artOrderContract.address)
@@ -667,36 +380,264 @@ describe('ArtOrder', function () {
       );
     });
 
-    it('reverts if signature is not valid', async function () {
-      const { _, r, s } = await createFinalizeOrderSignature(
+    it('reverts if order timestamp exceeded', async function () {
+      await time.increase(ONE_DAY);
+
+      await expect(
+        artOrderContract.connect(artist).finalizeOrder(orderEth, 'token CID')
+      ).to.be.reverted;
+    });
+
+    it('reverts if caller not the artist', async function () {
+      await expect(
+        artOrderContract.connect(orderer).finalizeOrder(orderErc20, 'token CID')
+      ).to.be.reverted;
+    });
+
+    it('reverts if order does not exist', async function () {
+      const order = {
+        ...orderEth,
+        price: PRICE + 1,
+      };
+
+      await expect(
+        artOrderContract.connect(artist).finalizeOrder(order, 'token CID')
+      ).to.be.reverted;
+    });
+  });
+
+  describe('finalizeExtendedOrder', () => {
+    beforeEach(async function () {
+      await time.increase(ONE_DAY + 1);
+
+      const artistSigEth = await createCreateOrderSignature(
         artOrderContract,
         artist,
         orderEth
       );
 
+      await artOrderContract
+        .connect(orderer)
+        .createOrder(orderEth, artistSigEth, { value: PRICE });
+
+      const artistSigErc20 = await createCreateOrderSignature(
+        artOrderContract,
+        artist,
+        orderErc20
+      );
+
+      await artOrderContract
+        .connect(orderer)
+        .createOrder(orderErc20, artistSigErc20);
+    });
+
+    it('finalizes an order and distributes ether', async function () {
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth,
+        timestamp2DaysAfter
+      );
+
+      const prevArtistBalance = await ethers.provider.getBalance(
+        artist.address
+      );
+      const prevFeeRecipientBalance = await ethers.provider.getBalance(
+        feeRecipient.address
+      );
+
+      const tx = await artOrderContract
+        .connect(artist)
+        .finalizeExtendedOrder(
+          orderEth,
+          timestamp2DaysAfter,
+          'token CID',
+          extendSignatureEth
+        );
+      const receipt = await tx.wait();
+      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+
+      expect(
+        await ethers.provider.getBalance(artOrderContract.address)
+      ).to.equal(0);
+      expect(await ethers.provider.getBalance(artist.address)).to.equal(
+        prevArtistBalance.add(PRICE * 0.975).sub(gasSpent)
+      );
+      expect(await ethers.provider.getBalance(feeRecipient.address)).to.equal(
+        prevFeeRecipientBalance.add(PRICE * 0.025)
+      );
+    });
+
+    it('finalizes an order and distributes erc20', async function () {
+      let extendSignatureErc20 = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderErc20,
+        timestamp2DaysAfter
+      );
+
+      const prevArtistBalance = await tokenContract.balanceOf(artist.address);
+      const prevFeeRecipientBalance = await tokenContract.balanceOf(
+        feeRecipient.address
+      );
+
+      await artOrderContract
+        .connect(artist)
+        .finalizeExtendedOrder(
+          orderErc20,
+          timestamp2DaysAfter,
+          'token CID',
+          extendSignatureErc20
+        );
+
+      expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
+        0
+      );
+      expect(await tokenContract.balanceOf(artist.address)).to.equal(
+        prevArtistBalance.add(PRICE * 0.975)
+      );
+      expect(await tokenContract.balanceOf(feeRecipient.address)).to.equal(
+        prevFeeRecipientBalance.add(PRICE * 0.025)
+      );
+    });
+
+    it('emits OrderFinalized event', async function () {
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth,
+        timestamp2DaysAfter
+      );
+
+      const tx = await artOrderContract
+        .connect(artist)
+        .finalizeExtendedOrder(
+          orderEth,
+          timestamp2DaysAfter,
+          'token CID',
+          extendSignatureEth
+        );
+
+      const receipt = await tx.wait();
+      const eventData = receipt.events.find(
+        ({ event }) => event === 'OrderFinalized'
+      );
+
+      expect(orderer.address).to.equal(eventData.args.orderer);
+      expect(artist.address).to.equal(eventData.args.artist);
+      expect(PRICE).to.equal(eventData.args.price);
+      expect(timestampDayAfter).to.equal(eventData.args.timestamp);
+      expect(ethers.constants.AddressZero).to.equal(
+        eventData.args.paymentErc20TokenAddress
+      );
+      expect('token CID').to.equal(eventData.args.tokenCID);
+    });
+
+    it('finalizes multiple extended orders for same artist', async function () {
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth,
+        timestamp2DaysAfter
+      );
+
+      let extendSignatureErc20 = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderErc20,
+        timestamp2DaysAfter
+      );
+
+      await artOrderContract
+        .connect(artist)
+        .finalizeExtendedOrder(
+          orderEth,
+          timestamp2DaysAfter,
+          'token CID',
+          extendSignatureEth
+        );
+
+      await artOrderContract
+        .connect(artist)
+        .finalizeExtendedOrder(
+          orderErc20,
+          timestamp2DaysAfter,
+          'token CID',
+          extendSignatureErc20
+        );
+
+      expect(
+        await ethers.provider.getBalance(artOrderContract.address)
+      ).to.equal(0);
+      expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
+        0
+      );
+    });
+
+    it('reverts if new order timestamp exceeded', async function () {
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth,
+        timestamp2DaysAfter
+      );
+
+      await time.increase(ONE_DAY);
+
       await expect(
         artOrderContract
           .connect(artist)
-          .finalizeOrder(orderEth, 'token CID', 0, r, s)
+          .finalizeExtendedOrder(
+            orderEth,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureEth
+          )
       ).to.be.reverted;
     });
 
-    it('reverts if order does not exist', async function () {
-      const orderEth2 = {
-        ...orderEth,
-        price: PRICE * 2,
-      };
-
-      const { v, r, s } = await createFinalizeOrderSignature(
+    it('reverts if caller not the artist', async function () {
+      let extendSignatureErc20 = await createExtendOrderSignature(
         artOrderContract,
-        artist,
-        orderEth2
+        orderer,
+        orderErc20,
+        timestamp2DaysAfter
       );
 
       await expect(
         artOrderContract
+          .connect(orderer)
+          .finalizeExtendedOrder(
+            orderErc20,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureErc20
+          )
+      ).to.be.reverted;
+    });
+
+    it('reverts if order does not exist', async function () {
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        orderEth,
+        timestamp2DaysAfter
+      );
+
+      const order = {
+        ...orderEth,
+        price: PRICE + 1,
+      };
+
+      await expect(
+        artOrderContract
           .connect(artist)
-          .finalizeOrder(orderEth2, 'token CID', v, r, s)
+          .finalizeExtendedOrder(
+            order,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureEth
+          )
       ).to.be.reverted;
     });
   });
