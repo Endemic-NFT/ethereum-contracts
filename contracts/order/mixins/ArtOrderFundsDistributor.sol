@@ -27,11 +27,13 @@ contract ArtOrderFundsDistributor is Initializable {
             if (msg.value != price) revert InvalidEtherAmount();
         } else {
             if (msg.value != 0) revert InvalidEtherAmount();
-            IERC20(paymentErc20TokenAddress).transferFrom(
+            bool success = IERC20(paymentErc20TokenAddress).transferFrom(
                 orderer,
                 address(this),
                 price
             );
+
+            if (!success) revert FundsTransferFailed();
         }
     }
 
