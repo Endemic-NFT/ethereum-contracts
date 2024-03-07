@@ -21,10 +21,14 @@ async function main() {
   await royaltiesProviderProxy.deployed();
 
   console.log('RoyaltiesProvider deployed to:', royaltiesProviderProxy.address);
+  return royaltiesProviderProxy.address;
 }
 
 main()
-  .then(() => process.exit(0))
+  .then((address) => {
+    console.log(' ', address);
+    process.exit(0);
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);
