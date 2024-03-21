@@ -1,44 +1,43 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers, upgrades } = require('hardhat');
 const { deployArtOrderWithFactory } = require('../helpers/deploy');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const {
-  createCreateOrderSignature,
+  createOrderSignature,
   createExtendOrderSignature,
 } = require('../helpers/sign');
 
 function getOrderHash(order) {
   return ethers.utils.solidityKeccak256(
-    ['address', 'address', 'uint256', 'uint256', 'address'],
+    ['uint256', 'address', 'address', 'uint256', 'uint256', 'address'],
     [
+      order.nonce,
       order.orderer,
       order.artist,
       order.price,
-      order.timestamp,
+      order.timeframe,
       order.paymentErc20TokenAddress,
     ]
   );
 }
 
-describe('ArtOrder', function () {
+describe.only('ArtOrder', function () {
   const PRICE = 1000000000;
   const ONE_DAY = 60 * 60 * 24;
   const FEE = 250;
 
   let artOrderContract;
   let tokenContract;
-  let administrator, orderer, artist, feeRecipient;
+  let owner, orderer, artist, feeRecipient;
   let timestampNow;
-  let timestampDayAfter;
   let timestamp2DaysAfter;
 
   let orderEth;
   let orderErc20;
 
   beforeEach(async function () {
-    [administrator, orderer, artist, feeRecipient] = await ethers.getSigners();
+    [owner, orderer, artist, feeRecipient] = await ethers.getSigners();
     timestampNow = (await ethers.provider.getBlock('latest')).timestamp;
-    timestampDayAfter = timestampNow + ONE_DAY;
     timestamp2DaysAfter = timestampNow + ONE_DAY * 2;
 
     const EndemicToken = await ethers.getContractFactory('EndemicToken');
@@ -46,25 +45,26 @@ describe('ArtOrder', function () {
     await tokenContract.deployed();
 
     orderEth = {
+      nonce: 0,
       orderer: orderer.address,
       artist: artist.address,
       price: PRICE,
-      timestamp: timestampDayAfter,
+      timeframe: ONE_DAY,
       paymentErc20TokenAddress: ethers.constants.AddressZero,
     };
 
     orderErc20 = {
+      nonce: 0,
       orderer: orderer.address,
       artist: artist.address,
       price: PRICE,
-      timestamp: timestampDayAfter,
+      timeframe: ONE_DAY,
       paymentErc20TokenAddress: tokenContract.address,
     };
 
     artOrderContract = await deployArtOrderWithFactory(
       FEE,
-      feeRecipient.address,
-      administrator.address
+      feeRecipient.address
     );
 
     await tokenContract
@@ -72,21 +72,42 @@ describe('ArtOrder', function () {
       .approve(artOrderContract.address, PRICE);
   });
 
-  it('deploys with correct initial setup', async function () {
-    const _feeAmount = await artOrderContract.feeAmount();
-    const _feeRecipient = await artOrderContract.feeRecipient();
-    const _administrator = await artOrderContract.administrator();
+  describe('initialize', function () {
+    it('deploys with correct initial setup', async function () {
+      const _feeAmount = await artOrderContract.feeAmount();
+      const _feeRecipient = await artOrderContract.feeRecipient();
+      const _owner = await artOrderContract.owner();
 
-    expect(_feeAmount).to.equal(FEE);
-    expect(_feeRecipient).to.equal(feeRecipient.address);
-    expect(_administrator).to.equal(administrator.address);
+      expect(_feeAmount).to.equal(FEE);
+      expect(_feeRecipient).to.equal(feeRecipient.address);
+      expect(_owner).to.equal(owner.address);
+    });
+
+    it('reverts if fee amount is too high', async function () {
+      await expect(
+        deployArtOrderWithFactory(10_001, feeRecipient.address)
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidFeeAmount');
+    });
+
+    it('reverts if collection factory is zero address', async function () {
+      const ArtOrder = await ethers.getContractFactory('ArtOrder');
+      await expect(
+        upgrades.deployProxy(
+          ArtOrder,
+          [1_000, feeRecipient.address, ethers.constants.AddressZero],
+          {
+            initializer: 'initialize',
+          }
+        )
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidAddress');
+    });
   });
 
   describe('createOrder', function () {
     let artistSignature;
 
     beforeEach(async function () {
-      artistSignature = await createCreateOrderSignature(
+      artistSignature = await createOrderSignature(
         artOrderContract,
         artist,
         orderEth
@@ -98,16 +119,20 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderEth, artistSignature, { value: PRICE });
 
-      const orderHash = getOrderHash(orderEth).toString();
+      const timestamp = await time.latest();
 
-      expect(await artOrderContract.statusPerOrder(orderHash)).to.equal(1);
+      const orderHash = getOrderHash(orderEth).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(1);
+      expect(order.deadline).to.equal(timestamp + ONE_DAY);
       expect(
         await ethers.provider.getBalance(artOrderContract.address)
       ).to.equal(PRICE);
     });
 
     it('creates a new order and transfers erc20', async function () {
-      const artistSignatureErc20 = await createCreateOrderSignature(
+      const artistSignatureErc20 = await createOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -117,9 +142,13 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderErc20, artistSignatureErc20);
 
-      const orderHash = getOrderHash(orderErc20).toString();
+      const timestamp = await time.latest();
 
-      expect(await artOrderContract.statusPerOrder(orderHash)).to.equal(1);
+      const orderHash = getOrderHash(orderErc20).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(1);
+      expect(order.deadline).to.equal(timestamp + ONE_DAY);
       expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
         PRICE
       );
@@ -130,30 +159,30 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderEth, artistSignature, { value: PRICE });
 
-      const receipt = await tx.wait();
-      const eventData = receipt.events.find(
-        ({ event }) => event === 'OrderCreated'
-      );
+      const timestamp = await time.latest();
 
-      expect(orderer.address).to.equal(eventData.args.orderer);
-      expect(artist.address).to.equal(eventData.args.artist);
-      expect(PRICE).to.equal(eventData.args.price);
-      expect(timestampDayAfter).to.equal(eventData.args.timestamp);
-      expect(ethers.constants.AddressZero).to.equal(
-        eventData.args.paymentErc20TokenAddress
-      );
+      await expect(tx)
+        .to.emit(artOrderContract, 'OrderCreated')
+        .withArgs(
+          0,
+          orderer.address,
+          artist.address,
+          PRICE,
+          timestamp + ONE_DAY,
+          ethers.constants.AddressZero
+        );
     });
 
     it('reverts if caller not the orderer', async function () {
       await expect(
         artOrderContract
-          .connect(administrator)
+          .connect(owner)
           .createOrder(orderEth, artistSignature, { value: PRICE })
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'UnauthorizedCaller');
     });
 
     it('reverts if artist signature is not valid', async function () {
-      const ordererSignature = await createCreateOrderSignature(
+      const ordererSignature = await createOrderSignature(
         artOrderContract,
         orderer,
         orderEth
@@ -165,7 +194,10 @@ describe('ArtOrder', function () {
           .createOrder(orderEth, ordererSignature, {
             value: PRICE,
           })
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(
+        artOrderContract,
+        'CreateOrderSignatureInvalid'
+      );
     });
 
     it('reverts if order already exists', async function () {
@@ -177,7 +209,7 @@ describe('ArtOrder', function () {
         artOrderContract
           .connect(orderer)
           .createOrder(orderEth, artistSignature, { value: PRICE })
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'OrderAlreadyExists');
     });
 
     it('reverts if invalid ether amount sent', async function () {
@@ -185,13 +217,65 @@ describe('ArtOrder', function () {
         artOrderContract
           .connect(orderer)
           .createOrder(orderEth, artistSignature, { value: PRICE - 1 })
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidEtherAmount');
+    });
+
+    it('reverts if ether is sent for erc20 order', async function () {
+      const artistSignatureErc20 = await createOrderSignature(
+        artOrderContract,
+        artist,
+        orderErc20
+      );
+
+      await expect(
+        artOrderContract
+          .connect(orderer)
+          .createOrder(orderErc20, artistSignatureErc20, {
+            value: 1,
+          })
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidEtherAmount');
+    });
+
+    it('reverts if caller have insufficient erc20 allowance', async function () {
+      const ordererSignature = await createOrderSignature(
+        artOrderContract,
+        artist,
+        orderErc20
+      );
+
+      await tokenContract
+        .connect(orderer)
+        .approve(artOrderContract.address, PRICE - 1);
+
+      await expect(
+        artOrderContract
+          .connect(orderer)
+          .createOrder(orderErc20, ordererSignature)
+      ).to.be.revertedWith('ERC20: insufficient allowance');
+    });
+
+    it('reverts if price is zero', async function () {
+      await expect(
+        artOrderContract.connect(orderer).createOrder(
+          {
+            nonce: 0,
+            orderer: orderer.address,
+            artist: artist.address,
+            price: 0, // price is zero
+            timeframe: ONE_DAY,
+            paymentErc20TokenAddress: ethers.constants.AddressZero,
+          },
+          artistSignature
+        )
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidPrice');
     });
   });
 
   describe('cancelOrder', () => {
+    let ethOrderTimestamp;
+
     beforeEach(async function () {
-      const artistSigEth = await createCreateOrderSignature(
+      const artistSigEth = await createOrderSignature(
         artOrderContract,
         artist,
         orderEth
@@ -201,7 +285,9 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderEth, artistSigEth, { value: PRICE });
 
-      const artistSigErc20 = await createCreateOrderSignature(
+      ethOrderTimestamp = await time.latest();
+
+      const artistSigErc20 = await createOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -217,6 +303,10 @@ describe('ArtOrder', function () {
 
       await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
+      const orderHash = getOrderHash(orderEth).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(2);
       expect(
         await ethers.provider.getBalance(artOrderContract.address)
       ).to.equal(0);
@@ -227,6 +317,10 @@ describe('ArtOrder', function () {
 
       await artOrderContract.connect(orderer).cancelOrder(orderErc20);
 
+      const orderHash = getOrderHash(orderErc20).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(2);
       expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
         0
       );
@@ -237,31 +331,33 @@ describe('ArtOrder', function () {
 
       const tx = await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
-      const receipt = await tx.wait();
-      const eventData = receipt.events.find(
-        ({ event }) => event === 'OrderCancelled'
-      );
-
-      expect(orderer.address).to.equal(eventData.args.orderer);
-      expect(artist.address).to.equal(eventData.args.artist);
-      expect(PRICE).to.equal(eventData.args.price);
-      expect(timestampDayAfter).to.equal(eventData.args.timestamp);
-      expect(ethers.constants.AddressZero).to.equal(
-        eventData.args.paymentErc20TokenAddress
-      );
+      await expect(tx)
+        .to.emit(artOrderContract, 'OrderCancelled')
+        .withArgs(
+          0,
+          orderer.address,
+          artist.address,
+          PRICE,
+          ethOrderTimestamp + ONE_DAY,
+          ethers.constants.AddressZero
+        );
     });
 
     it('reverts if caller not the orderer', async function () {
       await time.increase(ONE_DAY);
 
       await expect(
-        artOrderContract.connect(administrator).cancelOrder(orderEth)
-      ).to.be.reverted;
+        artOrderContract.connect(owner).cancelOrder(orderEth)
+      ).to.be.revertedWithCustomError(artOrderContract, 'UnauthorizedCaller');
     });
 
     it('reverts if order is still valid', async function () {
-      await expect(artOrderContract.connect(orderer).cancelOrder(orderEth)).to
-        .be.reverted;
+      await expect(
+        artOrderContract.connect(orderer).cancelOrder(orderEth)
+      ).to.be.revertedWithCustomError(
+        artOrderContract,
+        'OrderDeadlineNotExceeded'
+      );
     });
 
     it('reverts if order is not active', async function () {
@@ -269,14 +365,17 @@ describe('ArtOrder', function () {
 
       await artOrderContract.connect(orderer).cancelOrder(orderEth);
 
-      await expect(artOrderContract.connect(orderer).cancelOrder(orderEth)).to
-        .be.reverted;
+      await expect(
+        artOrderContract.connect(orderer).cancelOrder(orderEth)
+      ).to.be.revertedWithCustomError(artOrderContract, 'OrderNotActive');
     });
   });
 
   describe('finalizeOrder', () => {
+    let ethOrderTimestamp;
+
     beforeEach(async function () {
-      const artistSigEth = await createCreateOrderSignature(
+      const artistSigEth = await createOrderSignature(
         artOrderContract,
         artist,
         orderEth
@@ -286,7 +385,9 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderEth, artistSigEth, { value: PRICE });
 
-      const artistSigErc20 = await createCreateOrderSignature(
+      ethOrderTimestamp = await time.latest();
+
+      const artistSigErc20 = await createOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -320,6 +421,11 @@ describe('ArtOrder', function () {
       expect(await ethers.provider.getBalance(feeRecipient.address)).to.equal(
         prevFeeRecipientBalance.add(PRICE * 0.025)
       );
+
+      const orderHash = getOrderHash(orderEth).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(3);
     });
 
     it('finalizes an order and distributes erc20', async function () {
@@ -341,6 +447,11 @@ describe('ArtOrder', function () {
       expect(await tokenContract.balanceOf(feeRecipient.address)).to.equal(
         prevFeeRecipientBalance.add(PRICE * 0.025)
       );
+
+      const orderHash = getOrderHash(orderErc20).toString();
+      const order = await artOrderContract.orders(orderHash);
+
+      expect(order.status).to.equal(3);
     });
 
     it('emits OrderFinalized event', async function () {
@@ -348,19 +459,17 @@ describe('ArtOrder', function () {
         .connect(artist)
         .finalizeOrder(orderEth, 'token CID');
 
-      const receipt = await tx.wait();
-      const eventData = receipt.events.find(
-        ({ event }) => event === 'OrderFinalized'
-      );
-
-      expect(orderer.address).to.equal(eventData.args.orderer);
-      expect(artist.address).to.equal(eventData.args.artist);
-      expect(PRICE).to.equal(eventData.args.price);
-      expect(timestampDayAfter).to.equal(eventData.args.timestamp);
-      expect(ethers.constants.AddressZero).to.equal(
-        eventData.args.paymentErc20TokenAddress
-      );
-      expect('token CID').to.equal(eventData.args.tokenCID);
+      await expect(tx)
+        .to.emit(artOrderContract, 'OrderFinalized')
+        .withArgs(
+          0,
+          orderer.address,
+          artist.address,
+          PRICE,
+          ethOrderTimestamp + ONE_DAY, // original deadline
+          ethers.constants.AddressZero,
+          'token CID'
+        );
     });
 
     it('finalizes multiple orders for same artist', async function () {
@@ -385,13 +494,16 @@ describe('ArtOrder', function () {
 
       await expect(
         artOrderContract.connect(artist).finalizeOrder(orderEth, 'token CID')
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(
+        artOrderContract,
+        'OrderDeadlineExceeded'
+      );
     });
 
     it('reverts if caller not the artist', async function () {
       await expect(
         artOrderContract.connect(orderer).finalizeOrder(orderErc20, 'token CID')
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'UnauthorizedCaller');
     });
 
     it('reverts if order does not exist', async function () {
@@ -402,7 +514,13 @@ describe('ArtOrder', function () {
 
       await expect(
         artOrderContract.connect(artist).finalizeOrder(order, 'token CID')
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'OrderNotActive');
+    });
+
+    it('reverts if token cid is empty', async function () {
+      await expect(
+        artOrderContract.connect(artist).finalizeOrder(orderEth, '')
+      ).to.be.revertedWithCustomError(artOrderContract, 'InvalidTokenCID');
     });
   });
 
@@ -410,7 +528,7 @@ describe('ArtOrder', function () {
     beforeEach(async function () {
       await time.increase(ONE_DAY + 1);
 
-      const artistSigEth = await createCreateOrderSignature(
+      const artistSigEth = await createOrderSignature(
         artOrderContract,
         artist,
         orderEth
@@ -420,7 +538,7 @@ describe('ArtOrder', function () {
         .connect(orderer)
         .createOrder(orderEth, artistSigEth, { value: PRICE });
 
-      const artistSigErc20 = await createCreateOrderSignature(
+      const artistSigErc20 = await createOrderSignature(
         artOrderContract,
         artist,
         orderErc20
@@ -439,33 +557,23 @@ describe('ArtOrder', function () {
         timestamp2DaysAfter
       );
 
-      const prevArtistBalance = await ethers.provider.getBalance(
-        artist.address
+      await expect(
+        artOrderContract
+          .connect(artist)
+          .finalizeExtendedOrder(
+            orderEth,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureEth
+          )
+      ).to.changeEtherBalances(
+        [artist, feeRecipient],
+        [PRICE * 0.975, PRICE * 0.025]
       );
-      const prevFeeRecipientBalance = await ethers.provider.getBalance(
-        feeRecipient.address
-      );
-
-      const tx = await artOrderContract
-        .connect(artist)
-        .finalizeExtendedOrder(
-          orderEth,
-          timestamp2DaysAfter,
-          'token CID',
-          extendSignatureEth
-        );
-      const receipt = await tx.wait();
-      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
 
       expect(
         await ethers.provider.getBalance(artOrderContract.address)
       ).to.equal(0);
-      expect(await ethers.provider.getBalance(artist.address)).to.equal(
-        prevArtistBalance.add(PRICE * 0.975).sub(gasSpent)
-      );
-      expect(await ethers.provider.getBalance(feeRecipient.address)).to.equal(
-        prevFeeRecipientBalance.add(PRICE * 0.025)
-      );
     });
 
     it('finalizes an order and distributes erc20', async function () {
@@ -476,28 +584,23 @@ describe('ArtOrder', function () {
         timestamp2DaysAfter
       );
 
-      const prevArtistBalance = await tokenContract.balanceOf(artist.address);
-      const prevFeeRecipientBalance = await tokenContract.balanceOf(
-        feeRecipient.address
+      await expect(
+        artOrderContract
+          .connect(artist)
+          .finalizeExtendedOrder(
+            orderErc20,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureErc20
+          )
+      ).to.changeTokenBalances(
+        tokenContract,
+        [artist, feeRecipient],
+        [PRICE * 0.975, PRICE * 0.025]
       );
-
-      await artOrderContract
-        .connect(artist)
-        .finalizeExtendedOrder(
-          orderErc20,
-          timestamp2DaysAfter,
-          'token CID',
-          extendSignatureErc20
-        );
 
       expect(await tokenContract.balanceOf(artOrderContract.address)).to.equal(
         0
-      );
-      expect(await tokenContract.balanceOf(artist.address)).to.equal(
-        prevArtistBalance.add(PRICE * 0.975)
-      );
-      expect(await tokenContract.balanceOf(feeRecipient.address)).to.equal(
-        prevFeeRecipientBalance.add(PRICE * 0.025)
       );
     });
 
@@ -518,19 +621,15 @@ describe('ArtOrder', function () {
           extendSignatureEth
         );
 
-      const receipt = await tx.wait();
-      const eventData = receipt.events.find(
-        ({ event }) => event === 'OrderFinalized'
+      await expect(tx).to.emit(artOrderContract, 'OrderFinalized').withArgs(
+        0,
+        orderer.address,
+        artist.address,
+        PRICE,
+        timestamp2DaysAfter, // new deadline
+        ethers.constants.AddressZero,
+        'token CID'
       );
-
-      expect(orderer.address).to.equal(eventData.args.orderer);
-      expect(artist.address).to.equal(eventData.args.artist);
-      expect(PRICE).to.equal(eventData.args.price);
-      expect(timestampDayAfter).to.equal(eventData.args.timestamp);
-      expect(ethers.constants.AddressZero).to.equal(
-        eventData.args.paymentErc20TokenAddress
-      );
-      expect('token CID').to.equal(eventData.args.tokenCID);
     });
 
     it('finalizes multiple extended orders for same artist', async function () {
@@ -593,7 +692,10 @@ describe('ArtOrder', function () {
             'token CID',
             extendSignatureEth
           )
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(
+        artOrderContract,
+        'OrderDeadlineExceeded'
+      );
     });
 
     it('reverts if caller not the artist', async function () {
@@ -613,10 +715,35 @@ describe('ArtOrder', function () {
             'token CID',
             extendSignatureErc20
           )
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(artOrderContract, 'UnauthorizedCaller');
     });
 
     it('reverts if order does not exist', async function () {
+      const order = {
+        ...orderEth,
+        price: PRICE + 1,
+      };
+
+      let extendSignatureEth = await createExtendOrderSignature(
+        artOrderContract,
+        orderer,
+        order,
+        timestamp2DaysAfter
+      );
+
+      await expect(
+        artOrderContract
+          .connect(artist)
+          .finalizeExtendedOrder(
+            order,
+            timestamp2DaysAfter,
+            'token CID',
+            extendSignatureEth
+          )
+      ).to.be.revertedWithCustomError(artOrderContract, 'OrderNotActive');
+    });
+
+    it('reverts if signature is invalid', async function () {
       let extendSignatureEth = await createExtendOrderSignature(
         artOrderContract,
         orderer,
@@ -638,7 +765,10 @@ describe('ArtOrder', function () {
             'token CID',
             extendSignatureEth
           )
-      ).to.be.reverted;
+      ).to.be.revertedWithCustomError(
+        artOrderContract,
+        'ExtendOrderSignatureInvalid'
+      );
     });
   });
 
@@ -653,10 +783,10 @@ describe('ArtOrder', function () {
       expect(_feeRecipient).to.equal(feeRecipient.address);
     });
 
-    it('reverts if caller is not administrator', async function () {
+    it('reverts if caller is not owner', async function () {
       await expect(
         artOrderContract.connect(orderer).updateFees(500, feeRecipient.address)
-      ).to.be.reverted;
+      ).to.be.revertedWith('Ownable: caller is not the owner');
     });
   });
 });

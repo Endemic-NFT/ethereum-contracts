@@ -1,24 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract ArtOrderEIP712 is EIP712Upgradeable {
+abstract contract ArtOrderEIP712 is EIP712Upgradeable {
+    using ECDSA for bytes32;
+
     bytes32 public constant CREATE_ORDER_TYPEHASH =
         keccak256(
-            "CreateOrder(address orderer,address artist,uint256 price,uint256 timestamp,address paymentErc20TokenAddress)"
+            "CreateOrder(uint256 nonce,address orderer,address artist,uint256 price,uint256 timeframe,address paymentErc20TokenAddress)"
         );
     bytes32 public constant EXTEND_ORDER_TYPEHASH =
         keccak256(
-            "ExtendOrder(address orderer,address artist,uint256 price,uint256 timestamp,address paymentErc20TokenAddress,uint256 newTimestamp)"
+            "ExtendOrder(uint256 nonce,address orderer,address artist,uint256 price,uint256 timeframe,address paymentErc20TokenAddress,uint256 newDeadline)"
         );
 
     struct Order {
+        uint256 nonce;
         address orderer;
         address artist;
         uint256 price;
-        uint256 timestamp;
+        uint256 timeframe;
         address paymentErc20TokenAddress;
     }
 
@@ -39,12 +42,8 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
         Order calldata order,
         OrderSignature calldata signature
     ) internal view {
-        address signer = ecrecover(
-            _prepareCreateOrderMessage(order),
-            signature.v,
-            signature.r,
-            signature.s
-        );
+        bytes32 digest = _prepareCreateOrderMessage(order);
+        address signer = digest.recover(signature.v, signature.r, signature.s);
 
         if (signer != order.artist) {
             revert CreateOrderSignatureInvalid();
@@ -53,58 +52,38 @@ contract ArtOrderEIP712 is EIP712Upgradeable {
 
     function _checkExtendOrderSignature(
         Order calldata order,
-        uint256 newTimestamp,
+        uint256 newDeadline,
         OrderSignature calldata signature
     ) internal view {
-        address signer = ecrecover(
-            _prepareExtendOrderMessage(order, newTimestamp),
-            signature.v,
-            signature.r,
-            signature.s
-        );
+        bytes32 digest = _prepareExtendOrderMessage(order, newDeadline);
+        address signer = digest.recover(signature.v, signature.r, signature.s);
 
         if (signer != order.orderer) {
             revert ExtendOrderSignatureInvalid();
         }
     }
 
-    function _prepareCreateOrderMessage(Order calldata order)
-        internal
-        view
-        returns (bytes32)
-    {
+    function _prepareCreateOrderMessage(
+        Order calldata order
+    ) internal view returns (bytes32) {
         return
             _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        CREATE_ORDER_TYPEHASH,
-                        order.orderer,
-                        order.artist,
-                        order.price,
-                        order.timestamp,
-                        order.paymentErc20TokenAddress
-                    )
-                )
+                keccak256(abi.encode(CREATE_ORDER_TYPEHASH, order))
             );
     }
 
     function _prepareExtendOrderMessage(
         Order calldata order,
-        uint256 newTimestamp
+        uint256 newDeadline
     ) internal view returns (bytes32) {
         return
             _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        EXTEND_ORDER_TYPEHASH,
-                        order.orderer,
-                        order.artist,
-                        order.price,
-                        order.timestamp,
-                        order.paymentErc20TokenAddress,
-                        newTimestamp
-                    )
-                )
+                keccak256(abi.encode(EXTEND_ORDER_TYPEHASH, order, newDeadline))
             );
     }
+
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[500] private __gap;
 }
