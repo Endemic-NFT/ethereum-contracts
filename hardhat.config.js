@@ -2,6 +2,7 @@ require('@nomicfoundation/hardhat-chai-matchers');
 require('@nomiclabs/hardhat-etherscan');
 require('@openzeppelin/hardhat-upgrades');
 require('hardhat-contract-sizer');
+require('@primitivefi/hardhat-dodoc');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
 require('dotenv').config();
@@ -69,6 +70,17 @@ module.exports = {
           browserURL: 'https://testnet.arbiscan.io/',
         },
       },
+    ],
+  },
+  dodoc: {
+    runOnCompile: true,
+    include: [
+      'RoyaltiesProvider',
+      'ArtOrder',
+      'PaymentManager',
+      'Collection',
+      'EndemicCollectionFactory',
+      'EndemicExchange',
     ],
   },
 };
