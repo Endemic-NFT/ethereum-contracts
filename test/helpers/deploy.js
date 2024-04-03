@@ -143,17 +143,13 @@ const deployInitializedOrderCollection = async (
   return collection;
 };
 
-const deployArtOrderWithFactory = async (
-  feeAmount,
-  feeRecipient,
-  administrator
-) => {
+const deployArtOrderWithFactory = async (feeAmount, feeRecipient) => {
   const { nftFactory } = await deployOrderCollectionWithFactory();
 
   const ArtOrder = await ethers.getContractFactory('ArtOrder');
   const artOrder = await upgrades.deployProxy(
     ArtOrder,
-    [feeAmount, feeRecipient, administrator, nftFactory.address],
+    [feeAmount, feeRecipient, nftFactory.address],
     {
       initializer: 'initialize',
     }

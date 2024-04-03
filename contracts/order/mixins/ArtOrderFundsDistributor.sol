@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract ArtOrderFundsDistributor is Initializable {
+abstract contract ArtOrderFundsDistributor is Initializable {
+    using SafeERC20 for IERC20;
+
+    uint256 public constant MAX_FEE = 10_000;
+
     address public feeRecipient;
-    uint256 public feeAmount;
+    uint96 public feeAmount;
 
     error FundsTransferFailed();
     error InvalidEtherAmount();
+    error InvalidFeeAmount();
 
     function __ArtOrderFundsDistributor_init(
         address _feeRecipientAddress,
@@ -27,13 +33,11 @@ contract ArtOrderFundsDistributor is Initializable {
             if (msg.value != price) revert InvalidEtherAmount();
         } else {
             if (msg.value != 0) revert InvalidEtherAmount();
-            bool success = IERC20(paymentErc20TokenAddress).transferFrom(
+            IERC20(paymentErc20TokenAddress).safeTransferFrom(
                 orderer,
                 address(this),
                 price
             );
-
-            if (!success) revert FundsTransferFailed();
         }
     }
 
@@ -66,7 +70,7 @@ contract ArtOrderFundsDistributor is Initializable {
     }
 
     function _distributeEtherFunds(address artist, uint256 amount) internal {
-        uint256 fee = (amount * feeAmount) / 10_000;
+        uint256 fee = (amount * feeAmount) / MAX_FEE;
 
         _transferEtherFunds(feeRecipient, fee);
         _transferEtherFunds(artist, amount - fee);
@@ -77,7 +81,7 @@ contract ArtOrderFundsDistributor is Initializable {
         uint256 amount,
         address token
     ) internal {
-        uint256 fee = (amount * feeAmount) / 10_000;
+        uint256 fee = (amount * feeAmount) / MAX_FEE;
 
         _transferErc20Funds(IERC20(token), feeRecipient, fee);
         _transferErc20Funds(IERC20(token), artist, amount - fee);
@@ -94,16 +98,21 @@ contract ArtOrderFundsDistributor is Initializable {
         address recipient,
         uint256 value
     ) internal {
-        bool success = ERC20PaymentToken.transfer(recipient, value);
-
-        if (!success) revert FundsTransferFailed();
+        ERC20PaymentToken.safeTransfer(recipient, value);
     }
 
     function _updateDistributorConfiguration(
         address _feeRecipientAddress,
         uint256 _feeAmount
     ) internal {
+        if (_feeAmount > MAX_FEE) revert InvalidFeeAmount();
+
         feeRecipient = _feeRecipientAddress;
-        feeAmount = _feeAmount;
+        feeAmount = uint96(_feeAmount);
     }
+
+    /**
+     * @notice See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[500] private __gap;
 }

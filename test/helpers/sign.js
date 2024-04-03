@@ -78,7 +78,7 @@ const createBatchMintApprovalSignature = async (
   return ethers.utils.splitSignature(signature);
 };
 
-const createCreateOrderSignature = async (orderContract, signer, order) => {
+const createOrderSignature = async (orderContract, signer, order) => {
   const signature = await signer._signTypedData(
     {
       name: 'ArtOrder',
@@ -88,18 +88,20 @@ const createCreateOrderSignature = async (orderContract, signer, order) => {
     },
     {
       CreateOrder: [
+        { name: 'nonce', type: 'uint256' },
         { name: 'orderer', type: 'address' },
         { name: 'artist', type: 'address' },
         { name: 'price', type: 'uint256' },
-        { name: 'timestamp', type: 'uint256' },
+        { name: 'timeframe', type: 'uint256' },
         { name: 'paymentErc20TokenAddress', type: 'address' },
       ],
     },
     {
+      nonce: order.nonce,
       orderer: order.orderer,
       artist: order.artist,
       price: order.price,
-      timestamp: order.timestamp,
+      timeframe: order.timeframe,
       paymentErc20TokenAddress: order.paymentErc20TokenAddress,
     }
   );
@@ -111,7 +113,7 @@ const createExtendOrderSignature = async (
   orderContract,
   signer,
   order,
-  newTimestamp
+  newDeadline
 ) => {
   const signature = await signer._signTypedData(
     {
@@ -122,21 +124,23 @@ const createExtendOrderSignature = async (
     },
     {
       ExtendOrder: [
+        { name: 'nonce', type: 'uint256' },
         { name: 'orderer', type: 'address' },
         { name: 'artist', type: 'address' },
         { name: 'price', type: 'uint256' },
-        { name: 'timestamp', type: 'uint256' },
+        { name: 'timeframe', type: 'uint256' },
         { name: 'paymentErc20TokenAddress', type: 'address' },
-        { name: 'newTimestamp', type: 'uint256' },
+        { name: 'newDeadline', type: 'uint256' },
       ],
     },
     {
+      nonce: order.nonce,
       orderer: order.orderer,
       artist: order.artist,
       price: order.price,
-      timestamp: order.timestamp,
+      timeframe: order.timeframe,
       paymentErc20TokenAddress: order.paymentErc20TokenAddress,
-      newTimestamp: newTimestamp,
+      newDeadline: newDeadline,
     }
   );
 
@@ -148,6 +152,6 @@ module.exports = {
   sign,
   createMintApprovalSignature,
   createBatchMintApprovalSignature,
-  createCreateOrderSignature,
+  createOrderSignature,
   createExtendOrderSignature,
 };
