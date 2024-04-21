@@ -21,7 +21,7 @@ function getOrderHash(order) {
   );
 }
 
-describe.only('ArtOrder', function () {
+describe('ArtOrder', function () {
   const PRICE = 1000000000;
   const ONE_DAY = 60 * 60 * 24;
   const FEE = 250;
