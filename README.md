@@ -1,7 +1,7 @@
-# Endemic Ethereum Contracts
+# Endemic Smart Contracts
 Endemic is a platform connecting established artists and the real-world art with the newly growing NFT market.
 
-# Setup Accounts
+## Setup Accounts
 
 Create local .env file
 
@@ -27,7 +27,7 @@ Private key
     1. Install MetaMask from
     2. Export Private Key into .env file following the steps outlined here https://metamask.zendesk.com/hc/en-us/articles/360015289632-How-to-Export-an-Account-Private-Key
 
-# Setup Tools
+## Setup Tools
 
 (Ubuntu) Install NodeJS
 
@@ -43,7 +43,7 @@ Install Hardhat
 
 
 
-# Dev loop
+## Dev loop
 
 Build
 

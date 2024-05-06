@@ -17,10 +17,15 @@ async function main() {
   await paymentManagerProxy.deployed();
 
   console.log('PaymentManager deployed to:', paymentManagerProxy.address);
+
+  return paymentManagerProxy.address;
 }
 
 main()
-  .then(() => process.exit(0))
+  .then((address) => {
+    console.log(' ', address);
+    process.exit(0);
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);

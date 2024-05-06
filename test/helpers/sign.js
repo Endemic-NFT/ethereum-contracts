@@ -78,9 +78,80 @@ const createBatchMintApprovalSignature = async (
   return ethers.utils.splitSignature(signature);
 };
 
+const createOrderSignature = async (orderContract, signer, order) => {
+  const signature = await signer._signTypedData(
+    {
+      name: 'ArtOrder',
+      version: '1',
+      chainId: 31337,
+      verifyingContract: orderContract.address,
+    },
+    {
+      CreateOrder: [
+        { name: 'nonce', type: 'uint256' },
+        { name: 'orderer', type: 'address' },
+        { name: 'artist', type: 'address' },
+        { name: 'price', type: 'uint256' },
+        { name: 'timeframe', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
+      ],
+    },
+    {
+      nonce: order.nonce,
+      orderer: order.orderer,
+      artist: order.artist,
+      price: order.price,
+      timeframe: order.timeframe,
+      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
+const createExtendOrderSignature = async (
+  orderContract,
+  signer,
+  order,
+  newDeadline
+) => {
+  const signature = await signer._signTypedData(
+    {
+      name: 'ArtOrder',
+      version: '1',
+      chainId: 31337,
+      verifyingContract: orderContract.address,
+    },
+    {
+      ExtendOrder: [
+        { name: 'nonce', type: 'uint256' },
+        { name: 'orderer', type: 'address' },
+        { name: 'artist', type: 'address' },
+        { name: 'price', type: 'uint256' },
+        { name: 'timeframe', type: 'uint256' },
+        { name: 'paymentErc20TokenAddress', type: 'address' },
+        { name: 'newDeadline', type: 'uint256' },
+      ],
+    },
+    {
+      nonce: order.nonce,
+      orderer: order.orderer,
+      artist: order.artist,
+      price: order.price,
+      timeframe: order.timeframe,
+      paymentErc20TokenAddress: order.paymentErc20TokenAddress,
+      newDeadline: newDeadline,
+    }
+  );
+
+  return ethers.utils.splitSignature(signature);
+};
+
 module.exports = {
   hashAndSign,
   sign,
   createMintApprovalSignature,
   createBatchMintApprovalSignature,
+  createOrderSignature,
+  createExtendOrderSignature,
 };

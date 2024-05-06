@@ -1,5 +1,6 @@
 const { ethers, upgrades, network } = require('hardhat');
 const { getForNetwork } = require('../utils/addresses');
+require('dotenv').config();
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -14,21 +15,27 @@ async function main() {
     EndemicExchange,
     [
       paymentManagerProxy,
-      '0x813201fe76De0622223492D2467fF5Fd38cF2320',
-      '0xapproved-signer'
+      process.env.FEE_RECIPIENT, //'0x813201fe76De0622223492D2467fF5Fd38cF2320',
+      process.env.RESERVE_AUCTION_APPROVED_SIGNER,
     ],
     {
       deployer,
       initializer: '__EndemicExchange_init',
     }
   );
+
   await endemicExchange.deployed();
 
   console.log('EndemicExchange deployed to:', endemicExchange.address);
+
+  return endemicExchange.address;
 }
 
 main()
-  .then(() => process.exit(0))
+  .then((address) => {
+    console.log(' ', address);
+    process.exit(0);
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);
