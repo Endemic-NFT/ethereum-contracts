@@ -164,11 +164,7 @@ const deployArtOrderWithFactory = async (feeAmount, feeRecipient) => {
   return artOrder;
 };
 
-const deployEndemicExchange = async (
-  royaltiesProviderAddress,
-  paymentManagerAddress,
-  approvedSigner
-) => {
+const deployEndemicExchange = async (paymentManagerAddress, approvedSigner) => {
   const EndemicExchange = await ethers.getContractFactory('EndemicExchange');
   const endemicExchangeContract = await upgrades.deployProxy(
     EndemicExchange,
