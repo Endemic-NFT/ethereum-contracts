@@ -4,11 +4,11 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../../royalties/interfaces/IRoyaltiesProvider.sol";
 import "../../manager/interfaces/IPaymentManager.sol";
 
 abstract contract EndemicExchangeCore {
-    IRoyaltiesProvider public royaltiesProvider;
+    /// @custom:oz-renamed-from royaltiesProvider
+    address private royaltiesProvider_deprecated;
     IPaymentManager public paymentManager;
     address public approvedSigner;
 
@@ -45,76 +45,25 @@ abstract contract EndemicExchangeCore {
     }
 
     function _calculateFees(
-        address paymentMethodAddress,
-        address nftContract,
-        uint256 tokenId,
-        uint256 price
+        uint256 price,
+        uint256 makerFeePercentage,
+        uint256 takerFeePercentage,
+        uint256 royaltiesPercentage
     )
         internal
-        view
+        pure
         returns (
             uint256 makerCut,
             uint256 takerCut,
-            address royaltiesRecipient,
-            uint256 royaltieFee,
+            uint256 royaltiesCut,
             uint256 totalCut
         )
     {
-        (uint256 takerFee, uint256 makerFee) = paymentManager
-            .getPaymentMethodFees(paymentMethodAddress);
-
-        takerCut = _calculateCut(takerFee, price);
-        makerCut = _calculateCut(makerFee, price);
-
-        (royaltiesRecipient, royaltieFee) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(nftContract, tokenId, price);
-
+        takerCut = _calculateCut(takerFeePercentage, price);
+        makerCut = _calculateCut(makerFeePercentage, price);
         totalCut = takerCut + makerCut;
-    }
 
-    function _calculateOfferFees(
-        address paymentMethodAddress,
-        address nftContract,
-        uint256 tokenId,
-        uint256 price
-    )
-        internal
-        view
-        returns (
-            uint256 makerCut,
-            address royaltiesRecipient,
-            uint256 royaltieFee,
-            uint256 totalCut,
-            uint256 listingPrice
-        )
-    {
-        (uint256 takerFee, uint256 makerFee) = paymentManager
-            .getPaymentMethodFees(paymentMethodAddress);
-
-        listingPrice = (price * MAX_FEE) / (takerFee + MAX_FEE);
-
-        uint256 takerCut = price - listingPrice;
-        makerCut = _calculateCut(makerFee, listingPrice);
-
-        (royaltiesRecipient, royaltieFee) = royaltiesProvider
-            .calculateRoyaltiesAndGetRecipient(
-                nftContract,
-                tokenId,
-                listingPrice
-            );
-
-        totalCut = takerCut + makerCut;
-    }
-
-    function _calculateTakerCut(
-        address paymentErc20TokenAddress,
-        uint256 price
-    ) internal view returns (uint256) {
-        (uint256 takerFee, ) = paymentManager.getPaymentMethodFees(
-            paymentErc20TokenAddress
-        );
-
-        return _calculateCut(takerFee, price);
+        royaltiesCut = _calculateCut(royaltiesPercentage, price);
     }
 
     function _calculateCut(
@@ -180,16 +129,11 @@ abstract contract EndemicExchangeCore {
     }
 
     function _updateExchangeConfiguration(
-        address _royaltiesProvider,
         address _paymentManager,
         address _approvedSigner
     ) internal {
-        if (
-            _royaltiesProvider == ZERO_ADDRESS ||
-            _paymentManager == ZERO_ADDRESS
-        ) revert InvalidAddress();
+        if (_paymentManager == ZERO_ADDRESS) revert InvalidAddress();
 
-        royaltiesProvider = IRoyaltiesProvider(_royaltiesProvider);
         paymentManager = IPaymentManager(_paymentManager);
         approvedSigner = _approvedSigner;
     }

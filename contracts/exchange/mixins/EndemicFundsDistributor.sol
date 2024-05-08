@@ -14,17 +14,17 @@ abstract contract EndemicFundsDistributor {
         uint256 price,
         uint256 makerCut,
         uint256 totalCut,
-        uint256 royaltieFee,
+        uint256 royaltiesCut,
         address royaltiesRecipient,
         address seller,
         address buyer,
         address paymentErc20TokenAddress
     ) internal {
-        uint256 sellerProceeds = price - makerCut - royaltieFee;
+        uint256 sellerProceeds = price - makerCut - royaltiesCut;
 
         if (paymentErc20TokenAddress == address(0)) {
             _distributeEtherFunds(
-                royaltieFee,
+                royaltiesCut,
                 totalCut,
                 sellerProceeds,
                 royaltiesRecipient,
@@ -32,7 +32,7 @@ abstract contract EndemicFundsDistributor {
             );
         } else {
             _distributeErc20Funds(
-                royaltieFee,
+                royaltiesCut,
                 totalCut,
                 sellerProceeds,
                 royaltiesRecipient,
@@ -44,14 +44,14 @@ abstract contract EndemicFundsDistributor {
     }
 
     function _distributeEtherFunds(
-        uint256 royaltieFee,
+        uint256 royaltiesCut,
         uint256 totalCut,
         uint256 sellerProceeds,
         address royaltiesRecipient,
         address seller
     ) internal {
-        if (royaltieFee > 0) {
-            _transferEtherRoyalties(royaltiesRecipient, royaltieFee);
+        if (royaltiesCut > 0) {
+            _transferEtherRoyalties(royaltiesRecipient, royaltiesCut);
         }
 
         if (totalCut > 0) {
@@ -62,7 +62,7 @@ abstract contract EndemicFundsDistributor {
     }
 
     function _distributeErc20Funds(
-        uint256 royaltieFee,
+        uint256 royaltiesCut,
         uint256 totalCut,
         uint256 sellerProceeds,
         address royaltiesRecipient,
@@ -72,12 +72,12 @@ abstract contract EndemicFundsDistributor {
     ) internal {
         IERC20 ERC20PaymentToken = IERC20(paymentErc20TokenAddress);
 
-        if (royaltieFee > 0) {
+        if (royaltiesCut > 0) {
             _transferErc20Royalties(
                 ERC20PaymentToken,
                 buyer,
                 royaltiesRecipient,
-                royaltieFee
+                royaltiesCut
             );
         }
 

@@ -6,20 +6,11 @@ const { FEE_RECIPIENT } = require('../helpers/constants');
 describe('EndemicExchange', () => {
   let endemicExchange;
 
-  let owner,
-    contractAddress2,
-    contractAddress3,
-    contractAddress4,
-    contractAddress5;
+  let owner, contractAddress2, contractAddress3, contractAddress4;
 
   async function deploy() {
-    [
-      owner,
-      contractAddress2,
-      contractAddress3,
-      contractAddress4,
-      contractAddress5,
-    ] = await ethers.getSigners();
+    [owner, contractAddress2, contractAddress3, contractAddress4] =
+      await ethers.getSigners();
 
     const result = await deployEndemicExchangeWithDeps();
 
@@ -47,21 +38,17 @@ describe('EndemicExchange', () => {
       await endemicExchange.updateConfiguration(
         contractAddress2.address,
         contractAddress3.address,
-        contractAddress4.address,
-        contractAddress5.address
-      );
-
-      expect(await endemicExchange.royaltiesProvider()).to.equal(
-        contractAddress2.address
-      );
-      expect(await endemicExchange.paymentManager()).to.equal(
-        contractAddress3.address
-      );
-      expect(await endemicExchange.feeRecipientAddress()).to.equal(
         contractAddress4.address
       );
+
+      expect(await endemicExchange.paymentManager()).to.equal(
+        contractAddress2.address
+      );
+      expect(await endemicExchange.feeRecipientAddress()).to.equal(
+        contractAddress3.address
+      );
       expect(await endemicExchange.approvedSigner()).to.equal(
-        contractAddress5.address
+        contractAddress4.address
       );
     });
   });

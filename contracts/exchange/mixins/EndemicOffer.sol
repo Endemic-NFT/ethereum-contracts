@@ -21,7 +21,7 @@ abstract contract EndemicOffer is
 
     bytes32 private constant OFFER_TYPEHASH =
         keccak256(
-            "Offer(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 expiresAt,bool isForCollection)"
+            "Offer(uint256 orderNonce,address nftContract,uint256 tokenId,address paymentErc20TokenAddress,uint256 price,uint256 makerCut,uint256 takerCut,uint256 royaltiesCut,address royaltiesRecipient,uint256 expiresAt,bool isForCollection)"
         );
 
     struct Offer {
@@ -31,6 +31,10 @@ abstract contract EndemicOffer is
         uint256 tokenId;
         address paymentErc20TokenAddress;
         uint256 price;
+        uint256 makerCut;
+        uint256 takerCut;
+        uint256 royaltiesCut;
+        address royaltiesRecipient;
         uint256 expiresAt;
         bool isForCollection;
     }
@@ -92,31 +96,21 @@ abstract contract EndemicOffer is
     }
 
     function _acceptOffer(Offer calldata offer, uint256 tokenId) internal {
-        (
-            uint256 makerCut,
-            address royaltiesRecipient,
-            uint256 royaltiesFee,
-            uint256 totalCut,
-            uint256 listingPrice
-        ) = _calculateOfferFees(
-                offer.paymentErc20TokenAddress,
-                offer.nftContract,
-                tokenId,
-                offer.price
-            );
-
         IERC721(offer.nftContract).transferFrom(
             msg.sender,
             offer.bidder,
             tokenId
         );
 
+        uint256 listingPrice = offer.price - offer.takerCut;
+        uint256 totalCut = offer.makerCut + offer.takerCut;
+
         _distributeFunds(
             listingPrice,
-            makerCut,
+            offer.makerCut,
             totalCut,
-            royaltiesFee,
-            royaltiesRecipient,
+            offer.royaltiesCut,
+            offer.royaltiesRecipient,
             msg.sender,
             offer.bidder,
             offer.paymentErc20TokenAddress
@@ -151,6 +145,10 @@ abstract contract EndemicOffer is
                         offer.tokenId,
                         offer.paymentErc20TokenAddress,
                         offer.price,
+                        offer.makerCut,
+                        offer.takerCut,
+                        offer.royaltiesCut,
+                        offer.royaltiesRecipient,
                         offer.expiresAt,
                         offer.isForCollection
                     )
