@@ -4,14 +4,14 @@ require('dotenv').config();
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const { endemicErc721Factory } = getForNetwork(network.name);
+  const { artOrderFactory } = getForNetwork(network.name);
 
   console.log('Deploying Art orders with the account:', deployer.address);
 
   const ArtOrder = await ethers.getContractFactory('ArtOrder');
   const artOrder = await upgrades.deployProxy(
     ArtOrder,
-    [250, process.env.FEE_RECIPIENT, endemicErc721Factory],
+    [250, process.env.FEE_RECIPIENT, artOrderFactory],
     {
       deployer,
       initializer: 'initialize',

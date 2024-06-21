@@ -288,6 +288,22 @@ function transferOwnership(address newOwner) external nonpayable
 |---|---|---|
 | newOwner | address | undefined |
 
+### updateCollectionFactory
+
+```solidity
+function updateCollectionFactory(address collectionFactory_) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| collectionFactory_ | address | undefined |
+
 ### updateFees
 
 ```solidity

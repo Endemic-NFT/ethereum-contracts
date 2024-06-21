@@ -47,11 +47,11 @@ deployArtOrder:
 	npx hardhat run scripts/art-orders/deploy-art-orders-proxy.js --network ${network}
 
 .PHONY: deployArtOrderFactory
-deployArtOrder:
+deployArtOrderFactory:
 	npx hardhat run scripts/art-orders/deploy-art-order-factory.js --network ${network}
 
 .PHONY: deployAndUpdateArtOrderFactoryImplemetnation
-deployArtOrder:
+deployAndUpdateArtOrderFactoryImplemetnation:
 	npx hardhat run scripts/art-orders/deploy-and-upgrade-art-order-factory-implementation.js --network ${network}
 
 .PHONY: verify

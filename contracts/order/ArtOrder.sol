@@ -193,7 +193,10 @@ contract ArtOrder is
     function updateCollectionFactory(
         address collectionFactory_
     ) external onlyOwner {
-       collectionFactory = collectionFactory_;
+        if (collectionFactory_ == address(0)) {
+            revert InvalidAddress();
+        }
+        collectionFactory = collectionFactory_;
     }
 
     function _finalizeOrder(

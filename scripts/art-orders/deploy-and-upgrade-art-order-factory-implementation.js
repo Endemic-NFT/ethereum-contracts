@@ -12,6 +12,7 @@ async function main() {
 
   await orderCollection.deployed();
   console.log('OrderCollection proxy deployed to:', orderCollection.address);
+  await orderCollection.initialize(deployer, '', '', 0, deployer, deployer);
 
   const OrderCollectionFactory = await ethers.getContractFactory(
     'OrderCollectionFactory'
