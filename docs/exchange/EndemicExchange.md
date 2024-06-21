@@ -13,7 +13,7 @@
 ### __EndemicExchange_init
 
 ```solidity
-function __EndemicExchange_init(address _royaltiesProvider, address _paymentManager, address _feeRecipientAddress, address _approvedSigner) external nonpayable
+function __EndemicExchange_init(address _paymentManager, address _feeRecipientAddress, address _approvedSigner) external nonpayable
 ```
 
 Initialized Endemic exchange contract
@@ -24,7 +24,6 @@ Initialized Endemic exchange contract
 
 | Name | Type | Description |
 |---|---|---|
-| _royaltiesProvider | address | - royalyies provider contract |
 | _paymentManager | address | - payment manager contract address |
 | _feeRecipientAddress | address | - address to receive exchange fees |
 | _approvedSigner | address | - address to sign reserve auction orders |
@@ -88,7 +87,7 @@ function approvedSigner() external view returns (address)
 ### bidForDutchAuction
 
 ```solidity
-function bidForDutchAuction(uint8 v, bytes32 r, bytes32 s, EndemicDutchAuction.DutchAuction auction) external payable
+function bidForDutchAuction(uint8 v, bytes32 r, bytes32 s, address seller, EndemicDutchAuction.DutchAuction auction) external payable
 ```
 
 
@@ -102,6 +101,7 @@ function bidForDutchAuction(uint8 v, bytes32 r, bytes32 s, EndemicDutchAuction.D
 | v | uint8 | undefined |
 | r | bytes32 | undefined |
 | s | bytes32 | undefined |
+| seller | address | undefined |
 | auction | EndemicDutchAuction.DutchAuction | undefined |
 
 ### buyFromSale
@@ -159,7 +159,7 @@ function feeRecipientAddress() external view returns (address)
 ### finalizeReserveAuction
 
 ```solidity
-function finalizeReserveAuction(uint8 v, bytes32 r, bytes32 s, EndemicReserveAuction.ReserveAuction auction, EndemicReserveAuction.ReserveAuction bid) external nonpayable
+function finalizeReserveAuction(uint8 v, bytes32 r, bytes32 s, EndemicReserveAuction.ReserveAuction auction, EndemicReserveAuction.ReserveAuction bid, EndemicReserveAuction.AuctionInfo info) external nonpayable
 ```
 
 
@@ -175,6 +175,7 @@ function finalizeReserveAuction(uint8 v, bytes32 r, bytes32 s, EndemicReserveAuc
 | s | bytes32 | undefined |
 | auction | EndemicReserveAuction.ReserveAuction | undefined |
 | bid | EndemicReserveAuction.ReserveAuction | undefined |
+| info | EndemicReserveAuction.AuctionInfo | undefined |
 
 ### getCurrentPrice
 
@@ -246,23 +247,6 @@ function renounceOwnership() external nonpayable
 *Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.*
 
 
-### royaltiesProvider
-
-```solidity
-function royaltiesProvider() external view returns (contract IRoyaltiesProvider)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract IRoyaltiesProvider | undefined |
-
 ### transferOwnership
 
 ```solidity
@@ -282,7 +266,7 @@ function transferOwnership(address newOwner) external nonpayable
 ### updateConfiguration
 
 ```solidity
-function updateConfiguration(address _royaltiesProvider, address _paymentManager, address _feeRecipientAddress, address _approvedSigner) external nonpayable
+function updateConfiguration(address _paymentManager, address _feeRecipientAddress, address _approvedSigner) external nonpayable
 ```
 
 Updated contract internal configuration, callable by exchange owner
@@ -293,7 +277,6 @@ Updated contract internal configuration, callable by exchange owner
 
 | Name | Type | Description |
 |---|---|---|
-| _royaltiesProvider | address | - royalyies provider contract |
 | _paymentManager | address | - payment manager contract address |
 | _feeRecipientAddress | address | - address to receive exchange fees |
 | _approvedSigner | address | - address to sign reserve auction orders |

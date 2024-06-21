@@ -44,23 +44,6 @@ function paymentManager() external view returns (contract IPaymentManager)
 |---|---|---|
 | _0 | contract IPaymentManager | undefined |
 
-### royaltiesProvider
-
-```solidity
-function royaltiesProvider() external view returns (contract IRoyaltiesProvider)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract IRoyaltiesProvider | undefined |
-
 
 
 ## Events

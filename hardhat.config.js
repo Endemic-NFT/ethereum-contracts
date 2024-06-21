@@ -39,8 +39,8 @@ module.exports = {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
-    arbitrum_goerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+    arbitrum_sepolia: {
+      url: `https://arb-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
     },
     aurora: {
@@ -57,17 +57,18 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      arbitrum_goerli: process.env.ARBITRUM_API_KEY,
+      arbitrum_sepolia: process.env.ARBITRUM_API_KEY,
       mainnet: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGONSCAN_API_KEY,
+      sepolia: process.env.ETHERSCAN_API_KEY,
     },
     customChains: [
       {
-        network: 'arbitrum_goerli',
-        chainId: 421613,
+        network: 'arbitrum_sepolia',
+        chainId: 421614,
         urls: {
-          apiURL: `https://api-goerli.arbiscan.io/api?module=contract&action=verifysourcecode`,
-          browserURL: 'https://testnet.arbiscan.io/',
+          apiURL: `https://api-sepolia.arbiscan.io/api`,
+          browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
     ],

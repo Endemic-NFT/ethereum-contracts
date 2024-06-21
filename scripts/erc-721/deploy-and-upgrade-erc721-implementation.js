@@ -29,3 +29,5 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+//npx hardhat verify --network sepolia new_address factory_address

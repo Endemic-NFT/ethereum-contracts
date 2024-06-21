@@ -44,10 +44,10 @@ function EXTEND_ORDER_TYPEHASH() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### administrator
+### MAX_FEE
 
 ```solidity
-function administrator() external view returns (address)
+function MAX_FEE() external view returns (uint256)
 ```
 
 
@@ -59,7 +59,7 @@ function administrator() external view returns (address)
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | address | undefined |
+| _0 | uint256 | undefined |
 
 ### cancelOrder
 
@@ -97,7 +97,7 @@ function collectionFactory() external view returns (address)
 ### collectionPerArtist
 
 ```solidity
-function collectionPerArtist(address) external view returns (address)
+function collectionPerArtist(address artist) external view returns (address collection)
 ```
 
 
@@ -108,13 +108,13 @@ function collectionPerArtist(address) external view returns (address)
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | address | undefined |
+| artist | address | undefined |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | address | undefined |
+| collection | address | undefined |
 
 ### createOrder
 
@@ -136,7 +136,7 @@ function createOrder(ArtOrderEIP712.Order order, ArtOrderEIP712.OrderSignature a
 ### feeAmount
 
 ```solidity
-function feeAmount() external view returns (uint256)
+function feeAmount() external view returns (uint96)
 ```
 
 
@@ -148,7 +148,7 @@ function feeAmount() external view returns (uint256)
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | undefined |
+| _0 | uint96 | undefined |
 
 ### feeRecipient
 
@@ -170,7 +170,7 @@ function feeRecipient() external view returns (address)
 ### finalizeExtendedOrder
 
 ```solidity
-function finalizeExtendedOrder(ArtOrderEIP712.Order order, uint256 newTimestamp, string tokenCID, ArtOrderEIP712.OrderSignature extendSignature) external nonpayable
+function finalizeExtendedOrder(ArtOrderEIP712.Order order, uint256 newDeadline, string tokenCID, ArtOrderEIP712.OrderSignature extendSignature) external nonpayable
 ```
 
 
@@ -182,7 +182,7 @@ function finalizeExtendedOrder(ArtOrderEIP712.Order order, uint256 newTimestamp,
 | Name | Type | Description |
 |---|---|---|
 | order | ArtOrderEIP712.Order | undefined |
-| newTimestamp | uint256 | undefined |
+| newDeadline | uint256 | undefined |
 | tokenCID | string | undefined |
 | extendSignature | ArtOrderEIP712.OrderSignature | undefined |
 
@@ -206,7 +206,7 @@ function finalizeOrder(ArtOrderEIP712.Order order, string tokenCID) external non
 ### initialize
 
 ```solidity
-function initialize(uint256 _feeAmount, address _feeRecipient, address _administrator, address _collectionFactory) external nonpayable
+function initialize(uint256 feeAmount_, address feeRecipient_, address collectionFactory_) external nonpayable
 ```
 
 
@@ -217,10 +217,32 @@ function initialize(uint256 _feeAmount, address _feeRecipient, address _administ
 
 | Name | Type | Description |
 |---|---|---|
-| _feeAmount | uint256 | undefined |
-| _feeRecipient | address | undefined |
-| _administrator | address | undefined |
-| _collectionFactory | address | undefined |
+| feeAmount_ | uint256 | undefined |
+| feeRecipient_ | address | undefined |
+| collectionFactory_ | address | undefined |
+
+### orders
+
+```solidity
+function orders(bytes32 orderHash) external view returns (enum ArtOrder.OrderStatus status, uint248 deadline)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| orderHash | bytes32 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| status | enum ArtOrder.OrderStatus | undefined |
+| deadline | uint248 | undefined |
 
 ### owner
 
@@ -239,17 +261,6 @@ function owner() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### renounceAdministration
-
-```solidity
-function renounceAdministration() external nonpayable
-```
-
-
-
-
-
-
 ### renounceOwnership
 
 ```solidity
@@ -260,44 +271,6 @@ function renounceOwnership() external nonpayable
 
 *Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.*
 
-
-### statusPerOrder
-
-```solidity
-function statusPerOrder(bytes32) external view returns (enum ArtOrder.OrderStatus)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bytes32 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | enum ArtOrder.OrderStatus | undefined |
-
-### transferAdministration
-
-```solidity
-function transferAdministration(address newAdmin) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| newAdmin | address | undefined |
 
 ### transferOwnership
 
@@ -336,23 +309,6 @@ function updateFees(uint256 newFeeAmount, address newFeeRecipient) external nonp
 
 ## Events
 
-### AdministrationTransferred
-
-```solidity
-event AdministrationTransferred(address indexed previousAdmin, address indexed newAdmin)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| previousAdmin `indexed` | address | undefined |
-| newAdmin `indexed` | address | undefined |
-
 ### Initialized
 
 ```solidity
@@ -372,7 +328,7 @@ event Initialized(uint8 version)
 ### OrderCancelled
 
 ```solidity
-event OrderCancelled(address indexed orderer, address indexed artist, uint256 price, uint256 timestamp, address paymentErc20TokenAddress)
+event OrderCancelled(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress)
 ```
 
 
@@ -383,16 +339,17 @@ event OrderCancelled(address indexed orderer, address indexed artist, uint256 pr
 
 | Name | Type | Description |
 |---|---|---|
+| nonce  | uint256 | undefined |
 | orderer `indexed` | address | undefined |
 | artist `indexed` | address | undefined |
 | price  | uint256 | undefined |
-| timestamp  | uint256 | undefined |
+| deadline  | uint256 | undefined |
 | paymentErc20TokenAddress  | address | undefined |
 
 ### OrderCreated
 
 ```solidity
-event OrderCreated(address indexed orderer, address indexed artist, uint256 price, uint256 timestamp, address paymentErc20TokenAddress)
+event OrderCreated(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress)
 ```
 
 
@@ -403,16 +360,17 @@ event OrderCreated(address indexed orderer, address indexed artist, uint256 pric
 
 | Name | Type | Description |
 |---|---|---|
+| nonce  | uint256 | undefined |
 | orderer `indexed` | address | undefined |
 | artist `indexed` | address | undefined |
 | price  | uint256 | undefined |
-| timestamp  | uint256 | undefined |
+| deadline  | uint256 | undefined |
 | paymentErc20TokenAddress  | address | undefined |
 
 ### OrderFinalized
 
 ```solidity
-event OrderFinalized(address indexed orderer, address indexed artist, uint256 price, uint256 timestamp, address paymentErc20TokenAddress, string tokenCID)
+event OrderFinalized(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress, string tokenCID)
 ```
 
 
@@ -423,10 +381,11 @@ event OrderFinalized(address indexed orderer, address indexed artist, uint256 pr
 
 | Name | Type | Description |
 |---|---|---|
+| nonce  | uint256 | undefined |
 | orderer `indexed` | address | undefined |
 | artist `indexed` | address | undefined |
 | price  | uint256 | undefined |
-| timestamp  | uint256 | undefined |
+| deadline  | uint256 | undefined |
 | paymentErc20TokenAddress  | address | undefined |
 | tokenCID  | string | undefined |
 
@@ -484,10 +443,10 @@ error FundsTransferFailed()
 
 
 
-### InvalidAdministratorAddress
+### InvalidAddress
 
 ```solidity
-error InvalidAdministratorAddress()
+error InvalidAddress()
 ```
 
 
@@ -506,10 +465,10 @@ error InvalidEtherAmount()
 
 
 
-### OnlyAdministrator
+### InvalidFeeAmount
 
 ```solidity
-error OnlyAdministrator()
+error InvalidFeeAmount()
 ```
 
 
@@ -517,10 +476,21 @@ error OnlyAdministrator()
 
 
 
-### OnlyOwnerOrAdministrator
+### InvalidPrice
 
 ```solidity
-error OnlyOwnerOrAdministrator()
+error InvalidPrice()
+```
+
+
+
+
+
+
+### InvalidTokenCID
+
+```solidity
+error InvalidTokenCID()
 ```
 
 
@@ -539,32 +509,32 @@ error OrderAlreadyExists()
 
 
 
+### OrderDeadlineExceeded
+
+```solidity
+error OrderDeadlineExceeded()
+```
+
+
+
+
+
+
+### OrderDeadlineNotExceeded
+
+```solidity
+error OrderDeadlineNotExceeded()
+```
+
+
+
+
+
+
 ### OrderNotActive
 
 ```solidity
 error OrderNotActive()
-```
-
-
-
-
-
-
-### OrderTimestampExceeded
-
-```solidity
-error OrderTimestampExceeded()
-```
-
-
-
-
-
-
-### OrderTimestampNotExceeded
-
-```solidity
-error OrderTimestampNotExceeded()
 ```
 
 

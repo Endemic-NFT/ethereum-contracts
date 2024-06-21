@@ -190,6 +190,12 @@ contract ArtOrder is
         _updateDistributorConfiguration(newFeeRecipient, newFeeAmount);
     }
 
+    function updateCollectionFactory(
+        address collectionFactory_
+    ) external onlyOwner {
+       collectionFactory = collectionFactory_;
+    }
+
     function _finalizeOrder(
         OrderState storage orderState,
         Order calldata order,
