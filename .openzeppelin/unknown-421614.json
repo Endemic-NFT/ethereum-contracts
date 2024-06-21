@@ -29,6 +29,16 @@
       "address": "0x4a59326DF02578a30C3F0D5794411b6Cb031F04e",
       "txHash": "0xe67d91406ab7b6c1b19cb2087e41bc80370d2cb37438635c5b33a4384d6d8267",
       "kind": "transparent"
+    },
+    {
+      "address": "0x38fa0567899eEC25b064d089e777bAEcbde1C3A9",
+      "txHash": "0x304c43922af44e786cdc6ae75718427e63ef206e230db6835c352cb433646d4d",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x74eD3A709e970de96C6273c9b1034BCA8d66A404",
+      "txHash": "0xd9816b942d746b404d846e40f62ca148fb53e43338e744b107c9317df7a84870",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -668,6 +678,378 @@
             "type": "t_array(t_uint256)500_storage",
             "contract": "ArtOrder",
             "src": "contracts/order/ArtOrder.sol:264"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)500_storage": {
+            "label": "uint256[500]",
+            "numberOfBytes": "16000"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_enum(OrderStatus)5437": {
+            "label": "enum ArtOrder.OrderStatus",
+            "members": [
+              "Inactive",
+              "Active",
+              "Cancelled",
+              "Finalized"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(OrderState)5443_storage)": {
+            "label": "mapping(bytes32 => struct ArtOrder.OrderState)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(OrderState)5443_storage": {
+            "label": "struct ArtOrder.OrderState",
+            "members": [
+              {
+                "label": "status",
+                "type": "t_enum(OrderStatus)5437",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "deadline",
+                "type": "t_uint248",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint248": {
+            "label": "uint248",
+            "numberOfBytes": "31"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          },
+          "t_uint96": {
+            "label": "uint96",
+            "numberOfBytes": "12"
+          }
+        },
+        "namespaces": {}
+      }
+    },
+    "02f8a2d0deafdddad1a155bb5d91c1ce596a918f3ea76a1638c4aacdd2ea9699": {
+      "address": "0xF13743eC697dccfAa849C5574215035027687066",
+      "txHash": "0xbec26bb6a0d0a51566898a52d25596a873d462753abfaf9b27cdd9a5f430fa1c",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:259"
+          },
+          {
+            "label": "implementation",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OrderCollectionFactory",
+            "src": "contracts/order/erc-721/OrderCollectionFactory.sol:15"
+          },
+          {
+            "label": "collectionAdministrator",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_address",
+            "contract": "OrderCollectionFactory",
+            "src": "contracts/order/erc-721/OrderCollectionFactory.sol:16"
+          },
+          {
+            "label": "operator",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_address",
+            "contract": "OrderCollectionFactory",
+            "src": "contracts/order/erc-721/OrderCollectionFactory.sol:17"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      }
+    },
+    "b38462497c5aa746babc8e90b5322a2d9874be2e00a4fa6cf2c57bdca584dd0f": {
+      "address": "0x8E22f0ac4E3097c6778BF7976856669e072111e8",
+      "txHash": "0x5dc1387acc94938a0a2b0d833a60c1b64f09a7bbfccec0a0ec1a10d8e65ef4f1",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "feeRecipient",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "ArtOrderFundsDistributor",
+            "src": "contracts/order/mixins/ArtOrderFundsDistributor.sol:13"
+          },
+          {
+            "label": "feeAmount",
+            "offset": 20,
+            "slot": "51",
+            "type": "t_uint96",
+            "contract": "ArtOrderFundsDistributor",
+            "src": "contracts/order/mixins/ArtOrderFundsDistributor.sol:14"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)500_storage",
+            "contract": "ArtOrderFundsDistributor",
+            "src": "contracts/order/mixins/ArtOrderFundsDistributor.sol:117"
+          },
+          {
+            "label": "_HASHED_NAME",
+            "offset": 0,
+            "slot": "552",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:32"
+          },
+          {
+            "label": "_HASHED_VERSION",
+            "offset": 0,
+            "slot": "553",
+            "type": "t_bytes32",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:33"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "554",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "EIP712Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol:120"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "604",
+            "type": "t_array(t_uint256)500_storage",
+            "contract": "ArtOrderEIP712",
+            "src": "contracts/order/mixins/ArtOrderEIP712.sol:88"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1104",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "1154",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1155",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "collectionFactory",
+            "offset": 0,
+            "slot": "1204",
+            "type": "t_address",
+            "contract": "ArtOrder",
+            "src": "contracts/order/ArtOrder.sol:32"
+          },
+          {
+            "label": "orders",
+            "offset": 0,
+            "slot": "1205",
+            "type": "t_mapping(t_bytes32,t_struct(OrderState)5443_storage)",
+            "contract": "ArtOrder",
+            "src": "contracts/order/ArtOrder.sol:34"
+          },
+          {
+            "label": "collectionPerArtist",
+            "offset": 0,
+            "slot": "1206",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "ArtOrder",
+            "src": "contracts/order/ArtOrder.sol:35"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1207",
+            "type": "t_array(t_uint256)500_storage",
+            "contract": "ArtOrder",
+            "src": "contracts/order/ArtOrder.sol:273"
           }
         ],
         "types": {

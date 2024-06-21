@@ -12,7 +12,6 @@ async function main() {
 
   await endemicERC721.deployed();
   console.log('Collection proxy deployed to:', endemicERC721.address);
-  await endemicERC721.initialize(deployer, '', '', 0, deployer, deployer);
 
   const EndemicCollectionFactory = await ethers.getContractFactory(
     'EndemicCollectionFactory'
