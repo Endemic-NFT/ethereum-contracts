@@ -20,7 +20,7 @@ async function main() {
 
   await artOrder.deployed();
 
-  console.log('EndemicExchange deployed to:', artOrder.address);
+  console.log('Art order deployed to:', artOrder.address);
 
   return artOrder.address;
 }

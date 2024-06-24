@@ -64,7 +64,7 @@ contract OrderCollection is
     function mint(
         address recipient,
         string calldata tokenCID
-    ) external onlyOperator returns (uint) {
+    ) external onlyOperator returns (uint256) {
         return _mintBase(recipient, tokenCID);
     }
 
@@ -115,7 +115,7 @@ contract OrderCollection is
     function _mintBase(
         address recipient,
         string calldata tokenCID
-    ) internal returns (uint) {
+    ) internal returns (uint256) {
         // Create new token ID
         uint256 tokenId = ++latestTokenId;
 
