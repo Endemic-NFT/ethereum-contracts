@@ -386,11 +386,7 @@ event OrderCreated(uint256 nonce, address indexed orderer, address indexed artis
 ### OrderFinalized
 
 ```solidity
-<<<<<<< HEAD
-event OrderFinalized(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress, string tokenCID)
-=======
 event OrderFinalized(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress, address collectionAddress, uint256 tokenId)
->>>>>>> 45c5ddd (add nftId to art order finalize event)
 ```
 
 
