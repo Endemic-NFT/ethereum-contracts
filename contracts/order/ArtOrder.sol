@@ -57,7 +57,8 @@ contract ArtOrder is
         uint256 price,
         uint256 deadline,
         address paymentErc20TokenAddress,
-        string tokenCID
+        address collectionAddress,
+        uint256 tokenId
     );
 
     error OrderAlreadyExists();
@@ -215,7 +216,11 @@ contract ArtOrder is
 
         orderState.status = OrderStatus.Finalized;
 
-        _mintOrderNft(order.orderer, order.artist, tokenCID);
+        (address collectionAddress, uint256 tokenId) = _mintOrderNft(
+            order.orderer,
+            order.artist,
+            tokenCID
+        );
 
         _distributeFinalizedOrderFunds(
             order.artist,
@@ -230,7 +235,8 @@ contract ArtOrder is
             order.price,
             deadline,
             order.paymentErc20TokenAddress,
-            tokenCID
+            collectionAddress,
+            tokenId
         );
     }
 
@@ -238,17 +244,17 @@ contract ArtOrder is
         address orderer,
         address artist,
         string calldata tokenCID
-    ) internal {
-        address collectionAddr = collectionPerArtist[artist];
+    ) internal returns (address collectionAddress, uint256 tokenId) {
+        collectionAddress = collectionPerArtist[artist];
 
-        if (collectionAddr == address(0)) {
-            collectionAddr = IOrderCollectionFactory(collectionFactory)
+        if (collectionAddress == address(0)) {
+            collectionAddress = IOrderCollectionFactory(collectionFactory)
                 .createCollection(artist, "Order Collection", "OC", 1000);
 
-            collectionPerArtist[artist] = collectionAddr;
+            collectionPerArtist[artist] = collectionAddress;
         }
 
-        IOrderCollection(collectionAddr).mint(orderer, tokenCID);
+        tokenId = IOrderCollection(collectionAddress).mint(orderer, tokenCID);
     }
 
     function _getOrderHash(

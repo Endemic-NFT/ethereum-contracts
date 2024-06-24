@@ -386,7 +386,11 @@ event OrderCreated(uint256 nonce, address indexed orderer, address indexed artis
 ### OrderFinalized
 
 ```solidity
+<<<<<<< HEAD
 event OrderFinalized(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress, string tokenCID)
+=======
+event OrderFinalized(uint256 nonce, address indexed orderer, address indexed artist, uint256 price, uint256 deadline, address paymentErc20TokenAddress, address collectionAddress, uint256 tokenId)
+>>>>>>> 45c5ddd (add nftId to art order finalize event)
 ```
 
 
@@ -403,7 +407,8 @@ event OrderFinalized(uint256 nonce, address indexed orderer, address indexed art
 | price  | uint256 | undefined |
 | deadline  | uint256 | undefined |
 | paymentErc20TokenAddress  | address | undefined |
-| tokenCID  | string | undefined |
+| collectionAddress  | address | undefined |
+| tokenId  | uint256 | undefined |
 
 ### OwnershipTransferred
 
