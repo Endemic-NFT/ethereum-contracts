@@ -13,12 +13,23 @@ const goerli = {
   endemicENDToken: '0x27f31c8B3D6024C44155De1198dB86F23124b1A4',
 };
 
-const arbitrum_goerli = {
-  royaltiesProviderProxy: '0x03B19c39355fD271A0fF071fAeaEe65F4fe26914',
-  endemicErc721Factory: '0x1244F3358F25A50b11c0B4EC5a1831116c9cB2f4',
-  endemicErc721: '0x6945ae5F31998CC28d8652f54a5d24cDf4377D2d',
-  endemicExchangeProxy: '0xC33a562169bC0fB03aBDDD869F2952A608eaf641',
-  paymentManagerProxy: '0x054ABdbAB1efb098a0e2aC52BcD6fB3436631dDA',
+// const arbitrum_goerli = {
+//   royaltiesProviderProxy: '0x03B19c39355fD271A0fF071fAeaEe65F4fe26914',
+//   endemicErc721Factory: '0x1244F3358F25A50b11c0B4EC5a1831116c9cB2f4',
+//   endemicErc721: '0x6945ae5F31998CC28d8652f54a5d24cDf4377D2d',
+//   endemicExchangeProxy: '0xC33a562169bC0fB03aBDDD869F2952A608eaf641',
+//   paymentManagerProxy: '0x054ABdbAB1efb098a0e2aC52BcD6fB3436631dDA',
+// };
+
+const arbitrum_sepolia = {
+  // royaltiesProviderProxy: '0x03B19c39355fD271A0fF071fAeaEe65F4fe26914',
+  endemicErc721Factory: '0xC33a562169bC0fB03aBDDD869F2952A608eaf641', //0x054ABdbAB1efb098a0e2aC52BcD6fB3436631dDA
+  endemicErc721: '0x76D3755015cFE958e3351fFe59B9D353b783fa0a',
+  endemicExchangeProxy: '0x60f42637C941C0B01b3e42dca175A0f5bc4FAB81', //0x6A4674885adb719537a8730Cd122d16237A798d4
+  paymentManagerProxy: '0xE022E818a4273A8FD6C05833E6fD42DD2Cc59399', //0xdB2be7097E00f3C498c533BBE5e530CCE2FBBb1f
+  artOrders: '0x74eD3A709e970de96C6273c9b1034BCA8d66A404', //implementation: 0x8E22f0ac4E3097c6778BF7976856669e072111e8
+  artOrderFactory: '0x38fa0567899eEC25b064d089e777bAEcbde1C3A9', //implementation: 0xF13743eC697dccfAa849C5574215035027687066
+  artOrderCollection: '0xB79852ff8d4c0f37a2926B3cA5A290551E6183e2',
 };
 
 const aurora = {
@@ -41,12 +52,24 @@ const mainnet = {
   endemicENDToken: '0x7f5C4AdeD107F66687E6E55dEe36A3A8FA3de030',
 };
 
+// const sepolia = {
+//   royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
+//   endemicErc721Factory: '0xa3899FD9035de8438857c74F78E411e588fFCf39',
+//   endemicErc721: '0x611eaF72138D36Fe41E85308021f89A1f01F59ae',
+//   paymentManagerProxy: '0xBE45e76c9Db68e23148392400452114be019e5EC',
+//   endemicExchangeProxy: '0x389F14Ed3aA0F277a90e7C3ADb0a2CfEC02d62B7',
+// };
+
+// New contracts
 const sepolia = {
-  royaltiesProviderProxy: '0x1F709030A998b1756Ab9917E0Ca0E60F29736f94',
-  endemicErc721Factory: '0xa3899FD9035de8438857c74F78E411e588fFCf39',
-  endemicErc721: '0x611eaF72138D36Fe41E85308021f89A1f01F59ae',
-  paymentManagerProxy: '0xBE45e76c9Db68e23148392400452114be019e5EC',
-  endemicExchangeProxy: '0x389F14Ed3aA0F277a90e7C3ADb0a2CfEC02d62B7',
+  endemicErc721Factory: '0x892E710aa42ba1a63F500C9b4a85b7D9c646CB6f', //implementation: 0xC35b86C9828F08d7F7DE3e959BCB0877A33c810c
+  endemicErc721: '0xa4383Eb3f2Ca59FA51871A19CF3D753235f9041D',
+  paymentManagerProxy: '0xe5C828a0AB005E1f2403600C070357c413D313Ba', //implementation: 0x5749624215bCab94b1D09d5fdc81B8Ba2a33AA20
+  endemicExchangeProxy: '0x00BfA98843a6d855d44Bff622C3cFA130F720CaD', //implementation: 0x1514B11348ADA62B45fb4ec235E9980662a9Ef21
+
+  artOrders: '0x220aaFD3622a1CfE32D131CbEdEf9Eb2C5596e88', //implementation: 0x93c47440D0bCcF19D8c8443196BD3F334c407677
+  artOrderFactory: '0x8E3C22767df3164cD80b1802b717f1f41193f6aE', //implementation: 0x5B073C9A381146593f943b6E821F5eE220847783
+  artOrderCollection: '0xD2BeE612d87fC895E1649731E986B3Ad1A3F191c',
 };
 
 const mumbai = {
@@ -69,7 +92,7 @@ const networks = {
   aurora,
   mainnet,
   goerli,
-  arbitrum_goerli,
+  arbitrum_sepolia,
   sepolia,
   mumbai,
   polygon,

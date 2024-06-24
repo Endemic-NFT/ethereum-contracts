@@ -42,6 +42,18 @@ updatePaymentManager:
 upgradeErc721Factory:
 	npx hardhat run scripts/erc-721/upgrade-erc721-factory-proxy.js --network ${network}
 
+.PHONY: deployArtOrder
+deployArtOrder:
+	npx hardhat run scripts/art-orders/deploy-art-orders-proxy.js --network ${network}
+
+.PHONY: deployArtOrderFactory
+deployArtOrderFactory:
+	npx hardhat run scripts/art-orders/deploy-art-order-factory.js --network ${network}
+
+.PHONY: deployAndUpdateArtOrderFactoryImplemetnation
+deployAndUpdateArtOrderFactoryImplemetnation:
+	npx hardhat run scripts/art-orders/deploy-and-upgrade-art-order-factory-implementation.js --network ${network}
+
 .PHONY: verify
 verify:
 	npx hardhat verify --network ${network} "${address}"

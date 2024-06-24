@@ -4,35 +4,35 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log(
-    'Deploying EndemicCollectionFactory with the account:',
+    'Deploying ArtOrderCollectionFactory with the account:',
     deployer.address
   );
 
-  const EndemicCollectionFactory = await ethers.getContractFactory(
-    'EndemicCollectionFactory'
+  const OrderCollectionFactory = await ethers.getContractFactory(
+    'OrderCollectionFactory'
   );
 
-  const endemicERC721FactoryProxy = await upgrades.deployProxy(
-    EndemicCollectionFactory,
+  const orderCollectionFactoryProxy = await upgrades.deployProxy(
+    OrderCollectionFactory,
     [],
     {
       deployer,
       initializer: 'initialize',
     }
   );
-  await endemicERC721FactoryProxy.deployed();
+  await orderCollectionFactoryProxy.deployed();
 
-  await endemicERC721FactoryProxy.updateConfiguration(
+  await orderCollectionFactoryProxy.updateConfiguration(
     '0x3D77a01EF9265F8Af731367abF5b467641764191',
     '0x3D77a01EF9265F8Af731367abF5b467641764191'
   );
 
   console.log(
-    'Deployed EndemicCollectionFactory proxy to:',
-    endemicERC721FactoryProxy.address
+    'Deployed ArtOrderCollectionFactory proxy to:',
+    orderCollectionFactoryProxy.address
   );
 
-  return endemicERC721FactoryProxy.address;
+  return orderCollectionFactoryProxy.address;
 }
 
 main()

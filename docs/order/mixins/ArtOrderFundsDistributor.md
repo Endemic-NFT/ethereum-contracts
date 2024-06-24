@@ -10,10 +10,10 @@
 
 ## Methods
 
-### feeAmount
+### MAX_FEE
 
 ```solidity
-function feeAmount() external view returns (uint256)
+function MAX_FEE() external view returns (uint256)
 ```
 
 
@@ -26,6 +26,23 @@ function feeAmount() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### feeAmount
+
+```solidity
+function feeAmount() external view returns (uint96)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint96 | undefined |
 
 ### feeRecipient
 
@@ -83,6 +100,17 @@ error FundsTransferFailed()
 
 ```solidity
 error InvalidEtherAmount()
+```
+
+
+
+
+
+
+### InvalidFeeAmount
+
+```solidity
+error InvalidFeeAmount()
 ```
 
 
