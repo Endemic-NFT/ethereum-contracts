@@ -11,7 +11,10 @@ interface IOrderCollection {
         address operator
     ) external;
 
-    function mint(address recipient, string calldata tokenCID) external;
+    function mint(
+        address recipient,
+        string calldata tokenCID
+    ) external returns (uint256);
 
     function batchMint(address recipient, string[] calldata tokenCIDs) external;
 }

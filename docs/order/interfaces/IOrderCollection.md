@@ -51,7 +51,7 @@ function initialize(address creator, string name, string symbol, uint256 royalti
 ### mint
 
 ```solidity
-function mint(address recipient, string tokenCID) external nonpayable
+function mint(address recipient, string tokenCID) external nonpayable returns (uint256)
 ```
 
 
@@ -64,6 +64,12 @@ function mint(address recipient, string tokenCID) external nonpayable
 |---|---|---|
 | recipient | address | undefined |
 | tokenCID | string | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 
 

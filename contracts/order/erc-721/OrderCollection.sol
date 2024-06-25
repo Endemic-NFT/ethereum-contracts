@@ -41,9 +41,9 @@ contract OrderCollection is
         _;
     }
 
-    constructor(address _collectionFactory)
-        CollectionFactory(_collectionFactory)
-    {}
+    constructor(
+        address _collectionFactory
+    ) CollectionFactory(_collectionFactory) {}
 
     function initialize(
         address creator,
@@ -61,21 +61,23 @@ contract OrderCollection is
         mintOperator = operator;
     }
 
-    function mint(address recipient, string calldata tokenCID)
-        external
-        onlyOperator
-    {
-        _mintBase(recipient, tokenCID);
+    function mint(
+        address recipient,
+        string calldata tokenCID
+    ) external onlyOperator returns (uint256) {
+        return _mintBase(recipient, tokenCID);
     }
 
-    function batchMint(address recipient, string[] calldata tokenCIDs)
-        external
-        onlyOperator
-    {
+    function batchMint(
+        address recipient,
+        string[] calldata tokenCIDs
+    ) external onlyOperator {
         _batchMintBase(recipient, tokenCIDs);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(CollectionRoyalties, ERC721Upgradeable)
@@ -88,13 +90,9 @@ contract OrderCollection is
             type(IERC721MetadataUpgradeable).interfaceId == interfaceId;
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
 
         return string(abi.encodePacked(_baseURI(), _tokenCIDs[tokenId]));
@@ -104,10 +102,9 @@ contract OrderCollection is
         _setRoyalties(recipient, value);
     }
 
-    function updateMintOperator(address newMintOperator)
-        external
-        onlyAdministrator
-    {
+    function updateMintOperator(
+        address newMintOperator
+    ) external onlyAdministrator {
         if (newMintOperator == address(0)) {
             revert InvalidAddress();
         }
@@ -115,7 +112,10 @@ contract OrderCollection is
         mintOperator = newMintOperator;
     }
 
-    function _mintBase(address recipient, string calldata tokenCID) internal {
+    function _mintBase(
+        address recipient,
+        string calldata tokenCID
+    ) internal returns (uint256) {
         // Create new token ID
         uint256 tokenId = ++latestTokenId;
 
@@ -127,11 +127,14 @@ contract OrderCollection is
 
         // Emit mint event
         emit Minted(tokenId, owner(), tokenCID);
+
+        return tokenId;
     }
 
-    function _batchMintBase(address recipient, string[] calldata tokenCIDs)
-        internal
-    {
+    function _batchMintBase(
+        address recipient,
+        string[] calldata tokenCIDs
+    ) internal {
         // Retrieve latest token ID
         uint256 currentTokenId = latestTokenId;
         // Calculate start token ID for the batch
@@ -156,10 +159,9 @@ contract OrderCollection is
         emit BatchMinted(startTokenId, currentTokenId, owner(), tokenCIDs);
     }
 
-    function _burn(uint256 tokenId)
-        internal
-        override(ERC721Upgradeable, ERC721Base)
-    {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721Upgradeable, ERC721Base) {
         delete _tokenCIDs[tokenId];
         super._burn(tokenId);
     }

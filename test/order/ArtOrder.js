@@ -459,6 +459,10 @@ describe('ArtOrder', function () {
         .connect(artist)
         .finalizeOrder(orderEth, 'token CID');
 
+      const colAddress = await artOrderContract.collectionPerArtist(
+        artist.address
+      );
+
       await expect(tx)
         .to.emit(artOrderContract, 'OrderFinalized')
         .withArgs(
@@ -468,7 +472,8 @@ describe('ArtOrder', function () {
           PRICE,
           ethOrderTimestamp + ONE_DAY, // original deadline
           ethers.constants.AddressZero,
-          'token CID'
+          colAddress,
+          1
         );
     });
 
@@ -621,6 +626,10 @@ describe('ArtOrder', function () {
           extendSignatureEth
         );
 
+      const colAddress = await artOrderContract.collectionPerArtist(
+        artist.address
+      );
+
       await expect(tx).to.emit(artOrderContract, 'OrderFinalized').withArgs(
         0,
         orderer.address,
@@ -628,7 +637,8 @@ describe('ArtOrder', function () {
         PRICE,
         timestamp2DaysAfter, // new deadline
         ethers.constants.AddressZero,
-        'token CID'
+        colAddress,
+        1
       );
     });
 
